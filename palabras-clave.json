@@ -1,0 +1,12 @@
+{
+  "alimentacion": ["supermercado", "mercado", "minimarket", "restaurante", "panaderia", "cafeteria", "cafe", "almuerzo", "cena", "comida", "menu del dia", "delivery", "rappi", "pedidosya", "uber eats", "didi food"],
+  "transporte": ["gasolina", "combustible", "grifo", "uber", "didi", "cabify", "indriver", "taxi", "bus", "metro", "tren", "peaje", "parqueadero", "estacionamiento", "pasaje", "soat", "taller", "mecanico", "llanta", "neumatico"],
+  "salud": ["farmacia", "drogueria", "botica", "eps", "prepagada", "medico", "doctor", "odontologo", "dentista", "clinica", "hospital", "laboratorio", "medicamento", "gimnasio", "gym", "consulta", "terapia", "psicologo"],
+  "educacion": ["universidad", "colegio", "instituto", "matricula", "semestre", "mensualidad", "pension", "curso", "diplomado", "platzi", "udemy", "coursera", "libro", "utiles", "papeleria", "fotocopias"],
+  "entretenimiento": ["netflix", "spotify", "disney", "hbo", "max", "prime video", "cine", "pelicula", "concierto", "bar", "discoteca", "fiesta", "viaje", "hotel", "airbnb", "steam", "playstation", "xbox", "nintendo", "videojuego"],
+  "obligaciones": ["tarjeta de credito", "prestamo", "credito", "cuota", "interes", "comision", "seguro de vida", "seguro desempleo", "poliza"],
+  "cuidado_personal": ["ropa", "calzado", "zapatos", "zapatillas", "tenis", "peluqueria", "barberia", "salon de belleza", "estetica", "manicure", "maquillaje", "perfume", "shampoo", "aseo personal"],
+  "profesionales": ["notion", "vercel", "claude", "chatgpt", "github", "hosting", "dominio", "licencia", "software", "computador", "computadora", "laptop", "portatil", "monitor", "teclado", "mouse", "coworking"],
+  "vivienda": ["arriendo", "alquiler", "renta", "hipoteca", "administracion", "condominio", "luz", "electricidad", "energia", "agua", "gas", "internet", "wifi", "cable", "celular", "telefono", "claro", "movistar", "plomero", "gasfitero", "ferreteria", "cerrajero", "reparacion"],
+  "otros": []
+}
