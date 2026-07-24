@@ -8,5 +8,6 @@
   "obligaciones": ["tarjeta de credito", "prestamo", "credito", "cuota", "cuotas", "interes", "intereses", "comision", "mora", "seguro de vida", "seguro desempleo", "poliza", "impuesto", "impuestos"],
   "cuidado_personal": ["ropa", "calzado", "zapatos", "zapatillas", "tenis", "vestido", "camisa", "pantalon", "peluqueria", "barberia", "salon de belleza", "estetica", "manicure", "pedicure", "maquillaje", "perfume", "crema", "shampoo", "jabon", "aseo personal"],
   "vivienda": ["arriendo", "alquiler", "renta", "hipoteca", "administracion", "condominio", "luz", "electricidad", "energia", "agua", "gas", "internet", "wifi", "cable", "celular", "telefono", "telefonia", "recarga celular", "plan de datos", "plomero", "gasfitero", "electricista", "cerrajero", "ferreteria", "reparacion", "aseo hogar", "mueble", "muebles"],
+  "mascotas": ["mascota", "mascotas", "veterinaria", "veterinario", "perro", "perros", "gato", "gatos", "cachorro", "cachorros", "canino", "canina", "felino", "croquetas", "concentrado", "purina", "petshop", "pet shop", "paseador", "antipulgas", "pipeta", "arena para gato"],
   "otros": []
 }
