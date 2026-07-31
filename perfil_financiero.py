@@ -7,9 +7,7 @@ importa directamente. No depende del notebook.
 Contiene:
 - calcular_perfil_reglas(): logica de reglas pura (para explicabilidad y como fallback)
 - cargar_modelo(): carga perezosa del modelo entrenado (.pkl)
-- analizar_perfil(): funcion publica que usa MODELO + REGLAS combinados,
-  tal como lo exige el requisito minimo del reto ("Modelo entrenado y cargado
-  correctamente").
+- analizar_perfil(): funcion publica que usa MODELO + REGLAS combinados.
 """
 
 import os
@@ -30,7 +28,7 @@ def calcular_perfil_reglas(nivel_endeudamiento: float, ratio_gasto_ingreso: floa
     if nivel_endeudamiento > 43:
         razones.append("el nivel de endeudamiento supera el 43% del ingreso")
     if ratio_gasto_ingreso > 0.9:
-        razones.append("los gastos representan mas del 90% del ingreso mensual")
+        razones.append("los gastos representan más del 90% del ingreso mensual")
     if razones:
         return "En riesgo", razones
 
@@ -61,8 +59,7 @@ def analizar_perfil(ingreso_mensual: float, nivel_endeudamiento: float,
                      frecuencia_ahorro: str, gasto_total_mes: float) -> dict:
     """
     Funcion publica que el backend llama. Combina:
-    - MODELO entrenado -> perfil_financiero + probabilidad (cumple el requisito
-      minimo del reto: "modelo entrenado y cargado correctamente")
+    - MODELO entrenado -> perfil_financiero + probabilidad 
     - REGLAS -> razones (explicabilidad)
 
     Si el modelo no puede cargarse por cualquier motivo, cae de forma segura
