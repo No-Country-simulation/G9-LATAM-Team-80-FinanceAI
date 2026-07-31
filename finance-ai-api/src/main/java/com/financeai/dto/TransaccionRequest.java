@@ -1,5 +1,6 @@
 package com.financeai.dto;
 
+import com.financeai.domain.TipoTransaccion;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,7 +23,10 @@ public record TransaccionRequest(
 
         @NotNull(message = "La fecha es obligatoria")
         @PastOrPresent(message = "La fecha no puede ser futura")
-        LocalDate fecha
+        LocalDate fecha,
+
+        @NotNull(message = "El tipo de transacción es obligatorio")
+        TipoTransaccion tipo
 
 ) {
 }
