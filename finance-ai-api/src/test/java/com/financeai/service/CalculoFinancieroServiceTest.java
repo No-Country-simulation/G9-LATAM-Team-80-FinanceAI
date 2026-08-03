@@ -118,4 +118,103 @@ class CalculoFinancieroServiceTest {
                 )
         );
     }
+
+    @Test
+    void deberiaCalcularElRatioGastoIngreso() {
+        BigDecimal resultado = service.calcularRatioGastoIngreso(
+                new BigDecimal("800.00"),
+                new BigDecimal("1000.00")
+        );
+
+        assertEquals(
+                new BigDecimal("0.8000"),
+                resultado
+        );
+    }
+
+    @Test
+    void deberiaPermitirUnRatioMayorAUno() {
+        BigDecimal resultado = service.calcularRatioGastoIngreso(
+                new BigDecimal("1200.00"),
+                new BigDecimal("1000.00")
+        );
+
+        assertEquals(
+                new BigDecimal("1.2000"),
+                resultado
+        );
+    }
+
+    @Test
+    void deberiaRedondearElRatioAcuatroDecimales() {
+        BigDecimal resultado = service.calcularRatioGastoIngreso(
+                BigDecimal.ONE,
+                new BigDecimal("3")
+        );
+
+        assertEquals(
+                new BigDecimal("0.3333"),
+                resultado
+        );
+    }
+
+    @Test
+    void deberiaPermitirGastoTotalCero() {
+        BigDecimal resultado = service.calcularRatioGastoIngreso(
+                BigDecimal.ZERO,
+                new BigDecimal("1000.00")
+        );
+
+        assertEquals(
+                new BigDecimal("0.0000"),
+                resultado
+        );
+    }
+
+    @Test
+    void deberiaRechazarValoresFinancierosInvalidos() {
+        assertAll(
+                () -> assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.calcularRatioGastoIngreso(
+                                new BigDecimal("-1.00"),
+                                new BigDecimal("1000.00")
+                        )
+                ),
+                () -> assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.calcularRatioGastoIngreso(
+                                new BigDecimal("100.00"),
+                                BigDecimal.ZERO
+                        )
+                ),
+                () -> assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.calcularRatioGastoIngreso(
+                                new BigDecimal("100.00"),
+                                new BigDecimal("-1000.00")
+                        )
+                )
+        );
+    }
+
+    @Test
+    void deberiaRechazarValoresFinancierosNulos() {
+        assertAll(
+                () -> assertThrows(
+                        NullPointerException.class,
+                        () -> service.calcularRatioGastoIngreso(
+                                null,
+                                new BigDecimal("1000.00")
+                        )
+                ),
+                () -> assertThrows(
+                        NullPointerException.class,
+                        () -> service.calcularRatioGastoIngreso(
+                                new BigDecimal("100.00"),
+                                null
+                        )
+                )
+        );
+    }
 }
