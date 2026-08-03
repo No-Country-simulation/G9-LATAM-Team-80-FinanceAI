@@ -1,6 +1,7 @@
 package com.financeai.service;
 
 import com.financeai.domain.TipoTransaccion;
+import com.financeai.domain.ResumenFinanciero;
 import com.financeai.dto.TransaccionRequest;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +15,7 @@ import java.util.Objects;
 public class CalculoFinancieroService {
 
     private static final int ESCALA_RATIO = 4;
+    private static final String MONEDA = "USD";
 
     public BigDecimal calcularGastoTotalMes(
             List<TransaccionRequest> transacciones,
@@ -79,6 +81,30 @@ public class CalculoFinancieroService {
                 ingresoMensual,
                 ESCALA_RATIO,
                 RoundingMode.HALF_UP
+        );
+    }
+
+    public ResumenFinanciero calcularResumenFinanciero(
+            List<TransaccionRequest> transacciones,
+            BigDecimal ingresoMensual,
+            YearMonth periodo
+    ) {
+        BigDecimal gastoTotalMes = calcularGastoTotalMes(
+                transacciones,
+                periodo
+        );
+
+        BigDecimal ratioGastoIngreso = calcularRatioGastoIngreso(
+                gastoTotalMes,
+                ingresoMensual
+        );
+
+        return new ResumenFinanciero(
+                periodo,
+                ingresoMensual,
+                gastoTotalMes,
+                ratioGastoIngreso,
+                MONEDA
         );
     }
 }

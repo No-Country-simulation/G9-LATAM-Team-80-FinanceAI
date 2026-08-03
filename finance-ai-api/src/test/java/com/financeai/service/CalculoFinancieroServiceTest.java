@@ -1,5 +1,6 @@
 package com.financeai.service;
 
+import com.financeai.domain.ResumenFinanciero;
 import com.financeai.domain.TipoTransaccion;
 import com.financeai.dto.TransaccionRequest;
 import org.junit.jupiter.api.Test;
@@ -213,6 +214,129 @@ class CalculoFinancieroServiceTest {
                         () -> service.calcularRatioGastoIngreso(
                                 new BigDecimal("100.00"),
                                 null
+                        )
+                )
+        );
+    }
+
+    @Test
+    void deberiaCalcularUnResumenFinancieroMensual() {
+        List<TransaccionRequest> transacciones = List.of(
+                new TransaccionRequest(
+                        "Supermercado",
+                        new BigDecimal("600.25"),
+                        LocalDate.of(2026, 7, 5),
+                        TipoTransaccion.GASTO
+                ),
+                new TransaccionRequest(
+                        "Transporte",
+                        new BigDecimal("199.75"),
+                        LocalDate.of(2026, 7, 18),
+                        TipoTransaccion.GASTO
+                ),
+                new TransaccionRequest(
+                        "Salario",
+                        new BigDecimal("1000.00"),
+                        LocalDate.of(2026, 7, 15),
+                        TipoTransaccion.INGRESO
+                ),
+                new TransaccionRequest(
+                        "Gasto de agosto",
+                        new BigDecimal("50.00"),
+                        LocalDate.of(2026, 8, 1),
+                        TipoTransaccion.GASTO
+                )
+        );
+
+        ResumenFinanciero resultado =
+                service.calcularResumenFinanciero(
+                        transacciones,
+                        new BigDecimal("1000.00"),
+                        YearMonth.of(2026, 7)
+                );
+
+        assertAll(
+                () -> assertEquals(
+                        YearMonth.of(2026, 7),
+                        resultado.periodo()
+                ),
+                () -> assertEquals(
+                        new BigDecimal("1000.00"),
+                        resultado.ingresoMensual()
+                ),
+                () -> assertEquals(
+                        new BigDecimal("800.00"),
+                        resultado.gastoTotalMes()
+                ),
+                () -> assertEquals(
+                        new BigDecimal("0.8000"),
+                        resultado.ratioGastoIngreso()
+                ),
+                () -> assertEquals(
+                        "USD",
+                        resultado.moneda()
+                )
+        );
+    }
+
+    @Test
+    void deberiaCalcularUnResumenSinGastos() {
+        ResumenFinanciero resultado =
+                service.calcularResumenFinanciero(
+                        List.of(),
+                        new BigDecimal("1000.00"),
+                        YearMonth.of(2026, 7)
+                );
+
+        assertAll(
+                () -> assertEquals(
+                        BigDecimal.ZERO,
+                        resultado.gastoTotalMes()
+                ),
+                () -> assertEquals(
+                        new BigDecimal("0.0000"),
+                        resultado.ratioGastoIngreso()
+                ),
+                () -> assertEquals(
+                        "USD",
+                        resultado.moneda()
+                )
+        );
+    }
+
+    @Test
+    void deberiaRechazarDatosInvalidosAlCalcularElResumen() {
+        assertAll(
+                () -> assertThrows(
+                        NullPointerException.class,
+                        () -> service.calcularResumenFinanciero(
+                                null,
+                                new BigDecimal("1000.00"),
+                                YearMonth.of(2026, 7)
+                        )
+                ),
+                () -> assertThrows(
+                        NullPointerException.class,
+                        () -> service.calcularResumenFinanciero(
+                                List.of(),
+                                new BigDecimal("1000.00"),
+                                null
+                        )
+                ),
+                () -> assertThrows(
+                        NullPointerException.class,
+                        () -> service.calcularResumenFinanciero(
+                                List.of(),
+                                null,
+                                YearMonth.of(2026, 7)
+                        )
+                ),
+                () -> assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.calcularResumenFinanciero(
+                                List.of(),
+                                BigDecimal.ZERO,
+                                YearMonth.of(2026, 7)
                         )
                 )
         );
