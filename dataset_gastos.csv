@@ -9,18 +9,26 @@
 2026-04-01,Ajuste redondeo banco,1,otros
 2026-04-01,Óptica lentes fórmula,86,salud
 2026-04-01,Transferencia a mamá,75,otros
+2026-04-01,Prima de seguro anual,73,impuestos_y_seguros
+2026-04-01,Seguro exequial Los Olivos,16,impuestos_y_seguros
 2026-04-02,Manicure y pedicure,14,cuidado_personal
 2026-04-02,PLIN TRANSFERENCIA,17,otros
 2026-04-02,Mecánico revisión frenos,46,transporte
 2026-04-02,Justo & Bueno,14,alimentacion
 2026-04-02,Dentista calza resina,59,salud
+2026-04-02,Avance en efectivo cajero,114,deudas
+2026-04-02,Sobregiro cuenta corriente,30,deudas
 2026-04-03,Curso técnico para el negocio,70,profesionales
 2026-04-03,DAVIPLATA ENVIO,24,otros
-2026-04-03,Comisión transferencia internacional,11,obligaciones
+2026-04-03,Comisión transferencia internacional,11,impuestos_y_seguros
 2026-04-03,Fisioterapia rodilla sesión,24,salud
 2026-04-03,Preicfes sabatino,62,educacion
 2026-04-03,Medicamentos fórmula mensual,28,salud
-2026-04-03,Impuesto predial cuota 2,88,obligaciones
+2026-04-03,Impuesto predial cuota 2,88,impuestos_y_seguros
+2026-04-03,taxi al trabajo,12,transporte
+2026-04-03,Desayuno panadería Colombiana,8,alimentacion
+2026-04-03,Seguro exequial Los Olivos,20,impuestos_y_seguros
+2026-04-03,ADDI cuota compra,26,deudas
 2026-04-04,DIDI VIAJE NOCHE,3,transporte
 2026-04-04,VERCEL SUSCRIPCION PRO,20,profesionales
 2026-04-04,Almuerzo restaurante La Puerta,10,alimentacion
@@ -34,6 +42,8 @@
 2026-04-04,Peaje autopista norte,3,transporte
 2026-04-04,Instituto de idiomas nivel 3,75,educacion
 2026-04-04,PAGO PSE CLARO COLOMBIA,23,vivienda
+2026-04-04,Farmacia Cruz Verde,25,salud
+2026-04-04,Suscripción Netflix,10,entretenimiento
 2026-04-05,Frisby pollo,8,alimentacion
 2026-04-05,Concierto boleta general,45,entretenimiento
 2026-04-05,Mensajería envío paquete,4,otros
@@ -42,15 +52,20 @@
 2026-04-05,RETIRO ATM BCP LIMA,44,otros
 2026-04-05,Cuota gimnasio Bodytech,34,salud
 2026-04-05,Llantas nuevas delanteras,104,transporte
+2026-04-05,Compra supermercado Jumbo,120,alimentacion
+2026-04-05,Veterinaria vacuna perro,45,mascotas
+2026-04-05,SEGUROS BOLIVAR PAGO POLIZA,50,impuestos_y_seguros
 2026-04-06,Frisby pollo,8,alimentacion
 2026-04-06,Parqueadero mensual edificio,30,transporte
 2026-04-06,Examen de la vista óptica,24,salud
-2026-04-06,Mora tarjeta pago atrasado,9,obligaciones
+2026-04-06,Mora tarjeta pago atrasado,9,deudas
 2026-04-06,Monitor segunda pantalla,237,profesionales
 2026-04-06,Pastillas para la gripa,5,salud
-2026-04-06,Pago préstamo personal Davivienda,117,obligaciones
+2026-04-06,Pago préstamo personal Davivienda,117,deudas
 2026-04-06,Bar cervezas con amigos,17,entretenimiento
-2026-04-07,Seguro desempleo prima,11,obligaciones
+2026-04-06,Carga bip! Metro,15,transporte
+2026-04-06,Almuerzo restaurante,22,alimentacion
+2026-04-07,Seguro desempleo prima,11,impuestos_y_seguros
 2026-04-07,Peluquería canina baño completo,18,mascotas
 2026-04-07,COMPRA OXXO CDMX,6,alimentacion
 2026-04-07,Cerveza artesanal six pack,9,entretenimiento
@@ -59,6 +74,7 @@
 2026-04-07,Rifa de la oficina boleta,4,otros
 2026-04-07,Baño y corte para mi perro,18,mascotas
 2026-04-07,Licencia software diseño,40,profesionales
+2026-04-07,Gimnasio mensualidad,35,salud
 2026-04-08,Cine Colombia dos boletas,10,entretenimiento
 2026-04-08,Silla ergonómica oficina,155,profesionales
 2026-04-08,PLIN TRANSFERENCIA,16,otros
@@ -67,9 +83,11 @@
 2026-04-08,Tren a Cusco turismo local,34,transporte
 2026-04-08,Alquiler cuarto universitario,193,vivienda
 2026-04-08,Comida corriente donde Betty,3,alimentacion
+2026-04-08,Factura internet celular,40,vivienda
+2026-04-08,Peluquería corte,18,cuidado_personal
 2026-04-09,Clínica urgencias copago,16,salud
 2026-04-09,Vuelo Latam Bogotá Lima,195,entretenimiento
-2026-04-09,Comisión transferencia internacional,13,obligaciones
+2026-04-09,Comisión transferencia internacional,13,impuestos_y_seguros
 2026-04-09,Internet hogar Tigo,22,vivienda
 2026-04-09,Vaca para el paseo del grupo,20,otros
 2026-04-09,Fotocopia cédula y autenticación,2,otros
@@ -80,6 +98,7 @@
 2026-04-09,Dotación botas de seguridad,47,profesionales
 2026-04-09,Purina Pro Plan 15kg,55,mascotas
 2026-04-09,PAGO PSE UNIVERSIDAD NACIONAL,614,educacion
+2026-04-09,Compra libros Amazon,30,educacion
 2026-04-10,Diplomado en finanzas cuota,112,educacion
 2026-04-10,Apuesta deportiva BetPlay,10,otros
 2026-04-10,Arena para gato x2,12,mascotas
@@ -90,12 +109,13 @@
 2026-04-10,Medicamentos fórmula mensual,31,salud
 2026-04-10,Zapatillas deportivas Nike,86,cuidado_personal
 2026-04-10,Papelería útiles escolares,21,educacion
+2026-04-10,Carga de combustible Copec,50,transporte
 2026-04-11,Frisby pollo,9,alimentacion
 2026-04-11,Mensualidad gimnasio Smartfit,20,salud
 2026-04-11,Nutricionista consulta control,28,salud
 2026-04-11,Administración conjunto,70,vivienda
 2026-04-11,Recibo de luz Enel,36,vivienda
-2026-04-11,Impuesto vehicular anual,63,obligaciones
+2026-04-11,Impuesto vehicular anual,63,impuestos_y_seguros
 2026-04-11,MIFARMA COMPRA LIMA,9,salud
 2026-04-11,Gym pase día invitado,4,salud
 2026-04-11,Boleta partido en el estadio,24,entretenimiento
@@ -104,23 +124,27 @@
 2026-04-11,Farmacia Cruz Verde,10,salud
 2026-04-11,PAGO PSE CLARO COLOMBIA,23,vivienda
 2026-04-11,Shampoo y acondicionador,9,cuidado_personal
+2026-04-11,Entradas cine,16,entretenimiento
+2026-04-11,Comision bancaria cuatrimestral,13,impuestos_y_seguros
 2026-04-12,Vestido para matrimonio,73,cuidado_personal
 2026-04-12,Cine Colombia dos boletas,11,entretenimiento
 2026-04-12,Menú del día corrientazo,4,alimentacion
 2026-04-12,COMPRA OXXO CDMX,6,alimentacion
 2026-04-12,Estacionamiento aeropuerto día,8,transporte
-2026-04-12,Préstamo familiar abono,50,obligaciones
+2026-04-12,Préstamo familiar abono,50,deudas
 2026-04-12,Desparasitante cachorros,13,mascotas
 2026-04-12,COMPRA POS AGROCAMPO,47,mascotas
 2026-04-12,COMPRA POS AGROCAMPO,53,mascotas
 2026-04-12,Licorera botella para fiesta,22,entretenimiento
 2026-04-12,Lavadero autolavado full,6,transporte
 2026-04-12,Homecenter herramientas,75,profesionales
-2026-04-12,Cuotas nequi salvavidas,15,obligaciones
+2026-04-12,Cuotas nequi salvavidas,15,deudas
 2026-04-12,Justo & Bueno,13,alimentacion
 2026-04-12,Plan de datos celular,12,vivienda
 2026-04-12,UDEMY*COURSE PYTHON,14,educacion
 2026-04-12,Papelería útiles escolares,21,educacion
+2026-04-12,Regalo cumpleaños,25,otros
+2026-04-12,Avance en efectivo cajero,94,deudas
 2026-04-13,DAVIPLATA ENVIO,23,otros
 2026-04-13,Estacionamiento aeropuerto día,7,transporte
 2026-04-13,Tren a Cusco turismo local,38,transporte
@@ -130,6 +154,7 @@
 2026-04-13,Falabella vestido,55,cuidado_personal
 2026-04-13,Ara mecato,6,alimentacion
 2026-04-13,Combustible viaje fin de semana,26,transporte
+2026-04-13,Consulta médica,60,salud
 2026-04-14,Clínica urgencias copago,18,salud
 2026-04-14,Estacionamiento aeropuerto día,7,transporte
 2026-04-14,Desayuno cafetería oficina,2,alimentacion
@@ -142,8 +167,9 @@
 2026-04-14,Hosting página del negocio,10,profesionales
 2026-04-14,Giro Efecty a familiar,38,otros
 2026-04-14,Buseta intermunicipal,2,transporte
+2026-04-14,Ropa tienda Shein,45,cuidado_personal
 2026-04-15,Mercado mensual Carulla,80,alimentacion
-2026-04-15,Impuesto vehicular anual,65,obligaciones
+2026-04-15,Impuesto vehicular anual,65,impuestos_y_seguros
 2026-04-15,COMPRA POS KOAJ ROPA,39,cuidado_personal
 2026-04-15,Estética depilación,30,cuidado_personal
 2026-04-15,Publicidad Meta Ads negocio,50,profesionales
@@ -153,6 +179,8 @@
 2026-04-15,Jabón y aseo personal mensual,10,cuidado_personal
 2026-04-15,Jabón y aseo personal mensual,9,cuidado_personal
 2026-04-15,Cerrajero copia de llaves,4,vivienda
+2026-04-15,Pago luz ENEL,28,vivienda
+2026-04-15,Curso online Udemy,15,educacion
 2026-04-16,Odontólogo limpieza,38,salud
 2026-04-16,Donación teletón,12,otros
 2026-04-16,DIDI FOOD ALMUERZO,9,alimentacion
@@ -160,6 +188,7 @@
 2026-04-16,Tierragro alimento mascotas,31,mascotas
 2026-04-16,Grifo Primax gasolina,25,transporte
 2026-04-16,Cuota vehículo Banco Occidente,145,transporte
+2026-04-16,Empanadas a domicilio,18,alimentacion
 2026-04-17,Fotocopia cédula y autenticación,2,otros
 2026-04-17,Estética depilación,32,cuidado_personal
 2026-04-17,Plomero arreglo cocina,30,vivienda
@@ -171,23 +200,23 @@
 2026-04-18,Ferretería tornillos y silicona,7,vivienda
 2026-04-18,Uber Eats sushi,14,alimentacion
 2026-04-18,Cerveza artesanal six pack,10,entretenimiento
-2026-04-18,Comisión avance en efectivo,6,obligaciones
+2026-04-18,Comisión avance en efectivo,6,deudas
 2026-04-18,Ropa camisa y pantalón,47,cuidado_personal
 2026-04-18,Domicilio Rappi hamburguesas,9,alimentacion
 2026-04-18,Pago Netflix,6,entretenimiento
 2026-04-18,Pago Netflix,8,entretenimiento
 2026-04-18,Gas natural Vanti,7,vivienda
 2026-04-19,Xbox Game Pass,9,entretenimiento
-2026-04-19,Mora tarjeta pago atrasado,10,obligaciones
+2026-04-19,Mora tarjeta pago atrasado,10,deudas
 2026-04-19,MASCOTICAS DEL VALLE,30,mascotas
 2026-04-19,Farmacia Guadalajara,9,salud
 2026-04-19,Instituto de idiomas nivel 3,91,educacion
-2026-04-19,Impuesto predial cuota 2,80,obligaciones
+2026-04-19,Impuesto predial cuota 2,80,impuestos_y_seguros
 2026-04-20,Silla ergonómica oficina,161,profesionales
 2026-04-20,Desayuno cafetería oficina,2,alimentacion
 2026-04-20,Ferretería tornillos y silicona,7,vivienda
 2026-04-20,Pasajes bus Bogotá Medellín,21,transporte
-2026-04-20,Mora tarjeta pago atrasado,10,obligaciones
+2026-04-20,Mora tarjeta pago atrasado,10,deudas
 2026-04-20,Monitor segunda pantalla,212,profesionales
 2026-04-20,Veterinaria consulta anual,45,mascotas
 2026-04-20,MIFARMA COMPRA LIMA,11,salud
@@ -198,15 +227,16 @@
 2026-04-20,Dentista calza resina,48,salud
 2026-04-20,Notaría autenticación documentos,3,otros
 2026-04-20,Recarga celular prepago,5,vivienda
+2026-04-20,Seguro médico,100,salud
 2026-04-21,Concierto boleta general,43,entretenimiento
 2026-04-21,Taller cambio de aceite,34,transporte
 2026-04-21,Matrícula universidad semestre,875,educacion
 2026-04-21,Mensualidad jardín infantil,155,educacion
-2026-04-21,BBVA CUOTA PRESTAMO 04,102,obligaciones
+2026-04-21,BBVA CUOTA PRESTAMO 04,102,deudas
 2026-04-21,Pantalón jean Levis,48,cuidado_personal
 2026-04-21,Uniformes empleados taller,65,profesionales
 2026-04-21,TRANSFERENCIA INTERBANCARIA,94,otros
-2026-04-21,Intereses tarjeta rotativo,17,obligaciones
+2026-04-21,Intereses tarjeta rotativo,17,deudas
 2026-04-21,Prime Video mensual,4,entretenimiento
 2026-04-21,Condominio expensas mes,85,vivienda
 2026-04-22,Escuela de música clase,24,educacion
@@ -214,15 +244,16 @@
 2026-04-22,Coworking día completo,15,profesionales
 2026-04-22,Curso de excel avanzado,28,educacion
 2026-04-22,UDEMY*COURSE PYTHON,15,educacion
-2026-04-22,Pago préstamo personal Davivienda,128,obligaciones
+2026-04-22,Pago préstamo personal Davivienda,128,deudas
 2026-04-23,Escuela de música clase,25,educacion
 2026-04-23,Almuerzo con cliente,20,profesionales
 2026-04-23,UBER *TRIP HELP.UBER.COM,4,transporte
 2026-04-23,Olímpica surtido casa,33,alimentacion
-2026-04-24,Préstamo familiar abono,47,obligaciones
+2026-04-24,Préstamo familiar abono,47,deudas
 2026-04-24,Certificación cloud examen,92,educacion
 2026-04-24,Teatro obra sábado,19,entretenimiento
 2026-04-24,PAYU*NETFLIX BOGOTA,8,entretenimiento
+2026-04-24,SUNAT pago impuesto,77,impuestos_y_seguros
 2026-04-25,Menú del día corrientazo,4,alimentacion
 2026-04-25,Estacionamiento aeropuerto día,8,transporte
 2026-04-25,Botica Inkafarma,8,salud
@@ -231,6 +262,7 @@
 2026-04-25,COMPRA DEB MERCADO LIBRE,50,otros
 2026-04-25,Pastillas para la gripa,5,salud
 2026-04-25,Salón de belleza tinte,38,cuidado_personal
+2026-04-25,Pago impuesto vehicular,41,impuestos_y_seguros
 2026-04-26,Vuelo Latam Bogotá Lima,175,entretenimiento
 2026-04-26,Botica Inkafarma,8,salud
 2026-04-26,DIDI FOOD ALMUERZO,8,alimentacion
@@ -263,19 +295,20 @@
 2026-04-28,Nintendo eShop juego,41,entretenimiento
 2026-04-28,YouTube Premium familiar,8,entretenimiento
 2026-04-28,IZZI TELECOM PAGO,21,vivienda
-2026-04-29,BBVA CUOTA PRESTAMO 04,93,obligaciones
+2026-04-28,Cuota hipoteca Banco de Chile,323,deudas
+2026-04-29,BBVA CUOTA PRESTAMO 04,93,deudas
 2026-04-29,COMPRA POS EXITO CALLE 80,47,alimentacion
 2026-04-29,UBER *TRIP HELP.UBER.COM,4,transporte
 2026-04-29,Curso de cocina fin de semana,38,educacion
-2026-04-29,Póliza todo riesgo anual,222,obligaciones
+2026-04-29,Póliza todo riesgo anual,222,impuestos_y_seguros
 2026-04-29,TRANSFERENCIA INTERBANCARIA,88,otros
 2026-04-29,Shein paquete,35,otros
 2026-04-29,Empeño recuperación artículo,45,otros
 2026-04-29,Crema facial y bloqueador,24,cuidado_personal
-2026-04-29,Crédito de consumo Falabella,82,obligaciones
+2026-04-29,Crédito de consumo Falabella,82,deudas
 2026-04-29,Materiales obra cliente,232,profesionales
 2026-04-30,Parqueadero mensual edificio,33,transporte
-2026-04-30,BBVA CUOTA PRESTAMO 04,94,obligaciones
+2026-04-30,BBVA CUOTA PRESTAMO 04,94,deudas
 2026-04-30,Plaza Vea quincena,44,alimentacion
 2026-04-30,MIFARMA COMPRA LIMA,10,salud
 2026-04-30,MIFARMA COMPRA LIMA,10,salud
@@ -283,10 +316,10 @@
 2026-04-30,Disney Plus mensual,6,entretenimiento
 2026-04-30,Ajuste redondeo banco,1,otros
 2026-04-30,Empeño recuperación artículo,45,otros
-2026-04-30,DIAN impuesto de renta cuota,159,obligaciones
+2026-04-30,DIAN impuesto de renta cuota,159,impuestos_y_seguros
 2026-04-30,COMPRA DEB MERCADO LIBRE,49,otros
 2026-04-30,Peluquería corte y barba,10,cuidado_personal
-2026-04-30,Cuota Icetex mensual,81,obligaciones
+2026-04-30,Cuota Icetex mensual,81,deudas
 2026-04-30,La Baguette pan y tortas,5,alimentacion
 2026-04-30,MCDONALD APP PEDIDO,7,alimentacion
 2026-05-01,Administración conjunto,65,vivienda
@@ -308,6 +341,7 @@
 2026-05-02,Amazon compra varios,58,otros
 2026-05-02,Zapatos formales de vestir,50,cuidado_personal
 2026-05-02,Uber al aeropuerto madrugada,9,transporte
+2026-05-02,Sobregiro cuenta corriente,37,deudas
 2026-05-03,PLIN TRANSFERENCIA,18,otros
 2026-05-03,Aerolínea Avianca tiquete,143,entretenimiento
 2026-05-03,Zapatos formales de vestir,55,cuidado_personal
@@ -318,7 +352,7 @@
 2026-05-03,Condominio expensas mes,68,vivienda
 2026-05-03,Café reunión con cliente,6,profesionales
 2026-05-04,Almuerzo restaurante La Puerta,11,alimentacion
-2026-05-04,Seguro desempleo prima,10,obligaciones
+2026-05-04,Seguro desempleo prima,10,impuestos_y_seguros
 2026-05-04,Clínica urgencias copago,18,salud
 2026-05-04,COMPRA POS KOAJ ROPA,36,cuidado_personal
 2026-05-04,Uber Eats sushi,14,alimentacion
@@ -326,11 +360,11 @@
 2026-05-04,Escuela de música clase,21,educacion
 2026-05-04,Moto cambio de llanta trasera,24,transporte
 2026-05-04,Nintendo eShop juego,41,entretenimiento
-2026-05-04,Cuota tarjeta de crédito Visa,88,obligaciones
+2026-05-04,Cuota tarjeta de crédito Visa,88,deudas
 2026-05-04,Pedicure spa de pies,12,cuidado_personal
 2026-05-04,MOVISTAR PLAN POSPAGO,19,vivienda
 2026-05-04,Teclado y mouse oficina,39,profesionales
-2026-05-04,Cuota crédito libre inversión,113,obligaciones
+2026-05-04,Cuota crédito libre inversión,113,deudas
 2026-05-05,Plaza Vea quincena,42,alimentacion
 2026-05-05,Empeño recuperación artículo,44,otros
 2026-05-05,Libros texto escolar,41,educacion
@@ -353,11 +387,11 @@
 2026-05-06,SUPERPET CUENCA,31,mascotas
 2026-05-06,PAGO PSE PUPPIS BOGOTA,45,mascotas
 2026-05-07,Insumos repostería pedidos,47,profesionales
-2026-05-07,DIAN impuesto de renta cuota,180,obligaciones
+2026-05-07,DIAN impuesto de renta cuota,180,impuestos_y_seguros
 2026-05-07,NEQUI ENVIO JUAN P,29,otros
 2026-05-07,APPLE.COM/BILL,4,entretenimiento
 2026-05-07,Gasolina Terpel,22,transporte
-2026-05-07,Cuota Icetex mensual,84,obligaciones
+2026-05-07,Cuota Icetex mensual,84,deudas
 2026-05-07,Farmatodo vitaminas,16,salud
 2026-05-08,Laboratorio exámenes de sangre,46,salud
 2026-05-08,Gym pase día invitado,4,salud
@@ -379,6 +413,7 @@
 2026-05-09,Peaje autopista norte,3,transporte
 2026-05-09,Jumbo compra fin de mes,72,alimentacion
 2026-05-09,MERPAGO*SPOTIFY,4,entretenimiento
+2026-05-09,SUNAT pago impuesto,79,impuestos_y_seguros
 2026-05-10,Diplomado en finanzas cuota,109,educacion
 2026-05-10,Licorera botella para fiesta,18,entretenimiento
 2026-05-10,Pedicure spa de pies,11,cuidado_personal
@@ -393,6 +428,7 @@
 2026-05-11,Discoteca cover y consumo,24,entretenimiento
 2026-05-11,Spa masaje relajante,39,cuidado_personal
 2026-05-11,Combustible viaje fin de semana,29,transporte
+2026-05-11,Comision bancaria cuatrimestral,13,impuestos_y_seguros
 2026-05-12,Café Juan Valdez,2,alimentacion
 2026-05-12,Café Juan Valdez,2,alimentacion
 2026-05-12,Parqueadero centro comercial,2,transporte
@@ -401,10 +437,10 @@
 2026-05-12,Insumos repostería pedidos,41,profesionales
 2026-05-12,Croquetas para perro Dog Chow,28,mascotas
 2026-05-12,DEBITO AUTOMATICO SURA EPS,31,salud
-2026-05-12,Intereses tarjeta rotativo,19,obligaciones
-2026-05-12,Cuota crédito libre inversión,111,obligaciones
-2026-05-12,Seguro exequial familiar,10,obligaciones
-2026-05-13,Comisión avance en efectivo,6,obligaciones
+2026-05-12,Intereses tarjeta rotativo,19,deudas
+2026-05-12,Cuota crédito libre inversión,111,deudas
+2026-05-12,Seguro exequial familiar,10,impuestos_y_seguros
+2026-05-13,Comisión avance en efectivo,6,deudas
 2026-05-13,Hotel para perros vacaciones,30,mascotas
 2026-05-13,Airbnb 2 noches,114,entretenimiento
 2026-05-13,Supermercado Wong Miraflores,56,alimentacion
@@ -425,7 +461,7 @@
 2026-05-15,Aerolínea Avianca tiquete,119,entretenimiento
 2026-05-15,CRECER INSTITUTO PAGO,66,educacion
 2026-05-15,Uber al aeropuerto madrugada,10,transporte
-2026-05-15,Crédito de consumo Falabella,82,obligaciones
+2026-05-15,Crédito de consumo Falabella,82,deudas
 2026-05-15,Cuchillas y espuma de afeitar,6,cuidado_personal
 2026-05-15,GITHUB.COM MENSUAL,5,profesionales
 2026-05-15,Café reunión con cliente,6,profesionales
@@ -433,27 +469,27 @@
 2026-05-16,Teléfono fijo de la casa,11,vivienda
 2026-05-16,Cuota carro Sufi,148,transporte
 2026-05-16,Curso de inglés mensualidad,55,educacion
-2026-05-16,Cuota Icetex mensual,71,obligaciones
-2026-05-16,CUOTA MANEJO TARJETA,3,obligaciones
+2026-05-16,Cuota Icetex mensual,71,deudas
+2026-05-16,CUOTA MANEJO TARJETA,3,deudas
 2026-05-16,Farmatodo vitaminas,14,salud
 2026-05-16,Llantas nuevas delanteras,120,transporte
 2026-05-16,Taxi aeropuerto,10,transporte
 2026-05-16,Café reunión con cliente,7,profesionales
 2026-05-17,Fruver de la esquina,7,alimentacion
-2026-05-17,Comisión transferencia internacional,14,obligaciones
+2026-05-17,Comisión transferencia internacional,14,impuestos_y_seguros
 2026-05-17,Insumos repostería pedidos,37,profesionales
 2026-05-17,COMPRA POS FARMACIAS SIMILARES,7,salud
 2026-05-17,Óptica lentes fórmula,88,salud
-2026-05-17,DIAN impuesto de renta cuota,170,obligaciones
+2026-05-17,DIAN impuesto de renta cuota,170,impuestos_y_seguros
 2026-05-17,Teclado y mouse oficina,36,profesionales
 2026-05-17,Juguete mordedor perro,8,mascotas
-2026-05-17,Seguro de vida Sura mensual,25,obligaciones
+2026-05-17,Seguro de vida Sura mensual,25,impuestos_y_seguros
 2026-05-17,Gasolina visita clientes,26,profesionales
 2026-05-17,Viaje tour guatapé,37,entretenimiento
 2026-05-17,DEBITO AUTOMATICO EPM ENERGIA,33,vivienda
 2026-05-18,Donación teletón,11,otros
-2026-05-18,Mora tarjeta pago atrasado,10,obligaciones
-2026-05-18,Cuota tarjeta de crédito Visa,79,obligaciones
+2026-05-18,Mora tarjeta pago atrasado,10,deudas
+2026-05-18,Cuota tarjeta de crédito Visa,79,deudas
 2026-05-18,Pensión colegio niños,212,educacion
 2026-05-18,Coworking día completo,14,profesionales
 2026-05-18,NEQUI ENVIO JUAN P,30,otros
@@ -461,7 +497,7 @@
 2026-05-18,PAGO PSE PUPPIS BOGOTA,48,mascotas
 2026-05-18,Ara mecato,5,alimentacion
 2026-05-18,Combustible viaje fin de semana,32,transporte
-2026-05-18,Crédito de consumo Falabella,65,obligaciones
+2026-05-18,Crédito de consumo Falabella,65,deudas
 2026-05-18,Buseta intermunicipal,2,transporte
 2026-05-19,Crepes & Waffles,13,alimentacion
 2026-05-19,Concierto boleta general,42,entretenimiento
@@ -473,13 +509,14 @@
 2026-05-19,DEBITO AUTOMATICO SURA EPS,30,salud
 2026-05-19,Fisioterapia rodilla sesión,21,salud
 2026-05-19,Certificación cloud examen,80,educacion
-2026-05-19,Cuotas nequi salvavidas,15,obligaciones
+2026-05-19,Cuotas nequi salvavidas,15,deudas
 2026-05-19,Recarga tarjeta metro,5,transporte
 2026-05-19,Teatro obra sábado,22,entretenimiento
 2026-05-19,Útiles de arte para clase,11,educacion
 2026-05-20,Suplementos proteína,36,salud
-2026-05-20,Intereses tarjeta rotativo,18,obligaciones
+2026-05-20,Intereses tarjeta rotativo,18,deudas
 2026-05-20,Bar cervezas con amigos,18,entretenimiento
+2026-05-20,Seguro exequial Los Olivos,16,impuestos_y_seguros
 2026-05-21,APPLE.COM/BILL,4,entretenimiento
 2026-05-21,Vacuna antirrábica cachorro,22,mascotas
 2026-05-21,Baño y corte para mi perro,15,mascotas
@@ -487,17 +524,20 @@
 2026-05-21,Ara mecato,5,alimentacion
 2026-05-21,Comida corriente donde Betty,3,alimentacion
 2026-05-21,Supermercado Wong Miraflores,58,alimentacion
+2026-05-21,Cuota hipoteca Banco de Chile,371,deudas
+2026-05-21,ADDI cuota compra,32,deudas
 2026-05-22,Examen de la vista óptica,22,salud
-2026-05-22,Impuesto vehicular anual,58,obligaciones
+2026-05-22,Impuesto vehicular anual,58,impuestos_y_seguros
 2026-05-22,Pantalón jean Levis,46,cuidado_personal
 2026-05-22,Homecenter herramientas,85,profesionales
 2026-05-22,Rifa de la oficina boleta,5,otros
 2026-05-22,APPLE.COM/BILL,4,entretenimiento
 2026-05-22,Steam compra videojuego,22,entretenimiento
 2026-05-22,Steam compra videojuego,24,entretenimiento
-2026-05-22,Seguro de vida Sura mensual,24,obligaciones
+2026-05-22,Seguro de vida Sura mensual,24,impuestos_y_seguros
 2026-05-22,RETIRO CAJERO BANCOLOMBIA,100,otros
 2026-05-22,Combustible viaje fin de semana,27,transporte
+2026-05-22,COMISION BANCARIA RETIRO,8,impuestos_y_seguros
 2026-05-23,Veterinaria consulta anual,51,mascotas
 2026-05-23,Taller cambio de aceite,29,transporte
 2026-05-23,COMPRA DEB MERCADO LIBRE,38,otros
@@ -509,10 +549,11 @@
 2026-05-24,PlayStation Store juego,57,entretenimiento
 2026-05-24,Gasolina Terpel,22,transporte
 2026-05-24,Tierragro alimento mascotas,36,mascotas
-2026-05-24,Intereses sobregiro,8,obligaciones
+2026-05-24,Intereses sobregiro,8,deudas
 2026-05-24,SUPERPET CUENCA,28,mascotas
 2026-05-24,Lotería raspa y gana,2,otros
 2026-05-24,GITHUB.COM MENSUAL,3,profesionales
+2026-05-24,KUESKI pago prestamo,44,deudas
 2026-05-25,Vestido para matrimonio,69,cuidado_personal
 2026-05-25,Manicure y pedicure,13,cuidado_personal
 2026-05-25,Cerveza artesanal six pack,11,entretenimiento
@@ -522,9 +563,9 @@
 2026-05-25,Curso de inglés mensualidad,52,educacion
 2026-05-25,Justo & Bueno,14,alimentacion
 2026-05-25,Grifo Primax gasolina,24,transporte
-2026-05-25,Intereses sobregiro,7,obligaciones
-2026-05-25,Cuota codeudor préstamo,38,obligaciones
-2026-05-25,Hipoteca cuota mensual,450,vivienda
+2026-05-25,Intereses sobregiro,7,deudas
+2026-05-25,Cuota codeudor préstamo,38,deudas
+2026-05-25,Hipoteca cuota mensual,450,deudas
 2026-05-25,SUPERPET CUENCA,29,mascotas
 2026-05-25,Suscripción Notion trabajo,8,profesionales
 2026-05-25,Terapia psicólogo sesión,36,salud
@@ -556,7 +597,7 @@
 2026-05-27,PAGO PSE PUPPIS BOGOTA,59,mascotas
 2026-05-27,Giro Efecty a familiar,33,otros
 2026-05-27,Coursera certificación,48,educacion
-2026-05-27,Pago préstamo personal Davivienda,124,obligaciones
+2026-05-27,Pago préstamo personal Davivienda,124,deudas
 2026-05-28,Lavadero autolavado full,6,transporte
 2026-05-28,Homecenter herramientas,87,profesionales
 2026-05-28,Recarga tarjeta metro,5,transporte
@@ -565,16 +606,19 @@
 2026-05-28,Colegio salida pedagógica,16,educacion
 2026-05-28,Notaría autenticación documentos,3,otros
 2026-05-28,Cuota vehículo Banco Occidente,174,transporte
+2026-05-28,Tenencia vehicular CDMX,63,impuestos_y_seguros
+2026-05-28,KUESKI pago prestamo,42,deudas
 2026-05-29,Antipulgas pipeta gato,14,mascotas
-2026-05-29,BBVA CUOTA PRESTAMO 04,97,obligaciones
+2026-05-29,BBVA CUOTA PRESTAMO 04,97,deudas
 2026-05-29,Maquillaje base y labial,25,cuidado_personal
 2026-05-29,Droguería La Rebaja medicamentos,10,salud
 2026-05-29,Dentista calza resina,55,salud
 2026-05-29,Boleta partido en el estadio,22,entretenimiento
 2026-05-29,Spa masaje relajante,38,cuidado_personal
 2026-05-29,Suscripción Notion trabajo,9,profesionales
-2026-05-29,Seguro exequial familiar,10,obligaciones
+2026-05-29,Seguro exequial familiar,10,impuestos_y_seguros
 2026-05-29,Papelería facturas del negocio,7,profesionales
+2026-05-29,Prima de seguro anual,73,impuestos_y_seguros
 2026-05-30,COMPRA OXXO CDMX,7,alimentacion
 2026-05-30,Curso de cocina fin de semana,33,educacion
 2026-05-30,Doctor pediatra control,34,salud
@@ -585,19 +629,21 @@
 2026-05-30,Steam compra videojuego,21,entretenimiento
 2026-05-30,Kumon matemáticas,45,educacion
 2026-05-30,Peluquería corte y barba,9,cuidado_personal
-2026-05-30,PAGO MINIMO TARJETA MASTERCARD,48,obligaciones
+2026-05-30,PAGO MINIMO TARJETA MASTERCARD,48,deudas
 2026-05-30,Karaoke con amigos,16,entretenimiento
 2026-05-30,Dotación botas de seguridad,51,profesionales
 2026-05-30,Salón de belleza tinte,43,cuidado_personal
+2026-05-30,MAPFRE seguro hogar,38,impuestos_y_seguros
 2026-05-31,Menú del día corrientazo,4,alimentacion
 2026-05-31,TRANSFERENCIA INTERBANCARIA,87,otros
 2026-05-31,Aerolínea Avianca tiquete,111,entretenimiento
-2026-05-31,DIAN impuesto de renta cuota,159,obligaciones
+2026-05-31,DIAN impuesto de renta cuota,159,impuestos_y_seguros
 2026-05-31,Certificación cloud examen,80,educacion
-2026-05-31,Intereses sobregiro,6,obligaciones
+2026-05-31,Intereses sobregiro,6,deudas
 2026-05-31,Electricista cambio de toma,22,vivienda
 2026-05-31,Jumbo compra fin de mes,65,alimentacion
 2026-05-31,Pago Netflix,7,entretenimiento
+2026-05-31,Poliza exequial mensual,14,impuestos_y_seguros
 2026-06-01,Papelería resma y tinta,12,educacion
 2026-06-01,Karaoke con amigos,16,entretenimiento
 2026-06-01,Peaje autopista norte,3,transporte
@@ -606,8 +652,8 @@
 2026-06-02,Pago agua EAAB,17,vivienda
 2026-06-03,PAGO ELECTRONICO PEAJES FLYPASS,7,transporte
 2026-06-03,Teatro obra sábado,21,entretenimiento
-2026-06-03,PAGO MINIMO TARJETA MASTERCARD,46,obligaciones
-2026-06-03,Impuesto predial cuota 2,87,obligaciones
+2026-06-03,PAGO MINIMO TARJETA MASTERCARD,46,deudas
+2026-06-03,Impuesto predial cuota 2,87,impuestos_y_seguros
 2026-06-04,Compra insumos peluquería,68,profesionales
 2026-06-04,KFC combo familiar,14,alimentacion
 2026-06-04,ZARA COMPRA ONLINE,69,cuidado_personal
@@ -622,7 +668,9 @@
 2026-06-05,Compra insumos peluquería,52,profesionales
 2026-06-05,Aseo hogar productos limpieza,14,vivienda
 2026-06-05,Hotel fin de semana Girardot,92,entretenimiento
-2026-06-05,Cuota Icetex mensual,78,obligaciones
+2026-06-05,Cuota Icetex mensual,78,deudas
+2026-06-05,Pago impuesto vehicular,50,impuestos_y_seguros
+2026-06-05,Comision bancaria cuatrimestral,11,impuestos_y_seguros
 2026-06-06,Apuesta deportiva BetPlay,10,otros
 2026-06-06,COMPRA POS KOAJ ROPA,37,cuidado_personal
 2026-06-06,Gym pase día invitado,5,salud
@@ -640,6 +688,7 @@
 2026-06-07,Minimarket Tambo,3,alimentacion
 2026-06-07,SOAT anual moto,120,transporte
 2026-06-07,Bus alimentador,1,transporte
+2026-06-07,SEGUROS BOLIVAR PAGO POLIZA,48,impuestos_y_seguros
 2026-06-08,Mensajería envío paquete,4,otros
 2026-06-08,Peluquería canina baño completo,17,mascotas
 2026-06-08,Comida para gato sobres,15,mascotas
@@ -657,7 +706,8 @@
 2026-06-08,Paseador de perros semana,20,mascotas
 2026-06-08,Paseador de perros semana,18,mascotas
 2026-06-08,Falabella vestido,53,cuidado_personal
-2026-06-08,Interbank cuota préstamo,100,obligaciones
+2026-06-08,Interbank cuota préstamo,100,deudas
+2026-06-08,SUNAT pago impuesto,96,impuestos_y_seguros
 2026-06-09,Vestido para matrimonio,70,cuidado_personal
 2026-06-09,VERCEL SUSCRIPCION PRO,20,profesionales
 2026-06-09,Recibo de luz Enel,32,vivienda
@@ -679,13 +729,14 @@
 2026-06-10,TRANSFERENCIA INTERBANCARIA,87,otros
 2026-06-10,Herramienta taladro inalámbrico,96,profesionales
 2026-06-10,APPLE.COM/BILL,3,entretenimiento
-2026-06-10,Intereses sobregiro,6,obligaciones
+2026-06-10,Intereses sobregiro,6,deudas
 2026-06-10,Cuota gimnasio Bodytech,36,salud
 2026-06-10,Falabella vestido,60,cuidado_personal
 2026-06-10,Mueble organizador armado,112,vivienda
 2026-06-10,Lotería raspa y gana,2,otros
 2026-06-10,PAGO PSE PUPPIS BOGOTA,52,mascotas
-2026-06-11,Póliza todo riesgo anual,228,obligaciones
+2026-06-10,Comision bancaria cuatrimestral,14,impuestos_y_seguros
+2026-06-11,Póliza todo riesgo anual,228,impuestos_y_seguros
 2026-06-11,H&M COMPRA CC ANDINO,56,cuidado_personal
 2026-06-11,Ara mecato,5,alimentacion
 2026-06-11,Preicfes sabatino,72,educacion
@@ -694,9 +745,10 @@
 2026-06-11,Materiales obra cliente,242,profesionales
 2026-06-11,Compra bazar del barrio,8,otros
 2026-06-11,Concentrado gato adulto,35,mascotas
+2026-06-11,Pago impuesto vehicular,50,impuestos_y_seguros
 2026-06-12,Examen de la vista óptica,27,salud
 2026-06-12,Internet hogar Tigo,25,vivienda
-2026-06-12,Impuesto vehicular anual,60,obligaciones
+2026-06-12,Impuesto vehicular anual,60,impuestos_y_seguros
 2026-06-12,CRECER INSTITUTO PAGO,71,educacion
 2026-06-12,Baño y corte para mi perro,18,mascotas
 2026-06-12,Airbnb 2 noches,105,entretenimiento
@@ -704,6 +756,8 @@
 2026-06-12,MASCOTICAS DEL VALLE,26,mascotas
 2026-06-12,Licencia software diseño,46,profesionales
 2026-06-12,Colegio salida pedagógica,16,educacion
+2026-06-12,COMISION BANCARIA RETIRO,10,impuestos_y_seguros
+2026-06-12,Impuesto predial vigencia 2026,99,impuestos_y_seguros
 2026-06-13,Recibo de luz Enel,37,vivienda
 2026-06-13,Aseo hogar productos limpieza,15,vivienda
 2026-06-13,Ajuste redondeo banco,1,otros
@@ -714,15 +768,15 @@
 2026-06-13,Seguro médico prepagada Colsanitas,95,salud
 2026-06-13,Cerrajero copia de llaves,4,vivienda
 2026-06-13,Salón de belleza tinte,46,cuidado_personal
-2026-06-13,Impuesto predial cuota 2,78,obligaciones
+2026-06-13,Impuesto predial cuota 2,78,impuestos_y_seguros
 2026-06-14,Peluquería canina baño completo,18,mascotas
 2026-06-14,Peluquería canina baño completo,17,mascotas
 2026-06-14,Desayuno cafetería oficina,2,alimentacion
 2026-06-14,Herramienta taladro inalámbrico,91,profesionales
-2026-06-14,PAGO MINIMO TARJETA MASTERCARD,41,obligaciones
+2026-06-14,PAGO MINIMO TARJETA MASTERCARD,41,deudas
 2026-06-14,PEDIDOSYA*RESTAURANTE,12,alimentacion
-2026-06-14,CUOTA MANEJO TARJETA,3,obligaciones
-2026-06-14,Cuota crédito libre inversión,130,obligaciones
+2026-06-14,CUOTA MANEJO TARJETA,3,deudas
+2026-06-14,Cuota crédito libre inversión,130,deudas
 2026-06-14,Purina Pro Plan 15kg,55,mascotas
 2026-06-14,Papelería útiles escolares,20,educacion
 2026-06-14,Cuchillas y espuma de afeitar,6,cuidado_personal
@@ -737,22 +791,25 @@
 2026-06-15,Peaje autopista norte,3,transporte
 2026-06-15,Giro Efecty a familiar,38,otros
 2026-06-15,Temu pedido variado,24,otros
+2026-06-15,MAPFRE seguro hogar,44,impuestos_y_seguros
 2026-06-16,Silla ergonómica oficina,135,profesionales
-2026-06-16,Comisión transferencia internacional,12,obligaciones
+2026-06-16,Comisión transferencia internacional,12,impuestos_y_seguros
 2026-06-16,Mercado mensual Carulla,70,alimentacion
-2026-06-16,Impuesto vehicular anual,56,obligaciones
+2026-06-16,Impuesto vehicular anual,56,impuestos_y_seguros
 2026-06-16,Escuela de música clase,24,educacion
 2026-06-16,Libros texto escolar,45,educacion
 2026-06-16,Uber al aeropuerto madrugada,11,transporte
 2026-06-16,PAGO ELECTRONICO PEAJES FLYPASS,6,transporte
-2026-06-16,Cuota codeudor préstamo,38,obligaciones
-2026-06-16,Póliza hogar incendio,41,obligaciones
-2026-06-16,Seguro exequial familiar,10,obligaciones
-2026-06-16,Seguro exequial familiar,10,obligaciones
+2026-06-16,Cuota codeudor préstamo,38,deudas
+2026-06-16,Póliza hogar incendio,41,impuestos_y_seguros
+2026-06-16,Seguro exequial familiar,10,impuestos_y_seguros
+2026-06-16,Seguro exequial familiar,10,impuestos_y_seguros
 2026-06-16,Impresora tinta continua,180,profesionales
 2026-06-16,Farmacia Cruz Verde,12,salud
+2026-06-16,Tenencia vehicular CDMX,69,impuestos_y_seguros
+2026-06-16,MAPFRE seguro hogar,34,impuestos_y_seguros
 2026-06-17,Mensajería envío paquete,4,otros
-2026-06-17,Cuota tarjeta de crédito Visa,100,obligaciones
+2026-06-17,Cuota tarjeta de crédito Visa,100,deudas
 2026-06-17,Temu pedido variado,21,otros
 2026-06-17,MCDONALD APP PEDIDO,7,alimentacion
 2026-06-17,Combustible viaje fin de semana,28,transporte
@@ -760,9 +817,10 @@
 2026-06-17,Dominio .com renovación,16,profesionales
 2026-06-17,Alquiler cuarto universitario,188,vivienda
 2026-06-17,Ropa interior paquete,23,cuidado_personal
+2026-06-17,ADDI cuota compra,29,deudas
 2026-06-18,Platzi suscripción anual,97,educacion
 2026-06-18,Petshop collar y correa,21,mascotas
-2026-06-18,Póliza todo riesgo anual,243,obligaciones
+2026-06-18,Póliza todo riesgo anual,243,impuestos_y_seguros
 2026-06-18,Dotación botas de seguridad,41,profesionales
 2026-06-18,PAGO PSE PUPPIS BOGOTA,51,mascotas
 2026-06-18,D1 compra semanal,15,alimentacion
@@ -773,10 +831,11 @@
 2026-06-19,Freelance pago diseñador apoyo,89,profesionales
 2026-06-19,Curso de inglés mensualidad,48,educacion
 2026-06-19,La Baguette pan y tortas,6,alimentacion
-2026-06-19,Póliza hogar incendio,43,obligaciones
+2026-06-19,Póliza hogar incendio,43,impuestos_y_seguros
 2026-06-19,Terapia psicólogo sesión,32,salud
 2026-06-19,UDEMY*COURSE PYTHON,14,educacion
 2026-06-19,Minimarket Tambo,4,alimentacion
+2026-06-19,SEGUROS BOLIVAR PAGO POLIZA,47,impuestos_y_seguros
 2026-06-20,Fruver de la esquina,7,alimentacion
 2026-06-20,Mensualidad gimnasio Smartfit,17,salud
 2026-06-20,Petshop collar y correa,19,mascotas
@@ -786,10 +845,11 @@
 2026-06-20,Kumon matemáticas,47,educacion
 2026-06-20,Ropa camisa y pantalón,47,cuidado_personal
 2026-06-20,Farmatodo vitaminas,16,salud
-2026-06-20,Crédito de consumo Falabella,74,obligaciones
+2026-06-20,Crédito de consumo Falabella,74,deudas
 2026-06-20,Materiales obra cliente,212,profesionales
 2026-06-20,Compra bazar del barrio,9,otros
 2026-06-20,Sofá cama para la sala,295,vivienda
+2026-06-20,SUNAT pago impuesto,91,impuestos_y_seguros
 2026-06-21,Concierto boleta general,50,entretenimiento
 2026-06-21,Shein paquete,33,otros
 2026-06-21,Preicfes sabatino,74,educacion
@@ -801,7 +861,8 @@
 2026-06-21,Cerrajero copia de llaves,4,vivienda
 2026-06-21,Fotocopias e impresiones,2,educacion
 2026-06-21,Papelería facturas del negocio,9,profesionales
-2026-06-22,Seguro desempleo prima,11,obligaciones
+2026-06-21,Prima de seguro anual,66,impuestos_y_seguros
+2026-06-22,Seguro desempleo prima,11,impuestos_y_seguros
 2026-06-22,Ara mecato,5,alimentacion
 2026-06-22,Coursera certificación,49,educacion
 2026-06-22,Despegar paquete vacaciones,412,entretenimiento
@@ -836,7 +897,7 @@
 2026-06-25,Diplomado en finanzas cuota,117,educacion
 2026-06-25,Monitor segunda pantalla,187,profesionales
 2026-06-25,DIDI FOOD ALMUERZO,8,alimentacion
-2026-06-25,Póliza todo riesgo anual,224,obligaciones
+2026-06-25,Póliza todo riesgo anual,224,impuestos_y_seguros
 2026-06-25,Lavadero autolavado full,6,transporte
 2026-06-25,KFC combo familiar,12,alimentacion
 2026-06-25,Mueble organizador armado,127,vivienda
@@ -851,14 +912,14 @@
 2026-06-26,Supermercado Wong Miraflores,52,alimentacion
 2026-06-26,Gasfitero fuga de agua,29,vivienda
 2026-06-26,Barbería La 70,7,cuidado_personal
-2026-06-26,Pago préstamo personal Davivienda,128,obligaciones
+2026-06-26,Pago préstamo personal Davivienda,128,deudas
 2026-06-27,Mensajería envío paquete,4,otros
 2026-06-27,Parqueadero mensual edificio,28,transporte
 2026-06-27,Uber Eats sushi,15,alimentacion
 2026-06-27,Teclado y mouse oficina,33,profesionales
 2026-06-27,Fotocopias e impresiones,2,educacion
 2026-06-27,Matrícula técnico laboral,245,educacion
-2026-06-27,Tarjeta de crédito pago total,312,obligaciones
+2026-06-27,Tarjeta de crédito pago total,312,deudas
 2026-06-27,Perfume de regalo propio,70,cuidado_personal
 2026-06-27,Zapatillas deportivas Nike,95,cuidado_personal
 2026-06-28,Parqueadero mensual edificio,31,transporte
@@ -885,6 +946,7 @@
 2026-06-30,Pastillas para la gripa,5,salud
 2026-06-30,Notaría autenticación documentos,3,otros
 2026-06-30,Olímpica surtido casa,37,alimentacion
+2026-06-30,Poliza exequial mensual,15,impuestos_y_seguros
 2026-07-01,VERCEL SUSCRIPCION PRO,21,profesionales
 2026-07-01,COMPRA POS KOAJ ROPA,37,cuidado_personal
 2026-07-01,Uber Eats sushi,13,alimentacion
@@ -912,6 +974,7 @@
 2026-07-03,DEBITO AUTOMATICO EPM ENERGIA,38,vivienda
 2026-07-03,IZZI TELECOM PAGO,22,vivienda
 2026-07-03,Recarga celular prepago,5,vivienda
+2026-07-03,KUESKI pago prestamo,45,deudas
 2026-07-04,DIDI VIAJE NOCHE,3,transporte
 2026-07-04,Taller cambio de aceite,38,transporte
 2026-07-04,Botica Inkafarma,9,salud
@@ -929,13 +992,13 @@
 2026-07-05,Lotería raspa y gana,2,otros
 2026-07-05,Supermercado Wong Miraflores,49,alimentacion
 2026-07-05,Prime Video mensual,4,entretenimiento
-2026-07-05,Pago préstamo personal Davivienda,120,obligaciones
+2026-07-05,Pago préstamo personal Davivienda,120,deudas
 2026-07-06,LAIKA MASCOTAS APP,41,mascotas
 2026-07-06,Licorera botella para fiesta,18,entretenimiento
-2026-07-06,Póliza todo riesgo anual,248,obligaciones
+2026-07-06,Póliza todo riesgo anual,248,impuestos_y_seguros
 2026-07-06,Mecánico revisión frenos,45,transporte
 2026-07-06,Licencia software diseño,47,profesionales
-2026-07-06,Interbank cuota préstamo,108,obligaciones
+2026-07-06,Interbank cuota préstamo,108,deudas
 2026-07-06,Salón de belleza tinte,40,cuidado_personal
 2026-07-06,Condominio expensas mes,78,vivienda
 2026-07-07,Curso técnico para el negocio,67,profesionales
@@ -952,6 +1015,7 @@
 2026-07-07,Camisa para entrevista,28,cuidado_personal
 2026-07-07,GITHUB.COM MENSUAL,4,profesionales
 2026-07-07,PAGO PSE CLARO COLOMBIA,24,vivienda
+2026-07-07,Avance en efectivo cajero,113,deudas
 2026-07-08,Frisby pollo,7,alimentacion
 2026-07-08,Parqueadero mensual edificio,32,transporte
 2026-07-08,UBER *TRIP HELP.UBER.COM,4,transporte
@@ -977,43 +1041,46 @@
 2026-07-09,Papelería facturas del negocio,8,profesionales
 2026-07-09,PAYU*NETFLIX BOGOTA,7,entretenimiento
 2026-07-09,Guardería canina fin de semana,28,mascotas
+2026-07-09,Pago impuesto vehicular,45,impuestos_y_seguros
+2026-07-09,Impuesto predial vigencia 2026,100,impuestos_y_seguros
 2026-07-10,Antipulgas pipeta gato,15,mascotas
 2026-07-10,Taller cambio de aceite,38,transporte
 2026-07-10,Mensualidad jardín infantil,164,educacion
 2026-07-10,SUPERPET CUENCA,29,mascotas
 2026-07-10,Dentista calza resina,63,salud
 2026-07-10,D1 compra semanal,19,alimentacion
-2026-07-10,Interbank cuota préstamo,106,obligaciones
+2026-07-10,Interbank cuota préstamo,106,deudas
 2026-07-11,Silla ergonómica oficina,163,profesionales
 2026-07-11,Monitor segunda pantalla,242,profesionales
 2026-07-11,Hotel fin de semana Girardot,94,entretenimiento
 2026-07-11,Proveedor tela por rollos,117,profesionales
 2026-07-11,Impresora tinta continua,191,profesionales
 2026-07-11,Libro técnico Amazon,21,educacion
-2026-07-11,Impuesto predial cuota 2,85,obligaciones
+2026-07-11,Impuesto predial cuota 2,85,impuestos_y_seguros
 2026-07-12,Empeño recuperación artículo,46,otros
 2026-07-12,Laboratorio exámenes de sangre,43,salud
 2026-07-12,KFC combo familiar,14,alimentacion
 2026-07-12,Plan de datos celular,11,vivienda
 2026-07-12,Condominio expensas mes,80,vivienda
-2026-07-13,Comisión transferencia internacional,12,obligaciones
+2026-07-12,Sobregiro cuenta corriente,35,deudas
+2026-07-13,Comisión transferencia internacional,12,impuestos_y_seguros
 2026-07-13,Donación teletón,13,otros
 2026-07-13,Taller cambio de aceite,31,transporte
 2026-07-13,Panadería El Trigal,3,alimentacion
 2026-07-13,Alquiler cuarto universitario,167,vivienda
 2026-07-13,Pastillas para la gripa,5,salud
-2026-07-13,Interbank cuota préstamo,117,obligaciones
+2026-07-13,Interbank cuota préstamo,117,deudas
 2026-07-13,Taxi aeropuerto,11,transporte
 2026-07-13,SOAT anual moto,105,transporte
 2026-07-13,Bus alimentador,1,transporte
 2026-07-13,Bar cervezas con amigos,16,entretenimiento
 2026-07-13,Café reunión con cliente,6,profesionales
 2026-07-14,Plomero arreglo cocina,30,vivienda
-2026-07-14,Cuotas nequi salvavidas,15,obligaciones
+2026-07-14,Cuotas nequi salvavidas,15,deudas
 2026-07-14,Airbnb 2 noches,117,entretenimiento
 2026-07-14,GITHUB.COM MENSUAL,4,profesionales
 2026-07-14,Gas natural Vanti,8,vivienda
-2026-07-15,BBVA CUOTA PRESTAMO 04,111,obligaciones
+2026-07-15,BBVA CUOTA PRESTAMO 04,111,deudas
 2026-07-15,NEQUI ENVIO JUAN P,31,otros
 2026-07-15,Steam compra videojuego,25,entretenimiento
 2026-07-15,SUPERPET CUENCA,25,mascotas
@@ -1021,24 +1088,3 @@
 2026-07-15,PAYU*NETFLIX BOGOTA,7,entretenimiento
 2026-07-15,Guardería canina fin de semana,25,mascotas
 2026-07-15,KANU PET FOOD,33,mascotas
-2026-04-03,taxi al trabajo,12,transporte
-2026-04-03,Desayuno panadería Colombiana,8,alimentacion
-2026-04-04,Farmacia Cruz Verde,25,salud
-2026-04-04,Suscripción Netflix,10,entretenimiento
-2026-04-05,Compra supermercado Jumbo,120,alimentacion
-2026-04-05,Veterinaria vacuna perro,45,mascotas
-2026-04-06,Carga bip! Metro,15,transporte
-2026-04-06,Almuerzo restaurante,22,alimentacion
-2026-04-07,Gimnasio mensualidad,35,salud
-2026-04-08,Factura internet celular,40,vivienda
-2026-04-08,Peluquería corte,18,cuidado_personal
-2026-04-09,Compra libros Amazon,30,educacion
-2026-04-10,Carga de combustible Copec,50,transporte
-2026-04-11,Entradas cine,16,entretenimiento
-2026-04-12,Regalo cumpleaños,25,otros
-2026-04-13,Consulta médica,60,salud
-2026-04-14,Ropa tienda Shein,45,cuidado_personal
-2026-04-15,Pago luz ENEL,28,vivienda
-2026-04-15,Curso online Udemy,15,educacion
-2026-04-16,Empanadas a domicilio,18,alimentacion
-2026-04-20,Seguro médico,100,salud
