@@ -1,4 +1,4 @@
-Modelo: SVM lineal — limpieza de texto incluida en el pipeline
-Entrenado: 2026-07-29
+Modelo: Regresión logística — limpieza de texto incluida en el pipeline
+Entrenado: 2026-08-04
 scikit-learn 1.6.1 | pandas 2.2.2
-Datos: 1043 transacciones, 11 categorías
+Datos: 1089 transacciones, 12 categorías
