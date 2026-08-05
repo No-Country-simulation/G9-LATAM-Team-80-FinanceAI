@@ -340,10 +340,6 @@ ml-service
 
 - Clasificar transacciones.
 - Procesar clasificaciones por lotes.
-<<<<<<< HEAD
-=======
-- Calcular probabilidades.
->>>>>>> cfca7227302c03533b3c535b2ee3e9e7ba41a477
 - Evaluar el perfil financiero.
 - Generar recomendaciones.
 - Cargar modelos serializados.
@@ -376,7 +372,6 @@ POST /internal/analyze-profile
 POST /internal/financial-analysis
 ```
 
-<<<<<<< HEAD
 ## ✅ Estado actual: clasificador de gastos — entregado
 
 ```mermaid
@@ -417,8 +412,6 @@ Lista **cerrada** (contrato v1.3): estas 12 etiquetas técnicas son los únicos 
 | `vivienda` | Vivienda y servicios |
 | `otros` | Otros |
 
-=======
->>>>>>> cfca7227302c03533b3c535b2ee3e9e7ba41a477
 ---
 
 # 🗄️ Arquitectura de base de datos
@@ -644,13 +637,8 @@ salud-financiera-project/
 ## Clonar
 
 ```bash
-<<<<<<< HEAD
 git clone https://github.com/No-Country-simulation/G9-LATAM-Team-80-FinanceAI.git
 cd G9-LATAM-Team-80-FinanceAI
-=======
-git clone URL_DEL_REPOSITORIO
-cd salud-financiera-project
->>>>>>> cfca7227302c03533b3c535b2ee3e9e7ba41a477
 ```
 
 ## Ejecutar
@@ -691,11 +679,7 @@ ML_SERVICE_URL=http://ml-service:8000
 ```env
 ENVIRONMENT=development
 PORT=8000
-<<<<<<< HEAD
 MODEL_PATH=/app/models/modelo_clasificador.pkl
-=======
-MODEL_PATH=/app/models/transaction_classifier.joblib
->>>>>>> cfca7227302c03533b3c535b2ee3e9e7ba41a477
 OCI_BUCKET_MODELS=salud-financiera-models
 OCI_BUCKET_DATASETS=salud-financiera-datasets
 ```
@@ -735,11 +719,7 @@ feature/frontend-dashboard
 feature/backend-auth
 feature/backend-transactions
 feature/database-initial-schema
-<<<<<<< HEAD
 feature/clasificador-gastos
-=======
-feature/ml-classifier
->>>>>>> cfca7227302c03533b3c535b2ee3e9e7ba41a477
 feature/ml-api
 feature/oci-deployment
 ```
@@ -767,11 +747,7 @@ Reglas:
 - [ ] Creación de base de datos.
 - [ ] Autenticación.
 - [ ] Transacciones.
-<<<<<<< HEAD
 - [x] Dataset y modelo ML.
-=======
-- [ ] Dataset y modelo ML.
->>>>>>> cfca7227302c03533b3c535b2ee3e9e7ba41a477
 - [ ] Servicio FastAPI.
 - [ ] Integración backend-ML.
 - [ ] Dashboard.
@@ -784,11 +760,7 @@ Reglas:
 
 # 🔗 Enlaces
 
-<<<<<<< HEAD
 - Repositorio: [github.com/No-Country-simulation/G9-LATAM-Team-80-FinanceAI](https://github.com/No-Country-simulation/G9-LATAM-Team-80-FinanceAI)
-=======
-- Repositorio: `URL_DEL_REPOSITORIO`
->>>>>>> cfca7227302c03533b3c535b2ee3e9e7ba41a477
 - Demostración: `URL_DE_LA_DEMO`
 - Documentación: `URL_DE_DOCUMENTACION`
 - Tablero: `URL_DEL_TABLERO`
@@ -803,4 +775,3 @@ Reglas:
 **Oracle Next Education · Alura · Hackathon 2026**
 
 </div>
-
