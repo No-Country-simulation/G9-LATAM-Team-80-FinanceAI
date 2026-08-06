@@ -379,7 +379,7 @@ POST /internal/financial-analysis
 ml-service (Perfil Financiero)
 ```
 
-> Nota: esta sección documenta la arquitectura real construida para el módulo de **Perfil Financiero**. El módulo de **Clasificación de Gastos** (modelo, notebook y diccionario de palabras clave) vive en la rama `feature/clasificador-gastos` y aún no expone un servicio HTTP propio — hoy se consume como notebook + modelo serializado. El módulo de **Recomendaciones** está en diseño, pendiente de implementación.
+> Nota: esta sección documenta la arquitectura real construida para el módulo de **Perfil Financiero**.
 
 ## Responsabilidades (Perfil Financiero)
 
@@ -403,7 +403,6 @@ FinanceAI_Perfil_Financiero.ipynb  # Notebook: EDA, comparacion de modelos,
                                      # del modulo de Ciencia de Datos)
 ```
 
-*(Decisión de equipo: se mantienen archivos planos en vez de la arquitectura por capas `domain/application/infrastructure/presentation` — más simple para el tamaño actual del proyecto. Se puede migrar a capas más adelante si el servicio crece.)*
 
 ## Endpoints internos
 
