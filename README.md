@@ -373,13 +373,11 @@ POST /internal/analyze-profile
 POST /internal/financial-analysis
 ```
 ---
-## Nombre
+## Perfil financiero
 
 ```text
 ml-service (Perfil Financiero)
 ```
-
-> Nota: esta sección documenta la arquitectura real construida para el módulo de **Perfil Financiero**.
 
 ## Responsabilidades (Perfil Financiero)
 
@@ -389,7 +387,7 @@ ml-service (Perfil Financiero)
 - Generar la explicabilidad (`razones`) de cada veredicto.
 - Exponer el resultado vía API REST para que backend lo consuma.
 
-## Estructura real (archivos planos, sin capas)
+## Estructura
 
 ```text
 backend_module/
