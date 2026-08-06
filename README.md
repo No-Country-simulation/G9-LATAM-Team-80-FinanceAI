@@ -724,14 +724,16 @@ ML_SERVICE_URL=http://ml-service:8000
 
 ```env
 ENVIRONMENT=development
-PORT=8000
-MODEL_PATH=/app/models/transaction_classifier.joblib
+PORT=8001
+MODEL_CLASSIFIER_PATH=/app/models/modelo_clasificador.pkl
+MODEL_PROFILE_PATH=/app/models/modelo_perfil_financiero.pkl
 OCI_BUCKET_MODELS=salud-financiera-models
 OCI_BUCKET_DATASETS=salud-financiera-datasets
 ```
 
 No se deben subir archivos `.env` al repositorio.
 
+> Nota: `MODEL_PROFILE_PATH` es el modelo del módulo de Perfil Financiero (Árbol de Decisión). `MODEL_CLASSIFIER_PATH` corresponde al módulo de Clasificación de Gastos (SVM). Hoy ambos modelos se cargan desde ruta local (`modelo_perfil_financiero.pkl` junto al código) — la migración a `OCI_BUCKET_MODELS` queda pendiente como parte de la integración con OCI.
 ---
 
 # 📖 Documentación
