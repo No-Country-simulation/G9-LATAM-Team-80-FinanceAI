@@ -80,22 +80,24 @@ El proyecto integra desarrollo web, arquitectura de software, análisis de datos
 
 ### Análisis financiero
 
-- Ingresos totales.
-- Gastos totales.
-- Ahorro estimado.
-- Porcentaje de gastos y ahorro.
-- Nivel de endeudamiento.
-- Puntaje financiero.
-- Categoría principal.
-- Gastos recurrentes.
+- Ingresos totales (`ingreso_mensual`, dato del usuario).
+- Gastos totales (`gasto_total_mes`) — suma de transacciones clasificadas, **excluyendo la categoría `deudas`** para no duplicar información con el nivel de endeudamiento.
+- Ahorro estimado (`ahorro_estimado_pct`) — calculado, no declarado por el usuario: `1 − ratio_gasto_ingreso − (nivel_endeudamiento / 100)`.
+- Porcentaje de gastos sobre el ingreso (`ratio_gasto_ingreso`) — `gasto_total_mes / ingreso_mensual`.
+- Nivel de endeudamiento (`nivel_endeudamiento`) — `(gasto categoría "deudas" / ingreso_mensual) × 100`.
+- Puntaje financiero (`probabilidad`) — confianza del modelo entrenado en el veredicto de perfil.
+- Categoría principal — la de mayor gasto dentro de `resumen_gastos`.
+- Gastos recurrentes — pendiente de definir criterio (ej. misma descripción/categoría en 3+ meses consecutivos).
 
 ### Perfil financiero
 
 ```text
-Saludable
-En observación
-En riesgo
+Saludable        (endeudamiento ≤ 36% y ratio_gasto_ingreso ≤ 0.80)
+En observación    (endeudamiento 36%-43% o ratio_gasto_ingreso 0.80-0.90)
+En riesgo         (endeudamiento > 43% o ratio_gasto_ingreso > 0.90)
 ```
+
+Se aplica el peor caso entre ambos criterios (enfoque conservador). Umbrales validados contra el framework de Debt-to-Income de Fannie Mae (Selling Guide B3-6-02) y la regla de ahorro 50/30/20. El veredicto siempre sale de estas reglas; el modelo entrenado (Árbol de Decisión) se usa para calcular la probabilidad/confianza asociada, no el veredicto en sí.
 
 ### Dashboard
 
