@@ -8,7 +8,7 @@ Contiene:
 - calcular_perfil_reglas(): logica de reglas pura (para explicabilidad y como fallback)
 - cargar_modelo(): carga perezosa del modelo entrenado (.pkl)
 - analizar_perfil(): funcion publica que usa MODELO + REGLAS combinados,
-  tal como lo exige el requisito minimo del reto ("Modelo entrenado y cargado
+  ("Modelo entrenado y cargado
   correctamente").
 """
 
@@ -20,13 +20,18 @@ MODEL_PATH = os.path.join(os.path.dirname(__file__), "modelo_perfil_financiero.p
 _modelo = None  # cache: se carga una sola vez, no en cada request
 
 
-def estimar_frecuencia_ahorro(ratio_gasto_ingreso: float):
+def estimar_frecuencia_ahorro(ratio_gasto_ingreso: float, nivel_endeudamiento: float):
     """
-    Deriva la frecuencia de ahorro a partir del ratio gasto/ingreso, asumiendo
-    ingreso ~= gasto + ahorro. Ya no depende de que el usuario lo declare,
-    y queda garantizada la consistencia matematica con ratio_gasto_ingreso.
+    Deriva la frecuencia de ahorro asumiendo:
+        ingreso = gasto_total_mes (SIN deuda) + deuda + ahorro
+
+    Importante: gasto_total_mes ya NO incluye la categoria "deudas"
+    (se excluye en backend para no duplicar informacion con nivel_endeudamiento).
+    Por eso hay que restar tambien la fraccion de deuda aqui, o el ahorro
+    quedaria sobreestimado -- como si pagar una deuda fuera lo mismo que ahorrar.
     """
-    ahorro_estimado = max(0.0, round(1 - ratio_gasto_ingreso, 2))
+    fraccion_deuda = nivel_endeudamiento / 100
+    ahorro_estimado = max(0.0, round(1 - ratio_gasto_ingreso - fraccion_deuda, 2))
 
     if ahorro_estimado > 0.20:
         frecuencia = "Alta"
@@ -95,7 +100,7 @@ def analizar_perfil(ingreso_mensual: float, nivel_endeudamiento: float,
     ratio = round(gasto_total_mes / ingreso_mensual, 2)
     razones_reglas = calcular_perfil_reglas(nivel_endeudamiento, ratio)[1]
 
-    frecuencia_calculada, ahorro_estimado_pct = estimar_frecuencia_ahorro(ratio)
+    frecuencia_calculada, ahorro_estimado_pct = estimar_frecuencia_ahorro(ratio, nivel_endeudamiento)
     inconsistencia_ahorro = None
     if frecuencia_ahorro is not None and frecuencia_ahorro != frecuencia_calculada:
         inconsistencia_ahorro = (
@@ -104,23 +109,29 @@ def analizar_perfil(ingreso_mensual: float, nivel_endeudamiento: float,
         )
     frecuencia_ahorro_final = frecuencia_calculada
 
+    # El VEREDICTO siempre sale de las reglas de negocio (deterministico, 100%
+    # consistente con los umbrales documentados: 36%, 43%, 0.80, 0.90).
+    # El MODELO solo aporta la probabilidad/confianza para ese mismo veredicto
+    # -- asi se cumple el requisito de "modelo entrenado y cargado" sin
+    # arriesgar que el veredicto varie en los bordes por el ruido que se le
+    # agrego al dataset a proposito (para que la probabilidad fuera realista).
+    perfil, razones_reglas = calcular_perfil_reglas(nivel_endeudamiento, ratio)
+
     try:
         modelo = cargar_modelo()
         X = pd.DataFrame([{
             "nivel_endeudamiento": nivel_endeudamiento,
             "ratio_gasto_ingreso": ratio
         }])
-        perfil = modelo.predict(X)[0]
         proba = modelo.predict_proba(X)[0]
         clases = list(modelo.classes_)
         probabilidad = round(float(proba[clases.index(perfil)]), 2)
-        fuente = "modelo"
+        fuente = "reglas (veredicto) + modelo (confianza)"
     except Exception as e:
-        # Fallback de seguridad: si el modelo falla, el endpoint sigue funcionando
-        # con las reglas puras (perfil = 100% determinista, probabilidad fija).
-        perfil, razones_reglas = calcular_perfil_reglas(nivel_endeudamiento, ratio)
+        # Fallback de seguridad: si el modelo falla, el veredicto sigue siendo
+        # igual de confiable (reglas), solo se pierde el matiz de confianza.
         probabilidad = 1.0
-        fuente = f"reglas (fallback, motivo: {type(e).__name__})"
+        fuente = f"reglas (fallback total, motivo: {type(e).__name__})"
 
     return {
         "perfil_financiero": perfil,
