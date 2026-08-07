@@ -1,5 +1,7 @@
 package com.financeai.service;
 
+import com.financeai.classification.CategoriaTransaccion;
+import com.financeai.domain.TransaccionClasificada;
 import com.financeai.domain.ResumenFinanciero;
 import com.financeai.domain.TipoTransaccion;
 import com.financeai.dto.TransaccionRequest;
@@ -221,30 +223,34 @@ class CalculoFinancieroServiceTest {
 
     @Test
     void deberiaCalcularUnResumenFinancieroMensual() {
-        List<TransaccionRequest> transacciones = List.of(
-                new TransaccionRequest(
+        List<TransaccionClasificada> transacciones = List.of(
+                new TransaccionClasificada(
                         "Supermercado",
                         new BigDecimal("600.25"),
                         LocalDate.of(2026, 7, 5),
-                        TipoTransaccion.GASTO
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.ALIMENTACION
                 ),
-                new TransaccionRequest(
+                new TransaccionClasificada(
                         "Transporte",
                         new BigDecimal("199.75"),
                         LocalDate.of(2026, 7, 18),
-                        TipoTransaccion.GASTO
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.ALIMENTACION
                 ),
-                new TransaccionRequest(
+                new TransaccionClasificada(
                         "Salario",
                         new BigDecimal("1000.00"),
                         LocalDate.of(2026, 7, 15),
-                        TipoTransaccion.INGRESO
+                        TipoTransaccion.INGRESO,
+                        CategoriaTransaccion.OTROS
                 ),
-                new TransaccionRequest(
+                new TransaccionClasificada(
                         "Gasto de agosto",
                         new BigDecimal("50.00"),
                         LocalDate.of(2026, 8, 1),
-                        TipoTransaccion.GASTO
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.OTROS
                 )
         );
 
@@ -275,6 +281,14 @@ class CalculoFinancieroServiceTest {
                 () -> assertEquals(
                         "USD",
                         resultado.moneda()
+                ),
+                () -> assertEquals(
+                        BigDecimal.ZERO,
+                        resultado.totalDeudasMes()
+                ),
+                () -> assertEquals(
+                        new BigDecimal("0.0000"),
+                        resultado.nivelEndeudamiento()
                 )
         );
     }
@@ -338,6 +352,304 @@ class CalculoFinancieroServiceTest {
                                 BigDecimal.ZERO,
                                 YearMonth.of(2026, 7)
                         )
+                )
+        );
+    }
+    @Test
+    void deberiaCalcularUnicamenteLasDeudasDelPeriodo() {
+        List<TransaccionClasificada> transacciones = List.of(
+                new TransaccionClasificada(
+                        "Pago de tarjeta de crédito",
+                        new BigDecimal("200.00"),
+                        LocalDate.of(2026, 8, 5),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.DEUDAS
+                ),
+                new TransaccionClasificada(
+                        "Cuota de préstamo",
+                        new BigDecimal("50.00"),
+                        LocalDate.of(2026, 8, 10),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.DEUDAS
+                ),
+                new TransaccionClasificada(
+                        "Compra de supermercado",
+                        new BigDecimal("100.00"),
+                        LocalDate.of(2026, 8, 12),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.ALIMENTACION
+                ),
+                new TransaccionClasificada(
+                        "Deuda del mes anterior",
+                        new BigDecimal("75.00"),
+                        LocalDate.of(2026, 7, 25),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.DEUDAS
+                ),
+                new TransaccionClasificada(
+                        "Reembolso de préstamo",
+                        new BigDecimal("30.00"),
+                        LocalDate.of(2026, 8, 15),
+                        TipoTransaccion.INGRESO,
+                        CategoriaTransaccion.DEUDAS
+                )
+        );
+
+        BigDecimal resultado = service.calcularTotalDeudasMes(
+                transacciones,
+                YearMonth.of(2026, 8)
+        );
+
+        assertEquals(
+                new BigDecimal("250.00"),
+                resultado
+        );
+    }
+    @Test
+    void deberiaDevolverCeroCuandoNoExistanDeudasEnElPeriodo() {
+        List<TransaccionClasificada> transacciones = List.of(
+                new TransaccionClasificada(
+                        "Compra de supermercado",
+                        new BigDecimal("80.00"),
+                        LocalDate.of(2026, 8, 4),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.ALIMENTACION
+                ),
+                new TransaccionClasificada(
+                        "Pago de préstamo de otro mes",
+                        new BigDecimal("120.00"),
+                        LocalDate.of(2026, 7, 30),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.DEUDAS
+                )
+        );
+
+        BigDecimal resultado = service.calcularTotalDeudasMes(
+                transacciones,
+                YearMonth.of(2026, 8)
+        );
+
+        assertEquals(
+                BigDecimal.ZERO,
+                resultado
+        );
+    }
+    @Test
+    void deberiaCalcularLosGastosDelPeriodoExcluyendoDeudas() {
+        List<TransaccionClasificada> transacciones = List.of(
+                new TransaccionClasificada(
+                        "Compra de supermercado",
+                        new BigDecimal("100.00"),
+                        LocalDate.of(2026, 8, 5),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.ALIMENTACION
+                ),
+                new TransaccionClasificada(
+                        "Pago de electricidad",
+                        new BigDecimal("50.00"),
+                        LocalDate.of(2026, 8, 10),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.VIVIENDA
+                ),
+                new TransaccionClasificada(
+                        "Pago de tarjeta de crédito",
+                        new BigDecimal("200.00"),
+                        LocalDate.of(2026, 8, 15),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.DEUDAS
+                ),
+                new TransaccionClasificada(
+                        "Transporte del mes anterior",
+                        new BigDecimal("40.00"),
+                        LocalDate.of(2026, 7, 30),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.TRANSPORTE
+                ),
+                new TransaccionClasificada(
+                        "Salario mensual",
+                        new BigDecimal("1000.00"),
+                        LocalDate.of(2026, 8, 1),
+                        TipoTransaccion.INGRESO,
+                        CategoriaTransaccion.OTROS
+                )
+        );
+
+        BigDecimal resultado =
+                service.calcularGastoTotalMesExcluyendoDeudas(
+                        transacciones,
+                        YearMonth.of(2026, 8)
+                );
+
+        assertEquals(
+                new BigDecimal("150.00"),
+                resultado
+        );
+    }
+    @Test
+    void deberiaDevolverCeroCuandoSoloExistanDeudasEnElPeriodo() {
+        List<TransaccionClasificada> transacciones = List.of(
+                new TransaccionClasificada(
+                        "Pago de préstamo",
+                        new BigDecimal("300.00"),
+                        LocalDate.of(2026, 8, 8),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.DEUDAS
+                ),
+                new TransaccionClasificada(
+                        "Pago de tarjeta de crédito",
+                        new BigDecimal("125.00"),
+                        LocalDate.of(2026, 8, 20),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.DEUDAS
+                )
+        );
+
+        BigDecimal resultado =
+                service.calcularGastoTotalMesExcluyendoDeudas(
+                        transacciones,
+                        YearMonth.of(2026, 8)
+                );
+
+        assertEquals(
+                BigDecimal.ZERO,
+                resultado
+        );
+    }
+    @Test
+    void deberiaCalcularElNivelDeEndeudamientoComoPorcentaje() {
+        BigDecimal resultado =
+                service.calcularNivelEndeudamiento(
+                        new BigDecimal("350.00"),
+                        new BigDecimal("1000.00")
+                );
+
+        assertEquals(
+                new BigDecimal("35.0000"),
+                resultado
+        );
+    }
+    @Test
+    void deberiaCalcularElNivelDeEndeudamientoConCuatroDecimales() {
+        BigDecimal resultado =
+                service.calcularNivelEndeudamiento(
+                        new BigDecimal("1.00"),
+                        new BigDecimal("3.00")
+                );
+
+        assertEquals(
+                new BigDecimal("33.3333"),
+                resultado
+        );
+    }
+    @Test
+    void deberiaPermitirUnNivelDeEndeudamientoMayorQueCien() {
+        BigDecimal resultado =
+                service.calcularNivelEndeudamiento(
+                        new BigDecimal("1200.00"),
+                        new BigDecimal("1000.00")
+                );
+
+        assertEquals(
+                new BigDecimal("120.0000"),
+                resultado
+        );
+    }
+    @Test
+    void deberiaRechazarUnTotalDeDeudasNegativo() {
+        IllegalArgumentException excepcion =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.calcularNivelEndeudamiento(
+                                new BigDecimal("-10.00"),
+                                new BigDecimal("1000.00")
+                        )
+                );
+
+        assertEquals(
+                "El total de deudas del mes no puede ser negativo",
+                excepcion.getMessage()
+        );
+    }
+    @Test
+    void deberiaRechazarUnIngresoMensualIgualOMenorQueCero() {
+        assertAll(
+                () -> assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.calcularNivelEndeudamiento(
+                                new BigDecimal("100.00"),
+                                BigDecimal.ZERO
+                        )
+                ),
+                () -> assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.calcularNivelEndeudamiento(
+                                new BigDecimal("100.00"),
+                                new BigDecimal("-1000.00")
+                        )
+                )
+        );
+    }
+    @Test
+    void deberiaGenerarUnResumenSeparandoGastosYDeudas() {
+        List<TransaccionClasificada> transacciones = List.of(
+                new TransaccionClasificada(
+                        "Gastos de alimentación",
+                        new BigDecimal("500.00"),
+                        LocalDate.of(2026, 8, 5),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.ALIMENTACION
+                ),
+                new TransaccionClasificada(
+                        "Pago de tarjeta de crédito",
+                        new BigDecimal("200.00"),
+                        LocalDate.of(2026, 8, 10),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.DEUDAS
+                ),
+                new TransaccionClasificada(
+                        "Gasto de otro mes",
+                        new BigDecimal("100.00"),
+                        LocalDate.of(2026, 7, 20),
+                        TipoTransaccion.GASTO,
+                        CategoriaTransaccion.TRANSPORTE
+                )
+        );
+
+        ResumenFinanciero resultado =
+                service.calcularResumenFinanciero(
+                        transacciones,
+                        new BigDecimal("1000.00"),
+                        YearMonth.of(2026, 8)
+                );
+
+        assertAll(
+                () -> assertEquals(
+                        YearMonth.of(2026, 8),
+                        resultado.periodo()
+                ),
+                () -> assertEquals(
+                        new BigDecimal("1000.00"),
+                        resultado.ingresoMensual()
+                ),
+                () -> assertEquals(
+                        new BigDecimal("500.00"),
+                        resultado.gastoTotalMes()
+                ),
+                () -> assertEquals(
+                        new BigDecimal("200.00"),
+                        resultado.totalDeudasMes()
+                ),
+                () -> assertEquals(
+                        new BigDecimal("0.5000"),
+                        resultado.ratioGastoIngreso()
+                ),
+                () -> assertEquals(
+                        new BigDecimal("20.0000"),
+                        resultado.nivelEndeudamiento()
+                ),
+                () -> assertEquals(
+                        "USD",
+                        resultado.moneda()
                 )
         );
     }

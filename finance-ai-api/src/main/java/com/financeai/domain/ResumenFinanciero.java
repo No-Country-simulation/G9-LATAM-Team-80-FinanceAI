@@ -8,7 +8,9 @@ public record ResumenFinanciero(
         YearMonth periodo,
         BigDecimal ingresoMensual,
         BigDecimal gastoTotalMes,
+        BigDecimal totalDeudasMes,
         BigDecimal ratioGastoIngreso,
+        BigDecimal nivelEndeudamiento,
         String moneda
 
 ) {
