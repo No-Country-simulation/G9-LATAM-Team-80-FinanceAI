@@ -8,7 +8,7 @@ Contiene:
 - calcular_perfil_reglas(): logica de reglas pura (para explicabilidad y como fallback)
 - cargar_modelo(): carga perezosa del modelo entrenado (.pkl)
 - analizar_perfil(): funcion publica que usa MODELO + REGLAS combinados,
-  ("Modelo entrenado y cargado
+  tal como lo exige el requisito minimo del reto ("Modelo entrenado y cargado
   correctamente").
 """
 
@@ -31,8 +31,11 @@ def estimar_frecuencia_ahorro(ratio_gasto_ingreso: float, nivel_endeudamiento: f
     quedaria sobreestimado -- como si pagar una deuda fuera lo mismo que ahorrar.
     """
     fraccion_deuda = nivel_endeudamiento / 100
-    ahorro_estimado = max(0.0, round(1 - ratio_gasto_ingreso - fraccion_deuda, 2))
+    ahorro_estimado = max(0.0, 1 - ratio_gasto_ingreso - fraccion_deuda)
 
+    # Comparar SIEMPRE con el valor sin redondear -- si se redondeara antes,
+    # un caso como 0.096 podria convertirse en 0.10 y cambiar de categoria
+    # "Baja" a "Media" artificialmente, por el propio redondeo.
     if ahorro_estimado > 0.20:
         frecuencia = "Alta"
     elif ahorro_estimado >= 0.10:
@@ -40,7 +43,10 @@ def estimar_frecuencia_ahorro(ratio_gasto_ingreso: float, nivel_endeudamiento: f
     else:
         frecuencia = "Baja"
 
-    return frecuencia, ahorro_estimado
+    # El redondeo se aplica solo aqui, al final, unicamente para la salida JSON.
+    ahorro_estimado_pct = round(ahorro_estimado, 2)
+
+    return frecuencia, ahorro_estimado_pct
 
 
 def calcular_perfil_reglas(nivel_endeudamiento: float, ratio_gasto_ingreso: float):
@@ -97,7 +103,7 @@ def analizar_perfil(ingreso_mensual: float, nivel_endeudamiento: float,
     Si el modelo no puede cargarse por cualquier motivo, cae de forma segura
     a las reglas puras (fallback), para que el endpoint nunca se caiga en produccion.
     """
-    ratio = round(gasto_total_mes / ingreso_mensual, 2)
+    ratio = gasto_total_mes / ingreso_mensual  # sin redondear: se usa en reglas y calculos internos
     razones_reglas = calcular_perfil_reglas(nivel_endeudamiento, ratio)[1]
 
     frecuencia_calculada, ahorro_estimado_pct = estimar_frecuencia_ahorro(ratio, nivel_endeudamiento)
@@ -138,7 +144,7 @@ def analizar_perfil(ingreso_mensual: float, nivel_endeudamiento: float,
         "probabilidad": probabilidad,
         "razones": razones_reglas,
         "metricas": {
-            "ratio_gasto_ingreso": ratio,
+            "ratio_gasto_ingreso": round(ratio, 2),
             "nivel_endeudamiento": nivel_endeudamiento,
             "frecuencia_ahorro": frecuencia_ahorro_final,
             "ahorro_estimado_pct": ahorro_estimado_pct
