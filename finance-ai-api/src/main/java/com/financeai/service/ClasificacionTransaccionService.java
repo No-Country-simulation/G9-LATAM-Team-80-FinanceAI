@@ -72,27 +72,102 @@ public class ClasificacionTransaccionService {
         Map<CategoriaTransaccion, List<String>> palabrasClave =
                 new EnumMap<>(CategoriaTransaccion.class);
 
-        palabrasClave.put(CategoriaTransaccion.ALIMENTACION, List.of(
-                "supermercado", "restaurante", "comida", "cafe", "panaderia", "delivery"
-        ));
-        palabrasClave.put(CategoriaTransaccion.TRANSPORTE, List.of(
-                "uber", "taxi", "gasolina", "combustible", "autobus", "bus", "peaje"
-        ));
-        palabrasClave.put(CategoriaTransaccion.SALUD, List.of(
-                "farmacia", "medico", "hospital", "clinica", "medicina", "seguro medico"
-        ));
-        palabrasClave.put(CategoriaTransaccion.VIVIENDA, List.of(
-                "alquiler", "hipoteca", "condominio", "mantenimiento", "renta casa"
-        ));
-        palabrasClave.put(CategoriaTransaccion.EDUCACION, List.of(
-                "curso", "universidad", "colegio", "libro", "matricula", "capacitacion"
-        ));
-        palabrasClave.put(CategoriaTransaccion.ENTRETENIMIENTO, List.of(
-                "cine", "netflix", "spotify", "videojuego", "concierto", "streaming"
-        ));
-        palabrasClave.put(CategoriaTransaccion.SERVICIOS, List.of(
-                "electricidad", "agua", "internet", "telefono", "celular", "cable"
-        ));
+        palabrasClave.put(
+                CategoriaTransaccion.PROFESIONALES,
+                List.of(
+                        "freelance", "cliente", "proveedor",
+                        "oficina", "software", "hosting",
+                        "dominio", "computador", "laptop"
+                )
+        );
+
+        palabrasClave.put(
+                CategoriaTransaccion.MASCOTAS,
+                List.of(
+                        "mascota", "veterinaria", "veterinario",
+                        "perro", "gato", "croquetas", "petshop"
+                )
+        );
+
+        palabrasClave.put(
+                CategoriaTransaccion.ALIMENTACION,
+                List.of(
+                        "supermercado", "restaurante", "comida",
+                        "cafe", "panaderia", "delivery",
+                        "almuerzo", "cena"
+                )
+        );
+
+        palabrasClave.put(
+                CategoriaTransaccion.TRANSPORTE,
+                List.of(
+                        "uber", "taxi", "gasolina", "combustible",
+                        "autobus", "bus", "peaje", "parqueadero"
+                )
+        );
+
+        palabrasClave.put(
+                CategoriaTransaccion.SALUD,
+                List.of(
+                        "farmacia", "medico", "hospital",
+                        "clinica", "medicina", "terapia",
+                        "odontologo", "laboratorio"
+                )
+        );
+
+        palabrasClave.put(
+                CategoriaTransaccion.EDUCACION,
+                List.of(
+                        "curso", "universidad", "colegio",
+                        "libro", "matricula", "capacitacion",
+                        "instituto", "certificacion"
+                )
+        );
+
+        palabrasClave.put(
+                CategoriaTransaccion.ENTRETENIMIENTO,
+                List.of(
+                        "cine", "netflix", "spotify",
+                        "videojuego", "concierto", "streaming",
+                        "hotel", "turismo"
+                )
+        );
+
+        palabrasClave.put(
+                CategoriaTransaccion.DEUDAS,
+                List.of(
+                        "tarjeta de credito", "prestamo",
+                        "credito", "cuota", "interes",
+                        "mora", "sobregiro", "hipoteca"
+                )
+        );
+
+        palabrasClave.put(
+                CategoriaTransaccion.IMPUESTOS_Y_SEGUROS,
+                List.of(
+                        "impuesto", "predial", "vehicular",
+                        "seguro", "poliza", "prima de seguro",
+                        "comision bancaria"
+                )
+        );
+
+        palabrasClave.put(
+                CategoriaTransaccion.CUIDADO_PERSONAL,
+                List.of(
+                        "ropa", "calzado", "zapatos",
+                        "peluqueria", "barberia",
+                        "manicure", "maquillaje", "perfume"
+                )
+        );
+
+        palabrasClave.put(
+                CategoriaTransaccion.VIVIENDA,
+                List.of(
+                        "alquiler", "arriendo", "condominio",
+                        "electricidad", "agua", "internet",
+                        "telefono", "celular", "mantenimiento"
+                )
+        );
 
         return Map.copyOf(palabrasClave);
     }

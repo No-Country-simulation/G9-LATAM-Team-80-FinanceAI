@@ -54,7 +54,7 @@ public class ClasificacionController {
                 transaccion.fecha(),
                 MONEDA,
                 transaccion.tipo(),
-                resultado.categoria().getNombreVisible()
+                resultado.categoria().getCodigo()
         );
     }
 }

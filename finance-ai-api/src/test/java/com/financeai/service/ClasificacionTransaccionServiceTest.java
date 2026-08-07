@@ -1,5 +1,11 @@
 package com.financeai.service;
 
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.financeai.classification.CategoriaTransaccion;
 import com.financeai.classification.ResultadoClasificacion;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,4 +58,33 @@ class ClasificacionTransaccionServiceTest {
         assertThat(resultado.categoria()).isEqualTo(CategoriaTransaccion.OTROS);
         assertThat(resultado.coincidencias()).isEmpty();
     }
+
+    @Test
+    void deberiaMantenerLasDoceCategoriasAcordadasConMachineLearning() {
+        assertEquals(
+                12,
+                CategoriaTransaccion.values().length
+        );
+
+        assertEquals(
+                Set.of(
+                        "profesionales",
+                        "mascotas",
+                        "alimentacion",
+                        "transporte",
+                        "salud",
+                        "educacion",
+                        "entretenimiento",
+                        "deudas",
+                        "impuestos_y_seguros",
+                        "cuidado_personal",
+                        "vivienda",
+                        "otros"
+                ),
+                Arrays.stream(CategoriaTransaccion.values())
+                        .map(CategoriaTransaccion::getCodigo)
+                        .collect(Collectors.toSet())
+        );
+    }
+
 }

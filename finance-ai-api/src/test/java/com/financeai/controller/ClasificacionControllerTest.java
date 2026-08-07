@@ -72,7 +72,7 @@ class ClasificacionControllerTest {
                 .andExpect(jsonPath("$.transacciones[0].tipo")
                         .value("GASTO"))
                 .andExpect(jsonPath("$.transacciones[0].categoria")
-                        .value("Transporte"))
+                        .value("transporte"))
                 .andExpect(jsonPath("$.transacciones[0].confianza")
                         .doesNotExist());
 
