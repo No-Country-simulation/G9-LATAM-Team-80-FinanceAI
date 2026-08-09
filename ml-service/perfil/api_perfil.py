@@ -21,7 +21,11 @@ class PerfilRequest(BaseModel):
     ingreso_mensual: float = Field(..., gt=0)
     nivel_endeudamiento: float = Field(..., ge=0)
     gasto_total_mes: float = Field(..., ge=0)
-    # Ya no es obligatorio: se calcula internamente a partir de ingreso y gasto.
+    # Segun el contrato tecnico aprobado por el equipo, backend calcula y
+    # envia este valor directamente (fuente unica de verdad del calculo).
+    # Si no llega, este servicio lo calcula como respaldo.
+    ratio_gasto_ingreso: float | None = Field(None, ge=0)
+    # Ya no es obligatorio: se calcula internamente a partir de ratio y deuda.
     # Si el backend igual lo manda (ej. valor historico), se usa solo para
     # detectar inconsistencias, no afecta el veredicto.
     frecuencia_ahorro: str | None = None
@@ -34,6 +38,7 @@ def perfil_financiero(req: PerfilRequest):
             ingreso_mensual=req.ingreso_mensual,
             nivel_endeudamiento=req.nivel_endeudamiento,
             gasto_total_mes=req.gasto_total_mes,
+            ratio_gasto_ingreso=req.ratio_gasto_ingreso,
             frecuencia_ahorro=req.frecuencia_ahorro,
         )
     except Exception as e:
