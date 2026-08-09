@@ -25,7 +25,7 @@ def estimar_frecuencia_ahorro(ratio_gasto_ingreso: float, nivel_endeudamiento: f
     Deriva la frecuencia de ahorro asumiendo:
         ingreso = gasto_total_mes (SIN deuda) + deuda + ahorro
 
-    Importante: gasto_total_mes ya NO incluye la categoria "deudas"
+    Importante: gasto_total_mes ya NO incluye la categoria "obligaciones"
     (se excluye en backend para no duplicar informacion con nivel_endeudamiento).
     Por eso hay que restar tambien la fraccion de deuda aqui, o el ahorro
     quedaria sobreestimado -- como si pagar una deuda fuera lo mismo que ahorrar.
@@ -68,7 +68,7 @@ def calcular_perfil_reglas(nivel_endeudamiento: float, ratio_gasto_ingreso: floa
     if 0.8 <= ratio_gasto_ingreso <= 0.9:
         razones.append("los gastos representan entre el 80% y 90% del ingreso")
     if razones:
-        return "En observacion", razones
+        return "En observación", razones
 
     return "Saludable", ["endeudamiento controlado y gasto razonable frente al ingreso"]
 
@@ -87,15 +87,22 @@ def cargar_modelo():
 
 
 def analizar_perfil(ingreso_mensual: float, nivel_endeudamiento: float,
-                     gasto_total_mes: float, frecuencia_ahorro: str = None) -> dict:
+                     gasto_total_mes: float, ratio_gasto_ingreso: float = None,
+                     frecuencia_ahorro: str = None) -> dict:
     """
     Funcion publica que el backend llama. Combina:
     - MODELO entrenado -> perfil_financiero + probabilidad (cumple el requisito
       minimo del reto: "modelo entrenado y cargado correctamente")
     - REGLAS -> razones (explicabilidad)
 
+    Segun el contrato tecnico aprobado por el equipo, backend calcula y envia
+    ratio_gasto_ingreso directamente (fuente unica de verdad de ese calculo,
+    para que no exista ningun riesgo de que backend y este servicio calculen
+    valores levemente distintos por redondeo). Si por algun motivo no llega
+    (ej. llamadas antiguas o pruebas locales), se calcula aqui como respaldo.
+
     frecuencia_ahorro ya NO es obligatorio: se calcula internamente a partir
-    de ingreso_mensual y gasto_total_mes. Si el llamador igual lo manda
+    de ratio_gasto_ingreso y nivel_endeudamiento. Si el llamador igual lo manda
     (ej. dato historico o declarado por el usuario), se compara contra el
     valor calculado y se reporta si hay inconsistencia -- util como señal
     de calidad de datos, no afecta el veredicto del perfil.
@@ -103,7 +110,7 @@ def analizar_perfil(ingreso_mensual: float, nivel_endeudamiento: float,
     Si el modelo no puede cargarse por cualquier motivo, cae de forma segura
     a las reglas puras (fallback), para que el endpoint nunca se caiga en produccion.
     """
-    ratio = gasto_total_mes / ingreso_mensual  # sin redondear: se usa en reglas y calculos internos
+    ratio = ratio_gasto_ingreso if ratio_gasto_ingreso is not None else gasto_total_mes / ingreso_mensual
     razones_reglas = calcular_perfil_reglas(nivel_endeudamiento, ratio)[1]
 
     frecuencia_calculada, ahorro_estimado_pct = estimar_frecuencia_ahorro(ratio, nivel_endeudamiento)
