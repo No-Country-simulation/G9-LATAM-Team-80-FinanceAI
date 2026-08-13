@@ -80,22 +80,24 @@ El proyecto integra desarrollo web, arquitectura de software, análisis de datos
 
 ### Análisis financiero
 
-- Ingresos totales.
-- Gastos totales.
-- Ahorro estimado.
-- Porcentaje de gastos y ahorro.
-- Nivel de endeudamiento.
-- Puntaje financiero.
-- Categoría principal.
-- Gastos recurrentes.
+- Ingresos totales (`ingreso_mensual`, dato del usuario).
+- Gastos totales (`gasto_total_mes`) — suma de transacciones clasificadas, **excluyendo la categoría `deudas`** para no duplicar información con el nivel de endeudamiento.
+- Ahorro estimado (`ahorro_estimado_pct`) — calculado, no declarado por el usuario: `1 − ratio_gasto_ingreso − (nivel_endeudamiento / 100)`.
+- Porcentaje de gastos sobre el ingreso (`ratio_gasto_ingreso`) — `gasto_total_mes / ingreso_mensual`.
+- Nivel de endeudamiento (`nivel_endeudamiento`) — `(gasto categoría "deudas" / ingreso_mensual) × 100`.
+- Puntaje financiero (`probabilidad`) — confianza del modelo entrenado en el veredicto de perfil.
+- Categoría principal — la de mayor gasto dentro de `resumen_gastos`.
+- Gastos recurrentes — pendiente de definir criterio (ej. misma descripción/categoría en 3+ meses consecutivos).
 
 ### Perfil financiero
 
 ```text
-Saludable
-En observación
-En riesgo
+Saludable        (endeudamiento ≤ 36% y ratio_gasto_ingreso ≤ 0.80)
+En observación    (endeudamiento 36%-43% o ratio_gasto_ingreso 0.80-0.90)
+En riesgo         (endeudamiento > 43% o ratio_gasto_ingreso > 0.90)
 ```
+
+Se aplica el peor caso entre ambos criterios (enfoque conservador). Umbrales validados contra el framework de Debt-to-Income de Fannie Mae (Selling Guide B3-6-02) y la regla de ahorro 50/30/20. El veredicto siempre sale de estas reglas; el modelo entrenado (Árbol de Decisión) se usa para calcular la probabilidad/confianza asociada, no el veredicto en sí.
 
 ### Dashboard
 
@@ -333,86 +335,89 @@ GET  /api/v1/files/:id/status
 ## Nombre
 
 ```text
-ml-service
+ml-service (Perfil Financiero)
 ```
 
-## Responsabilidades
+> Nota: esta sección documenta la arquitectura real construida para el módulo de **Perfil Financiero**. El módulo de **Clasificación de Gastos** (modelo, notebook y diccionario de palabras clave) vive en la rama `feature/clasificador-gastos` y aún no expone un servicio HTTP propio — hoy se consume como notebook + modelo serializado. El módulo de **Recomendaciones** está en diseño, pendiente de implementación.
 
-- Clasificar transacciones.
-- Procesar clasificaciones por lotes.
-- Evaluar el perfil financiero.
-- Generar recomendaciones.
-- Cargar modelos serializados.
-- Integrarse con OCI Object Storage.
+## Responsabilidades (Perfil Financiero)
 
-## Estructura
+- Calcular el perfil financiero del usuario (Saludable / En observación / En riesgo) mediante reglas de negocio.
+- Cargar el modelo entrenado (Árbol de Decisión) y usarlo para calcular la probabilidad/confianza del veredicto.
+- Calcular `ratio_gasto_ingreso` y `ahorro_estimado_pct` a partir de los datos que entrega backend.
+- Generar la explicabilidad (`razones`) de cada veredicto.
+- Exponer el resultado vía API REST para que backend lo consuma.
+
+## Estructura real (archivos planos, sin capas)
 
 ```text
-ml-service/
-├── app/
-│   ├── domain/
-│   ├── application/
-│   ├── infrastructure/
-│   └── presentation/
-├── models/
-├── tests/
-├── Dockerfile
-├── requirements.txt
-├── README.md
-└── CHANGELOG.md
+backend_module/
+├── perfil_financiero.py           # Logica de negocio: reglas + integracion con el modelo
+├── api_perfil.py                  # Servicio FastAPI, expone el endpoint HTTP
+├── modelo_perfil_financiero.pkl   # Modelo entrenado (Arbol de Decision)
+└── README.md                      # Contrato de entrada/salida de este modulo
+
+FinanceAI_Perfil_Financiero.ipynb  # Notebook: EDA, comparacion de modelos,
+                                     # entrenamiento, validacion (vive en la raiz
+                                     # del modulo de Ciencia de Datos)
 ```
+
+*(Decisión de equipo: se mantienen archivos planos en vez de la arquitectura por capas `domain/application/infrastructure/presentation` — más simple para el tamaño actual del proyecto. Se puede migrar a capas más adelante si el servicio crece.)*
 
 ## Endpoints internos
 
 ```text
 GET  /health
-POST /internal/predict-category
-POST /internal/predict-categories
-POST /internal/analyze-profile
-POST /internal/financial-analysis
+POST /perfil-financiero
 ```
 
-## ✅ Estado actual: clasificador de gastos — entregado
+### `POST /perfil-financiero`
 
-```mermaid
-flowchart TD
-    subgraph FUENTES["Fuentes · en el repositorio"]
-        DS[dataset_gastos.csv<br/>1.089 transacciones · 12 categorías]
-        DIC[palabras-clave.json<br/>orden de prioridad]
-    end
-    subgraph NB["Notebook clasificador_gastos.ipynb"]
-        EDA[EDA] --> V1[Clasificador v1<br/>reglas] --> V2[Modelo v2<br/>torneo → regresión logística] --> EV[Evaluación<br/>test + CV + benchmark]
-    end
-    DS --> EDA
-    DIC --> V1
-    EV --> PKL[modelo_clasificador.pkl<br/>+ modelo_info.txt]
-    PKL -.->|joblib.load · predict| API[API del equipo<br/>texto crudo → 12 etiquetas]
+**Request:**
+```json
+{
+  "ingreso_mensual": 1000000,
+  "nivel_endeudamiento": 37,
+  "gasto_total_mes": 790000,
+  "frecuencia_ahorro": "Media"
+}
+```
+`frecuencia_ahorro` es opcional — si no se envía, se calcula internamente.
+
+**Response:**
+```json
+{
+  "perfil_financiero": "En observacion",
+  "probabilidad": 0.85,
+  "razones": ["el endeudamiento esta en zona moderada (36%-43%)"],
+  "metricas": {
+    "ratio_gasto_ingreso": 0.79,
+    "nivel_endeudamiento": 37,
+    "frecuencia_ahorro": "Media",
+    "ahorro_estimado_pct": 0.05
+  }
+}
 ```
 
-**Modelo v3:** regresión logística sobre TF-IDF (1–2 gramas), con la normalización de texto dentro del pipeline. Métricas: 98.2 % en el conjunto de prueba (218 transacciones nunca vistas) · 96.0 % en validación cruzada de 5 pliegues (líder del torneo de 4 candidatos) · línea base por reglas: 81.9 %.
+## Diseño del modelo: reglas + modelo entrenado (híbrido)
 
-**Integración en dos líneas:** cargar `modelo_clasificador.pkl` una sola vez con `joblib.load` y clasificar con `modelo.predict(lista_de_descripciones)` — con el texto tal cual llegue. Salida: etiquetas técnicas de la lista cerrada de 12. Detalle y decisiones: [`docs/arquitectura.md`](docs/arquitectura.md) · [Notebook con métricas](clasificador_gastos.ipynb)
+El **veredicto** (`perfil_financiero`) siempre sale de reglas de negocio deterministas (umbrales validados contra el framework DTI de Fannie Mae y la regla de ahorro 50/30/20). El **modelo entrenado** (cargado desde el `.pkl`) se usa exclusivamente para calcular `probabilidad` — su nivel de confianza en ese mismo veredicto. Esto garantiza que el veredicto sea siempre consistente con los umbrales documentados, incluso en casos límite, mientras se cumple el requisito del reto de tener un modelo entrenado y cargado en producción. Si el modelo falla al cargar, hay fallback automático a reglas puras.
 
-## 📋 Categorías oficiales
+## Cómo correrlo localmente
 
-Lista **cerrada** (contrato v1.3): estas 12 etiquetas técnicas son los únicos valores válidos en datos, modelo y API.
+```bash
+cd backend_module
+pip install fastapi uvicorn scikit-learn pandas joblib
+uvicorn api_perfil:app --port 8001
+```
 
-| Etiqueta técnica (datos y API) | Nombre para mostrar (interfaz) |
-|---|---|
-| `profesionales` | Gastos profesionales |
-| `mascotas` | Mascotas |
-| `alimentacion` | Alimentación |
-| `transporte` | Transporte |
-| `salud` | Salud y bienestar |
-| `educacion` | Educación |
-| `entretenimiento` | Entretenimiento y ocio |
-| `deudas` | Deudas |
-| `impuestos_y_seguros` | Impuestos y seguros |
-| `cuidado_personal` | Cuidado personal y ropa |
-| `vivienda` | Vivienda y servicios |
-| `otros` | Otros |
+## Contrato con Backend (unidades)
 
----
+| Campo | Unidad | Quién lo calcula |
+|---|---|---|
+| `ingreso_mensual`, `gasto_total_mes` | Monto plano, misma moneda | Backend (`gasto_total_mes` = suma de `resumen_gastos` **excluyendo** categoría `deudas`) |
+| `nivel_endeudamiento` | Porcentaje 0–100 | Backend (`deudas / ingreso_mensual × 100`) |
+| `ratio_gasto_ingreso`, `ahorro_estimado_pct`, `probabilidad` | Fracción 0–1 | Este módulo (no se recalculan en backend) |
 
 # 🗄️ Arquitectura de base de datos
 
@@ -637,8 +642,8 @@ salud-financiera-project/
 ## Clonar
 
 ```bash
-git clone https://github.com/No-Country-simulation/G9-LATAM-Team-80-FinanceAI.git
-cd G9-LATAM-Team-80-FinanceAI
+git clone URL_DEL_REPOSITORIO
+cd salud-financiera-project
 ```
 
 ## Ejecutar
@@ -678,16 +683,17 @@ ML_SERVICE_URL=http://ml-service:8000
 
 ```env
 ENVIRONMENT=development
-PORT=8000
-MODEL_PATH=/app/models/modelo_clasificador.pkl
+PORT=8001
+MODEL_CLASSIFIER_PATH=/app/models/modelo_clasificador.pkl
+MODEL_PROFILE_PATH=/app/models/modelo_perfil_financiero.pkl
 OCI_BUCKET_MODELS=salud-financiera-models
 OCI_BUCKET_DATASETS=salud-financiera-datasets
 ```
 
 No se deben subir archivos `.env` al repositorio.
 
----
-
+> Nota: `MODEL_PROFILE_PATH` es el modelo del módulo de Perfil Financiero (Árbol de Decisión). `MODEL_CLASSIFIER_PATH` corresponde al módulo de Clasificación de Gastos (SVM). Hoy ambos modelos se cargan desde ruta local (`modelo_perfil_financiero.pkl` junto al código) — la migración a `OCI_BUCKET_MODELS` queda pendiente como parte de la integración con OCI.
+> 
 # 📖 Documentación
 
 ```text
@@ -719,7 +725,7 @@ feature/frontend-dashboard
 feature/backend-auth
 feature/backend-transactions
 feature/database-initial-schema
-feature/clasificador-gastos
+feature/ml-classifier
 feature/ml-api
 feature/oci-deployment
 ```
@@ -747,7 +753,7 @@ Reglas:
 - [ ] Creación de base de datos.
 - [ ] Autenticación.
 - [ ] Transacciones.
-- [x] Dataset y modelo ML.
+- [ ] Dataset y modelo ML.
 - [ ] Servicio FastAPI.
 - [ ] Integración backend-ML.
 - [ ] Dashboard.
@@ -760,7 +766,7 @@ Reglas:
 
 # 🔗 Enlaces
 
-- Repositorio: [github.com/No-Country-simulation/G9-LATAM-Team-80-FinanceAI](https://github.com/No-Country-simulation/G9-LATAM-Team-80-FinanceAI)
+- Repositorio: `URL_DEL_REPOSITORIO`
 - Demostración: `URL_DE_LA_DEMO`
 - Documentación: `URL_DE_DOCUMENTACION`
 - Tablero: `URL_DEL_TABLERO`
