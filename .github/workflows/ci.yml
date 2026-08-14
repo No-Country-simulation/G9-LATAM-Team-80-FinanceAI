@@ -1,55 +1,68 @@
-name: CI - FinanceAI
+name: CI - FinanceAI unificado
 
 on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
+    branches: [main, proyecto-unificado-fase1]
 
 jobs:
   backend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: finance-ai-api
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: financeai
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
-      - name: Run backend tests
-        run: mvn test
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+      - name: Crear esquema MySQL
+        run: mysql -h 127.0.0.1 -uroot -proot < database/001_schema.sql
+      - name: Ejecutar pruebas Java
+        working-directory: backend-financeAI/finance-ai-api
+        run: bash mvnw test
 
-  ml-services:
+  ml-service:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [clasificador, perfil, recomendaciones]
-    defaults:
-      run:
-        working-directory: ml-service/${{ matrix.service }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install dependencies
-        run: pip install -r requirements.txt --break-system-packages
-      - name: Run Python tests
-        run: pytest -v
+          cache: pip
+          cache-dependency-path: feature-financeAI/ml-service/requirements.txt
+      - name: Instalar dependencias
+        working-directory: feature-financeAI/ml-service
+        run: pip install -r requirements.txt
+      - name: Probar analisis y clasificacion
+        working-directory: feature-financeAI/ml-service
+        run: python -c "from test_integracion import test_flujo_completo, test_clasificacion_lote; test_flujo_completo(); test_clasificacion_lote()"
 
   frontend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: financeAI
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Install dependencies
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-financeAI/financeAI/package-lock.json
+      - name: Instalar dependencias
+        working-directory: frontend-financeAI/financeAI
         run: npm ci
-      - name: Build
+      - name: Compilar frontend
+        working-directory: frontend-financeAI/financeAI
         run: npm run build
