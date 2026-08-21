@@ -1,90 +1,96 @@
 package com.financeai.service;
 
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.financeai.classification.CategoriaTransaccion;
 import com.financeai.classification.ResultadoClasificacion;
-import org.junit.jupiter.api.BeforeEach;
+import com.financeai.client.ClasificadorGastosClient;
+import com.financeai.dto.clasificacion.ClasificadorGastosRequest;
+import com.financeai.dto.clasificacion.ClasificadorGastosResponse;
+import com.financeai.mapper.CategoriaTransaccionMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class ClasificacionTransaccionServiceTest {
 
+    @Mock
+    private ClasificadorGastosClient clasificadorGastosClient;
+
+    @Mock
+    private CategoriaTransaccionMapper categoriaMapper;
+
+    @InjectMocks
     private ClasificacionTransaccionService service;
 
-    @BeforeEach
-    void setUp() {
-        service = new ClasificacionTransaccionService();
-    }
-
     @Test
-    void deberiaClasificarUberComoTransporte() {
-        ResultadoClasificacion resultado = service.clasificar("Viaje en Uber al trabajo");
+    void deberiaClasificarLaTransaccionUtilizandoElServicioDeMachineLearning() {
+        ClasificadorGastosRequest requestEsperado =
+                new ClasificadorGastosRequest("Uber al trabajo");
 
-        assertThat(resultado.categoria()).isEqualTo(CategoriaTransaccion.TRANSPORTE);
-        assertThat(resultado.puntuacion()).isEqualTo(1);
-        assertThat(resultado.confianza()).isEqualTo(0.70);
-        assertThat(resultado.coincidencias()).containsExactly("uber");
-    }
-
-    @Test
-    void deberiaIgnorarMayusculasYAcentos() {
-        ResultadoClasificacion resultado = service.clasificar("CAFÉ en una panadería");
-
-        assertThat(resultado.categoria()).isEqualTo(CategoriaTransaccion.ALIMENTACION);
-        assertThat(resultado.puntuacion()).isEqualTo(2);
-        assertThat(resultado.coincidencias()).containsExactly("cafe", "panaderia");
-    }
-
-    @Test
-    void deberiaUsarOtrosCuandoNoHayCoincidencias() {
-        ResultadoClasificacion resultado = service.clasificar("Compra sin descripción conocida");
-
-        assertThat(resultado.categoria()).isEqualTo(CategoriaTransaccion.OTROS);
-        assertThat(resultado.puntuacion()).isZero();
-        assertThat(resultado.confianza()).isEqualTo(0.30);
-        assertThat(resultado.coincidencias()).isEmpty();
-    }
-
-    @Test
-    void noDeberiaAceptarCoincidenciasParciales() {
-        ResultadoClasificacion resultado = service.clasificar("Servicio de búsqueda en línea");
-
-        assertThat(resultado.categoria()).isEqualTo(CategoriaTransaccion.OTROS);
-        assertThat(resultado.coincidencias()).isEmpty();
-    }
-
-    @Test
-    void deberiaMantenerLasDoceCategoriasAcordadasConMachineLearning() {
-        assertEquals(
-                12,
-                CategoriaTransaccion.values().length
-        );
-
-        assertEquals(
-                Set.of(
-                        "profesionales",
-                        "mascotas",
-                        "alimentacion",
+        ClasificadorGastosResponse respuestaML =
+                new ClasificadorGastosResponse(
                         "transporte",
-                        "salud",
-                        "educacion",
-                        "entretenimiento",
-                        "deudas",
-                        "impuestos_y_seguros",
-                        "cuidado_personal",
-                        "vivienda",
-                        "otros"
-                ),
-                Arrays.stream(CategoriaTransaccion.values())
-                        .map(CategoriaTransaccion::getCodigo)
-                        .collect(Collectors.toSet())
+                        0.98
+                );
+
+        when(clasificadorGastosClient.clasificar(requestEsperado))
+                .thenReturn(respuestaML);
+
+        when(categoriaMapper.desdeCodigo("transporte"))
+                .thenReturn(CategoriaTransaccion.TRANSPORTE);
+
+        ResultadoClasificacion resultado =
+                service.clasificar("  Uber al trabajo  ");
+
+        assertAll(
+                () -> assertThat(resultado.categoria())
+                        .isEqualTo(CategoriaTransaccion.TRANSPORTE),
+
+                () -> assertThat(resultado.confianza())
+                        .isEqualTo(0.98),
+
+                () -> assertThat(resultado.puntuacion())
+                        .isZero(),
+
+                () -> assertThat(resultado.coincidencias())
+                        .isEmpty()
         );
+
+        verify(clasificadorGastosClient)
+                .clasificar(requestEsperado);
+
+        verify(categoriaMapper)
+                .desdeCodigo("transporte");
     }
 
+    @Test
+    void deberiaRechazarUnaDescripcionNulaOVaciaSinInvocarMachineLearning() {
+        assertAll(
+                () -> assertThatIllegalArgumentException()
+                        .isThrownBy(() -> service.clasificar(null))
+                        .withMessage(
+                                "La descripción de la transacción es obligatoria"
+                        ),
+
+                () -> assertThatIllegalArgumentException()
+                        .isThrownBy(() -> service.clasificar("   "))
+                        .withMessage(
+                                "La descripción de la transacción es obligatoria"
+                        )
+        );
+
+        verifyNoInteractions(
+                clasificadorGastosClient,
+                categoriaMapper
+        );
+    }
 }
