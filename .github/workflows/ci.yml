@@ -9,19 +9,6 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: financeai
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -29,8 +16,6 @@ jobs:
           java-version: '17'
           distribution: temurin
           cache: maven
-      - name: Crear esquema MySQL
-        run: mysql -h 127.0.0.1 -uroot -proot < database/001_schema.sql
       - name: Ejecutar pruebas Java
         working-directory: backend-financeAI/finance-ai-api
         run: bash mvnw test
