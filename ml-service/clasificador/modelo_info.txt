@@ -1,0 +1,4 @@
+Modelo: Regresión logística — limpieza de texto incluida en el pipeline
+Entrenado: 2026-08-04
+scikit-learn 1.6.1 | pandas 2.2.2
+Datos: 1089 transacciones, 12 categorías

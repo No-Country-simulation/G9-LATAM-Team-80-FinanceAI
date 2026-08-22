@@ -78,6 +78,16 @@ El proyecto integra desarrollo web, arquitectura de software, análisis de datos
 - Clasificación automática.
 - Clasificación por lotes.
 
+### Clasificación de gastos
+
+```text
+alimentacion, transporte, vivienda, salud, educacion, entretenimiento,
+deudas, cuidado_personal, mascotas, profesionales, impuestos_y_seguros, otros
+```
+
+Modelo entrenado (regresión logística) con 98.2% de accuracy en datos nunca vistos, elegido tras comparar 4 candidatos (regresión logística, Naive Bayes, SVM lineal, Random Forest) con validación cruzada de 5 pliegues sobre un dataset propio de 1.089 transacciones reales de Colombia, Perú, México y Chile. Si la confianza de la predicción cae por debajo del 15% (cercano al azar puro con 12 categorías), se clasifica como `otros` en vez de forzar una categoría con falsa seguridad. Si el modelo no puede cargarse, hay fallback automático a un clasificador por palabras clave — el endpoint nunca se cae.
+
+
 ### Análisis financiero
 
 - Ingresos totales (`ingreso_mensual`, dato del usuario).
@@ -781,4 +791,3 @@ Reglas:
 **Oracle Next Education · Alura · Hackathon 2026**
 
 </div>
-
