@@ -19,11 +19,12 @@ import java.util.UUID;
 public class AuthService {
     private final UsuarioRepository usuarios;
     private final SesionRepository sesiones;
+    private final SesionService sesionService;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     private final long horasSesion;
 
-    public AuthService(UsuarioRepository usuarios, SesionRepository sesiones, @Value("${financeai.session.hours}") long horasSesion) {
-        this.usuarios = usuarios; this.sesiones = sesiones; this.horasSesion = horasSesion;
+    public AuthService(UsuarioRepository usuarios, SesionRepository sesiones, SesionService sesionService, @Value("${financeai.session.hours}") long horasSesion) {
+        this.usuarios = usuarios; this.sesiones = sesiones; this.sesionService = sesionService; this.horasSesion = horasSesion;
     }
 
     @PostConstruct @Transactional
@@ -45,6 +46,11 @@ public class AuthService {
     @Transactional
     public void logout(String authorization) {
         if (authorization != null && authorization.startsWith("Bearer ")) sesiones.deleteById(authorization.substring(7).trim());
+    }
+
+    @Transactional(readOnly = true)
+    public UsuarioResponse me(String authorization) {
+        return respuesta(sesionService.requerirUsuario(authorization));
     }
 
     public UsuarioResponse respuesta(Usuario usuario) {

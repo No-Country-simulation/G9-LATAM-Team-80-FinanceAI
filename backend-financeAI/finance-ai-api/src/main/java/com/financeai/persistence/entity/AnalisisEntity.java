@@ -28,8 +28,13 @@ public class AnalisisEntity {
     private BigDecimal ahorroTotal;
     @Lob @Column(name = "resultado_json", nullable = false, columnDefinition = "LONGTEXT")
     private String resultadoJson;
-    @Column(name = "creado_en", nullable = false)
-    private LocalDateTime creadoEn = LocalDateTime.now();
+    @Column(name = "creado_en", nullable = false, updatable = false)
+    private LocalDateTime creadoEn;
+
+    @PrePersist
+    protected void alCrear() {
+        creadoEn = LocalDateTime.now();
+    }
 
     protected AnalisisEntity() {}
     public AnalisisEntity(Usuario usuario, BigDecimal ingreso, BigDecimal deuda, String frecuencia,

@@ -13,7 +13,7 @@ public final class PersistenciaDtos {
             @NotBlank @Size(max = 200) String descripcion,
             @NotBlank @Size(max = 50) String categoria,
             @NotBlank @Pattern(regexp = "ingreso|gasto|ahorro") String tipo,
-            @NotNull LocalDate fecha,
+            @NotNull @PastOrPresent LocalDate fecha,
             @NotNull @DecimalMin("0.01") BigDecimal monto
     ) {}
     public record TransaccionResponse(Long id, String descripcion, String categoria, String tipo, LocalDate fecha, BigDecimal monto) {}

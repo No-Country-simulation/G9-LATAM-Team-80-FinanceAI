@@ -23,8 +23,13 @@ public class TransaccionEntity {
     private LocalDate fecha;
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal monto;
-    @Column(name = "creado_en", nullable = false)
-    private LocalDateTime creadoEn = LocalDateTime.now();
+    @Column(name = "creado_en", nullable = false, updatable = false)
+    private LocalDateTime creadoEn;
+
+    @PrePersist
+    protected void alCrear() {
+        creadoEn = LocalDateTime.now();
+    }
 
     protected TransaccionEntity() {}
     public TransaccionEntity(Usuario usuario, String descripcion, String categoria, String tipo, LocalDate fecha, BigDecimal monto) {

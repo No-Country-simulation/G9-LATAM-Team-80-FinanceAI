@@ -20,15 +20,7 @@ CATEGORIAS_OFICIALES = {
 
 RAIZ = os.path.join(os.path.dirname(__file__), "../..")
 
-RUTA_JAVA = os.path.join(RAIZ, "finance-ai-api/src/main/java/com/financeai/classification/CategoriaTransaccion.java")
 RUTA_FRONTEND = os.path.join(RAIZ, "financeAI/src/compartido/constantes/categorias.ts")
-
-
-def _extraer_categorias_java():
-    with open(RUTA_JAVA) as f:
-        contenido = f.read()
-    # Busca literales entre comillas que preceden a una coma, dentro del enum
-    return set(re.findall(r'\(\s*"([a-z_]+)"', contenido))
 
 
 def _extraer_categorias_frontend():
@@ -45,12 +37,9 @@ def _extraer_categorias_recomendaciones():
     return set(UMBRALES_POR_CATEGORIA.keys())
 
 
-def test_categorias_java_coinciden_con_las_12_oficiales():
-    categorias_java = _extraer_categorias_java()
-    faltantes = CATEGORIAS_OFICIALES - categorias_java
-    sobrantes = categorias_java - CATEGORIAS_OFICIALES
-    assert not faltantes, f"Java no tiene estas categorias oficiales: {faltantes}"
-    assert not sobrantes, f"Java tiene categorias que no son parte del catalogo oficial: {sobrantes}"
+# No hay prueba equivalente para Java: el backend (backend-financeAI/finance-ai-api)
+# ya no clasifica nada por su cuenta, delega la clasificacion completa al ml-service
+# via MlServiceClient y guarda "categoria" como texto libre (sin enum propio).
 
 
 def test_categorias_recomendaciones_coinciden_con_las_12_oficiales():

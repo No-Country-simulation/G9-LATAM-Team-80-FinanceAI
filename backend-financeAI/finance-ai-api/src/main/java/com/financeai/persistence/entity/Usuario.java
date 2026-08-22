@@ -16,8 +16,13 @@ public class Usuario {
     private String passwordHash;
     @Column(nullable = false, length = 30)
     private String rol = "USUARIO";
-    @Column(name = "creado_en", nullable = false)
-    private LocalDateTime creadoEn = LocalDateTime.now();
+    @Column(name = "creado_en", nullable = false, updatable = false)
+    private LocalDateTime creadoEn;
+
+    @PrePersist
+    protected void alCrear() {
+        creadoEn = LocalDateTime.now();
+    }
 
     protected Usuario() {}
     public Usuario(String nombre, String email, String passwordHash) {
