@@ -13,8 +13,13 @@ public class Sesion {
     private Usuario usuario;
     @Column(name = "expira_en", nullable = false)
     private LocalDateTime expiraEn;
-    @Column(name = "creado_en", nullable = false)
-    private LocalDateTime creadoEn = LocalDateTime.now();
+    @Column(name = "creado_en", nullable = false, updatable = false)
+    private LocalDateTime creadoEn;
+
+    @PrePersist
+    protected void alCrear() {
+        creadoEn = LocalDateTime.now();
+    }
 
     protected Sesion() {}
     public Sesion(String token, Usuario usuario, LocalDateTime expiraEn) {

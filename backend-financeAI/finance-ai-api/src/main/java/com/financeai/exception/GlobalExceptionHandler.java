@@ -2,6 +2,7 @@ package com.financeai.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -21,6 +22,12 @@ public class GlobalExceptionHandler {
         exception.getBindingResult().getFieldErrors()
                 .forEach(error -> campos.put(error.getField(), error.getDefaultMessage()));
         return ResponseEntity.badRequest().body(error("Los datos enviados no son validos", campos));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> cuerpoNoLegible(HttpMessageNotReadableException exception) {
+        return ResponseEntity.badRequest()
+                .body(error("El cuerpo de la solicitud no es valido", Map.of("solicitud", "Verifique el formato JSON y los valores enviados")));
     }
 
     @ExceptionHandler(RestClientException.class)
