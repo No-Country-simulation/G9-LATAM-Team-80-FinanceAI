@@ -51,6 +51,20 @@ jobs:
         working-directory: feature-financeAI/ml-service
         run: python -c "from test_integracion import test_flujo_completo, test_clasificacion_lote; test_flujo_completo(); test_clasificacion_lote()"
 
+  contract-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Instalar dependencias (perfil + recomendaciones)
+        run: |
+          pip install -r ml-service/perfil/requirements.txt
+          pip install -r ml-service/recomendaciones/requirements.txt
+      - name: Run contract tests between Perfil y Recomendaciones
+        run: pytest tests/contract/ -v
+
   frontend:
     runs-on: ubuntu-latest
     steps:
