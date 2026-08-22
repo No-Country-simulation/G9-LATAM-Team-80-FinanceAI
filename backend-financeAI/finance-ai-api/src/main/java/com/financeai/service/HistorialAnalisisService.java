@@ -33,11 +33,18 @@ public class HistorialAnalisisService {
         return repositorio.findByUsuarioIdOrderByCreadoEnDesc(usuario.getId()).stream().map(this::resumen).toList();
     }
     public AnalisisDetalleResponse detalle(Usuario usuario, Long id) {
-        AnalisisEntity item = obtener(usuario, id);
-        return new AnalisisDetalleResponse(item.getId(), item.getCreadoEn(), leer(item.getResultadoJson()));
+        return detalleDesde(obtener(usuario, id));
+    }
+    public AnalisisDetalleResponse ultimo(Usuario usuario) {
+        return detalleDesde(repositorio.findFirstByUsuarioIdOrderByCreadoEnDesc(usuario.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aun no hay analisis registrados")));
     }
     @Transactional
     public void eliminar(Usuario usuario, Long id) { repositorio.delete(obtener(usuario, id)); }
+
+    private AnalisisDetalleResponse detalleDesde(AnalisisEntity item) {
+        return new AnalisisDetalleResponse(item.getId(), item.getCreadoEn(), leer(item.getResultadoJson()));
+    }
 
     private AnalisisEntity obtener(Usuario usuario, Long id) {
         return repositorio.findByIdAndUsuarioId(id, usuario.getId())

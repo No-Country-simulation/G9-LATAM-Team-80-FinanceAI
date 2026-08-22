@@ -8,5 +8,6 @@ import java.util.Optional;
 public interface AnalisisRepository extends JpaRepository<AnalisisEntity, Long> {
     List<AnalisisEntity> findByUsuarioIdOrderByCreadoEnDesc(Long usuarioId);
     Optional<AnalisisEntity> findByIdAndUsuarioId(Long id, Long usuarioId);
+    Optional<AnalisisEntity> findFirstByUsuarioIdOrderByCreadoEnDesc(Long usuarioId);
 }
 
