@@ -1,0 +1,11 @@
+**/.venv/
+**/node_modules/
+**/dist/
+**/target/
+**/__pycache__/
+.m2/
+.npm-cache/
+*.pyc
+.env
+*.rar
+*.zip

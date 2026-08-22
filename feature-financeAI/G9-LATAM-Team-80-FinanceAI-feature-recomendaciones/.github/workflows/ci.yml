@@ -1,0 +1,19 @@
+name: CI FinanceAI Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Copiar codigo del repositorio
+      uses: actions/checkout@v4
+
+    - name: Verificar archivos del proyecto
+      run: |
+        echo "Revisando la estructura del proyecto FinanceAI..."
+        ls -la
