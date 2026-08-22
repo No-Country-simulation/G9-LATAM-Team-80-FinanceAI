@@ -69,7 +69,6 @@ def analisis_financiero(request: AnalisisRequest):
     try:
         gastos = [item for item in request.transacciones if item.tipo == "gasto"]
         ahorro_total = sum(item.valor for item in request.transacciones if item.tipo == "ahorro")
-        gasto_total = sum(item.valor for item in gastos)
         resultados = clasificar_lote([item.descripcion for item in gastos])
 
         resumen = defaultdict(float)
@@ -83,6 +82,10 @@ def analisis_financiero(request: AnalisisRequest):
                 "categoria": categoria,
             })
 
+        # gasto_total_mes EXCLUYE "deudas" -- evita doble conteo con nivel_endeudamiento,
+        # tal como especifica el contrato acordado con backend.
+        gasto_total = sum(monto for cat, monto in resumen.items() if cat != "deudas")
+
         perfil = analizar_perfil(
             request.ingreso_mensual,
             request.nivel_endeudamiento,
@@ -95,11 +98,15 @@ def analisis_financiero(request: AnalisisRequest):
             ingreso_mensual=request.ingreso_mensual,
         )
 
+        # Los campos que empiezan con "_" (_inconsistencia_ahorro, _fuente_prediccion)
+        # son solo para logs/trazabilidad interna -- nunca deben llegar al usuario final.
+        perfil_publico = {k: v for k, v in perfil.items() if not k.startswith("_")}
+
         return {
             "ingreso_mensual": request.ingreso_mensual,
             "gasto_total_mes": round(gasto_total, 2),
             "ahorro_total": round(ahorro_total, 2),
-            **perfil,
+            **perfil_publico,
             "resumen_gastos": {key: round(value, 2) for key, value in resumen.items()},
             "clasificaciones": clasificaciones,
             "recomendaciones": recomendaciones,
