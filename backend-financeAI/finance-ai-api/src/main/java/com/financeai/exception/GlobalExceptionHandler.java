@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.RestClientException;
@@ -28,6 +29,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> cuerpoNoLegible(HttpMessageNotReadableException exception) {
         return ResponseEntity.badRequest()
                 .body(error("El cuerpo de la solicitud no es valido", Map.of("solicitud", "Verifique el formato JSON y los valores enviados")));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<Map<String, Object>> headerFaltante(MissingRequestHeaderException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error("Debes iniciar sesion", Map.of()));
     }
 
     @ExceptionHandler(RestClientException.class)
