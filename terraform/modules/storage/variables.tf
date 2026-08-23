@@ -30,4 +30,5 @@ variable "name_prefix" {
 variable "region" {
   description = "Region de OCI (ej. \"sa-bogota-1\"), usada para construir bucket_base_url."
   type        = string
+  default     = "sa-bogota-1"
 }
