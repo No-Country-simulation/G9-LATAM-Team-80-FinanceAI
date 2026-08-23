@@ -1,0 +1,413 @@
+/*
+ * Header global.
+ *
+ * Namespace propio (fa-*) en vez de reutilizar las clases .topbar del prototipo: el
+ * Design System nuevo convive con la hoja global mientras se rediseña pantalla por
+ * pantalla, y separar los selectores evita pelear con las reglas viejas.
+ */
+
+.fa-header {
+  --fa-primary: #2458E8;
+  --fa-deep: #153B9A;
+  --fa-violet: #6548EF;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-border: #E4E9F3;
+  --fa-card: #FFFFFF;
+  --fa-alto-control: 42px;
+
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 76px;
+  margin: -30px -32px 8px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--fa-border);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+  color: var(--fa-text);
+}
+
+/* --- Izquierda: contexto discreto -------------------------------- */
+
+.fa-header-contexto {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* El titular de cada pagina vive en su contenido, no aca. Esto es solo ubicacion. */
+.fa-header-contexto > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fa-muted);
+  font-size: 0.94rem;
+  font-weight: 500;
+}
+
+.fa-header-menu {
+  display: none;
+  width: var(--fa-alto-control);
+  height: var(--fa-alto-control);
+  flex: 0 0 var(--fa-alto-control);
+  place-items: center;
+  border: 1px solid var(--fa-border);
+  border-radius: 11px;
+  background: var(--fa-card);
+  color: var(--fa-text);
+  padding: 0;
+}
+
+/* --- Derecha: controles ------------------------------------------ */
+
+.fa-header-controles { display: flex; align-items: center; gap: 10px; }
+
+.fa-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--fa-alto-control);
+  height: var(--fa-alto-control);
+  padding: 0 15px;
+  border: 1px solid var(--fa-border);
+  border-radius: 11px;
+  background: var(--fa-card);
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.fa-control svg { color: var(--fa-muted); flex: 0 0 auto; }
+.fa-control small { color: var(--fa-muted); font-size: 0.9rem; }
+
+.fa-icono-boton {
+  width: var(--fa-alto-control);
+  padding: 0;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.fa-divisor { width: 1px; height: 26px; margin: 0 4px; background: var(--fa-border); }
+
+/* --- Selector de periodo ------------------------------------------ */
+
+/* Un solo control partido en dos, no dos botones sueltos: el borde y el fondo son del
+   contenedor, y cada mitad solo aporta su hover. */
+.fa-periodo {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: var(--fa-alto-control);
+  border: 1px solid var(--fa-border);
+  border-radius: 11px;
+  background: var(--fa-card);
+}
+
+.fa-periodo-zona {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 112px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fa-periodo-anio { min-width: 78px; font-weight: 500; }
+.fa-periodo-zona:hover { background: #F4F7FE; }
+.fa-periodo-zona:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: -2px; }
+.fa-periodo-zona[aria-expanded='true'] { background: #EDF2FE; color: var(--fa-primary); }
+.fa-periodo-zona svg { color: var(--fa-muted); flex: 0 0 auto; transition: transform 170ms ease; }
+.fa-periodo-zona[aria-expanded='true'] svg { color: var(--fa-primary); transform: rotate(180deg); }
+
+.fa-periodo-divisor { width: 1px; margin: 8px 0; background: var(--fa-border); }
+.fa-periodo-corto { display: none; }
+
+.fa-periodo-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 168px;
+  max-height: 292px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--fa-border);
+  border-radius: 12px;
+  background: var(--fa-card);
+  box-shadow: 0 14px 36px rgba(13, 24, 56, 0.12);
+}
+
+.fa-periodo-menu.alineado-derecha { left: auto; right: 0; min-width: 122px; }
+
+.fa-periodo-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 0.89rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fa-periodo-menu button:hover:not(:disabled) { background: #F4F7FE; }
+.fa-periodo-menu button:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: -2px; }
+.fa-periodo-menu button.activo { background: #EDF2FE; color: var(--fa-primary); font-weight: 600; }
+
+/* Mes sin movimientos: se muestra para dar contexto del anio, pero no se puede elegir
+   porque el analisis no tendria nada que calcular. */
+.fa-periodo-menu button:disabled { color: #AFB8CD; cursor: not-allowed; }
+
+/* --- Usuario ------------------------------------------------------ */
+
+.fa-usuario { position: relative; }
+
+.fa-usuario-boton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--fa-alto-control);
+  padding: 0 10px 0 4px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--fa-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.fa-usuario-boton:hover { background: #F1F5FD; }
+.fa-usuario-boton[aria-expanded='true'] { border-color: var(--fa-border); background: var(--fa-card); }
+
+.fa-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 50%;
+  background: #EDF1FE;
+  color: var(--fa-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.fa-usuario-nombre {
+  max-width: 168px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.fa-usuario-boton > svg { color: var(--fa-muted); transition: transform 180ms ease; }
+.fa-usuario-boton[aria-expanded='true'] > svg { transform: rotate(180deg); }
+
+/* --- Menu --------------------------------------------------------- */
+
+.fa-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  min-width: 232px;
+  padding: 6px;
+  border: 1px solid var(--fa-border);
+  border-radius: 14px;
+  background: var(--fa-card);
+  /* Unica sombra del header: es un elemento flotante de verdad. */
+  box-shadow: 0 16px 40px rgba(13, 24, 56, 0.12);
+}
+
+.fa-menu-cabecera { padding: 10px 12px 12px; border-bottom: 1px solid var(--fa-border); margin-bottom: 6px; }
+.fa-menu-cabecera strong { display: block; font-size: 0.92rem; font-weight: 600; }
+.fa-menu-cabecera small { display: block; margin-top: 2px; color: var(--fa-muted); font-size: 0.82rem; overflow-wrap: anywhere; }
+
+.fa-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fa-menu button:hover { background: #F1F5FD; }
+.fa-menu button svg { color: var(--fa-muted); }
+
+/* --- Responsive --------------------------------------------------- */
+
+@media (max-width: 1080px) {
+  .fa-header { margin: -24px -24px 8px; padding: 0 24px; }
+}
+
+@media (max-width: 900px) {
+  .fa-header-menu { display: grid; }
+}
+
+@media (max-width: 720px) {
+  .fa-header { min-height: 68px; margin: -18px -18px 6px; padding: 0 18px; gap: 10px; }
+  /* En movil el contexto cede el espacio a los controles antes que apretarlos. */
+  .fa-header-contexto > span { display: none; }
+  .fa-usuario-nombre { display: none; }
+  .fa-usuario-boton { padding: 0 4px; }
+  .fa-divisor { margin: 0 2px; }
+  .fa-control { padding: 0 12px; gap: 6px; }
+}
+
+@media (max-width: 420px) {
+  .fa-header-controles { gap: 6px; }
+  .fa-control small { display: none; }
+  /* El valor logico sigue siendo el mes completo; solo se abrevia la etiqueta. */
+  .fa-periodo-largo { display: none; }
+  .fa-periodo-corto { display: inline; }
+  .fa-periodo-zona { min-width: 0; padding: 0 10px; gap: 5px; }
+  .fa-periodo-anio { min-width: 0; }
+}
+
+/* --- Navegacion lateral -------------------------------------------- */
+
+.fa-nav {
+  --fa-primary: #2458E8;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-grupo: #8A95AC;
+  --fa-border: #E4E9F3;
+
+  position: sticky;
+  top: 0;
+  z-index: 42;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 26px 14px;
+  border-right: 1px solid var(--fa-border);
+  background: #FFFFFF;
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+}
+
+.fa-nav-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 8px; }
+
+.fa-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fa-primary);
+  font: inherit;
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+}
+
+.fa-marca strong { font-weight: 800; }
+
+.fa-nav-cerrar {
+  display: none;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--fa-border);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--fa-muted);
+  padding: 0;
+  cursor: pointer;
+}
+
+.fa-nav-lista { display: flex; flex-direction: column; gap: 18px; min-height: 0; }
+
+.fa-nav-grupo { display: grid; gap: 2px; }
+
+.fa-nav-grupo-titulo {
+  margin: 0 0 10px;
+  padding: 0 12px;
+  color: var(--fa-grupo);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.fa-nav-grupo button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.fa-nav-grupo button svg { color: #7A88A6; flex: 0 0 auto; transition: color 160ms ease; }
+.fa-nav-grupo button:hover { background: #F4F7FE; }
+.fa-nav-grupo button:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: -2px; }
+
+/* Pastilla activa: suave y del alto del item, sin sombra ni desplazamiento. */
+.fa-nav-grupo button.activa { background: #EDF2FE; color: var(--fa-primary); font-weight: 700; }
+.fa-nav-grupo button.activa svg { color: var(--fa-primary); }
+
+@media (max-width: 1080px) {
+  .fa-nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: min(300px, 86vw);
+    transform: translateX(-100%);
+    box-shadow: 18px 0 42px rgba(15, 23, 42, 0.18);
+    transition: transform 240ms cubic-bezier(.32, .72, 0, 1);
+    padding: 20px 12px;
+  }
+  .fa-nav.abierto { transform: translateX(0); }
+  .fa-nav-cerrar { display: grid; }
+  .fa-nav-lista { overflow-y: auto; padding-right: 2px; scrollbar-width: thin; }
+}
+
+@media (max-width: 480px) {
+  .fa-nav { width: min(284px, 88vw); padding: 16px 10px; }
+  .fa-marca { font-size: 1.08rem; }
+  .fa-nav-grupo button { font-size: 0.89rem; gap: 10px; }
+}

@@ -86,6 +86,10 @@ export function useFinancialWorkspace(token: string | null) {
   const [errorAnalisis, setErrorAnalisis] = useState('');
   const [revision, setRevision] = useState(0);
   const [hidratado, setHidratado] = useState(false);
+  // Distingue "todavia no hay analisis" de "el analisis dio cero". Sin este flag, el
+  // estado inicial (perfil Saludable y todo en cero) es indistinguible de un resultado
+  // real, y el tablero mostraria un diagnostico que nadie calculo.
+  const [analisisListo, setAnalisisListo] = useState(false);
 
   const [mesSeleccionado, setMesSeleccionado] = useState<string | null>(null);
 
@@ -129,6 +133,32 @@ export function useFinancialWorkspace(token: string | null) {
     }
   }, [transacciones]);
 
+  // El anio no es un estado aparte: se deriva del mes elegido. Con dos estados habria
+  // que mantenerlos en sincronia y siempre queda el caso de un anio sin ningun mes.
+  const aniosDisponibles = useMemo(
+    () => [...new Set(mesesDisponibles.map((mes) => mes.slice(0, 4)))],
+    [mesesDisponibles]
+  );
+  const anioAnalizado = mesAnalizado?.slice(0, 4) ?? null;
+  const mesesDelAnio = useMemo(
+    () => (anioAnalizado === null ? [] : mesesDisponibles.filter((mes) => mes.startsWith(anioAnalizado))),
+    [mesesDisponibles, anioAnalizado]
+  );
+
+  /**
+   * Cambiar de anio conserva el mes: de agosto 2026 se pasa a agosto 2025, no a
+   * diciembre. Solo si ese mes no tiene movimientos en el anio destino se cae al mas
+   * reciente que si los tenga, para no dejar el tablero sin datos que analizar.
+   */
+  const seleccionarAnio = useCallback((anio: string) => {
+    const numeroDeMes = mesAnalizado?.slice(5, 7);
+    const mismoMes = numeroDeMes ? `${anio}-${numeroDeMes}` : null;
+    const destino = (mismoMes !== null && mesesDisponibles.includes(mismoMes))
+      ? mismoMes
+      : mesesDisponibles.find((mes) => mes.startsWith(anio));
+    if (destino) seleccionarMes(destino);
+  }, [mesesDisponibles, mesAnalizado, seleccionarMes]);
+
   const recargarHistorial = useCallback(async () => {
     if (token) setHistorial(await listarHistorial(token));
   }, [token]);
@@ -139,7 +169,7 @@ export function useFinancialWorkspace(token: string | null) {
 
   useEffect(() => {
     if (!token) {
-      setTransacciones([]); setPresupuestos([]); setHistorial([]); setHidratado(false);
+      setTransacciones([]); setPresupuestos([]); setHistorial([]); setHidratado(false); setAnalisisListo(false);
       return;
     }
     setCargandoDatos(true);
@@ -166,17 +196,22 @@ export function useFinancialWorkspace(token: string | null) {
     const controller = new AbortController();
     setCargandoAnalisis(true); setErrorAnalisis('');
     solicitarAnalisisFinanciero(token, transaccionesDelMes, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, controller.signal)
-      .then(async (resultado) => { setAnalisis(resultado); await recargarHistorial(); })
+      .then(async (resultado) => { setAnalisis(resultado); setAnalisisListo(true); await recargarHistorial(); })
       .catch((error: Error) => { if (error.name !== 'AbortError') setErrorAnalisis(error.message); })
       .finally(() => { if (!controller.signal.aborted) setCargandoAnalisis(false); });
     return () => controller.abort();
   }, [token, hidratado, transaccionesDelMes, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, revision, recargarHistorial]);
 
-  async function agregarTransaccion(data: { descripcion: string; categoria: CategoriaFinanciera; tipo: TipoTransaccion; monto: number }) {
+  /*
+   * La fecha llega desde el formulario. Antes se forzaba siempre a hoy, asi que no
+   * habia forma de registrar un movimiento pasado salvo importando un CSV. Se mantiene
+   * el dia actual como valor por defecto para quien no la envie.
+   */
+  async function agregarTransaccion(data: { descripcion: string; categoria: CategoriaFinanciera; tipo: TipoTransaccion; monto: number; fecha?: string }) {
     if (!token) return;
     const nueva = await crearTransaccion(token, {
       descripcion: data.descripcion, categoria: data.categoria, tipo: data.tipo,
-      fecha: new Date().toISOString().slice(0, 10), monto: Math.abs(data.monto)
+      fecha: data.fecha ?? new Date().toISOString().slice(0, 10), monto: Math.abs(data.monto)
     });
     setTransacciones((actuales) => [nueva, ...actuales]);
     await recargarPresupuestos();
@@ -228,8 +263,9 @@ export function useFinancialWorkspace(token: string | null) {
   }
 
   return {
-    transacciones, transaccionesDelMes, mesAnalizado, mesesDisponibles, seleccionarMes, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
-    cargandoDatos, cargandoAnalisis, errorAnalisis, agregarTransaccion, actualizarTransaccion,
+    transacciones, transaccionesDelMes, mesAnalizado, mesesDisponibles, mesesDelAnio, seleccionarMes,
+    anioAnalizado, aniosDisponibles, seleccionarAnio, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
+    cargandoDatos, cargandoAnalisis, errorAnalisis, analisisListo, hidratado, agregarTransaccion, actualizarTransaccion,
     eliminarTransaccion, importarTransacciones, agregarPresupuesto, eliminarAnalisis, generarAnalisis, obtenerCategoria
   };
 }
