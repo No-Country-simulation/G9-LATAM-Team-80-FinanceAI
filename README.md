@@ -1,793 +1,344 @@
 <div align="center">
 
-# 💚 Salud Financiera
+# 💚 FinanceAI — Salud Financiera
 
-### Plataforma inteligente para el análisis y mejora de la salud financiera personal
+### Asistente inteligente que analiza el comportamiento financiero de una persona y responde, con datos reales, si una decisión es viable hoy
 
-![React](https://img.shields.io/badge/React-TypeScript-61DAFB?logo=react)
-![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=nodedotjs)
+![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1.0-6DB33F?logo=springboot)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
 ![Python](https://img.shields.io/badge/Python-FastAPI-009688?logo=python)
-![MySQL](https://img.shields.io/badge/MySQL-HeatWave-4479A1?logo=mysql)
-![OCI](https://img.shields.io/badge/Oracle_Cloud-OCI-F80000?logo=oracle)
-![Estado](https://img.shields.io/badge/Estado-En%20desarrollo-blue)
+![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql)
+![Estado](https://img.shields.io/badge/Estado-MVP%20funcional-blue)
+
+**Oracle Next Education · Alura · Hackathon 2026 · Equipo G9 LATAM 80**
 
 </div>
-
----
-
-## 📚 Índice
-
-- [Sobre el proyecto](#-sobre-el-proyecto)
-- [Objetivos](#-objetivos)
-- [Funcionalidades](#-funcionalidades)
-- [Arquitectura general](#️-arquitectura-general)
-- [Arquitectura del frontend](#-arquitectura-del-frontend)
-- [Arquitectura del backend](#️-arquitectura-del-backend)
-- [Arquitectura de Machine Learning](#-arquitectura-de-machine-learning)
-- [Arquitectura de base de datos](#️-arquitectura-de-base-de-datos)
-- [Arquitectura OCI](#️-arquitectura-oci)
-- [Tecnologías](#️-tecnologías)
-- [Estructura del proyecto](#-estructura-general-del-proyecto)
-- [Organización del equipo](#-organización-del-equipo)
-- [Instalación](#-instalación-y-ejecución)
-- [Documentación](#-documentación)
-- [Estrategia de ramas](#-estrategia-de-ramas)
-- [Roadmap](#-roadmap)
-- [Enlaces](#-enlaces)
 
 ---
 
 ## 📝 Sobre el proyecto
 
-**Salud Financiera** es una plataforma web inteligente para el análisis de finanzas personales. Permite registrar ingresos y gastos, clasificar transacciones automáticamente, calcular indicadores financieros, identificar el perfil financiero del usuario y generar recomendaciones personalizadas.
-
-El proyecto integra desarrollo web, arquitectura de software, análisis de datos, Machine Learning y servicios de Oracle Cloud Infrastructure. Se desarrolla en el contexto del **Hackathon ONE**, iniciativa de **Oracle Next Education y Alura**.
-
----
+Muchas personas tienen acceso a todos los datos de sus transacciones, pero no tienen forma sencilla de convertir esos datos en una decisión financiera concreta. **FinanceAI** resuelve esto: clasifica automáticamente los gastos de un usuario, diagnostica su perfil financiero contra estándares reales de la industria bancaria, y responde preguntas concretas ("¿puedo comprar un carro?") con un veredicto claro respaldado por sus propios números — a través de un asistente conversacional, no solo un dashboard.
 
 ## 🎯 Objetivos
 
-- Registrar ingresos y gastos.
-- Clasificar automáticamente las transacciones.
-- Organizar movimientos por categorías.
-- Calcular ahorro, gastos, endeudamiento y puntaje financiero.
-- Identificar perfiles saludables, en observación o en riesgo.
-- Generar recomendaciones personalizadas.
-- Mostrar dashboards e historial financiero.
-- Procesar archivos CSV.
-- Desplegar la solución en OCI.
-- Mantener una arquitectura modular, escalable y documentada.
+- Clasificar automáticamente las transacciones de un usuario en 12 categorías financieras
+- Diagnosticar el perfil financiero (`Saludable` / `En observación` / `En riesgo`) con criterios validados contra estándares bancarios reales
+- Generar recomendaciones concretas y priorizadas para mejorar la salud financiera
+- Ofrecer un asistente conversacional que responda con datos reales del usuario, no respuestas genéricas
+- Persistir la información del usuario de forma segura (autenticación, transacciones, presupuestos, historial)
+
+---
+
+## ✅ Estado actual del proyecto
+
+| Componente | Estado |
+|---|---|
+| Backend (Java / Spring Boot) | ✅ Funcional — autenticación, transacciones, presupuestos, historial y análisis financiero, todo con persistencia real en MySQL |
+| Frontend (React / TypeScript) | ✅ Funcional — conectado al backend real, sin datos de ejemplo |
+| Microservicios de Machine Learning (Python) | ✅ Funcionales — Clasificador (98.2% accuracy), Perfil Financiero, Recomendaciones, cada uno con pruebas automatizadas |
+| Asistente conversacional (widget Oven) | ✅ Embebido en la página de Recomendaciones, conectado a los datos reales del usuario |
+| Base de datos (MySQL) | ✅ Esquema completo, persistencia de usuarios, sesiones, transacciones, presupuestos y análisis |
+| Despliegue local con Docker | ✅ Un solo comando levanta los 4 servicios (`docker compose up`) |
+| Integración con OCI (Oracle Cloud) | 🟡 Preparado, no desplegado — los Dockerfiles de los modelos ML ya incluyen el mecanismo de descarga desde Object Storage, pendiente de generar las credenciales reales (PAR) |
+
+---
+
+## 🏗️ Arquitectura
+
+```text
+                            ┌──────────────────────┐
+                            │       USUARIO         │
+                            └───────────┬───────────┘
+                                        │ HTTPS
+                                        ▼
+                       ┌────────────────────────────────┐
+                       │   FRONTEND (React + Vite +      │
+                       │   TypeScript) — puerto 8081      │
+                       │   + Widget de chat agéntico       │
+                       │     (Oven) embebido               │
+                       └────────────────┬─────────────────┘
+                                        │ /api  (mismo origen vía nginx)
+                                        ▼
+                       ┌────────────────────────────────┐
+                       │   BACKEND (Java 17 + Spring     │
+                       │   Boot 4.1) — puerto 8080         │
+                       │   Auth · Transacciones ·          │
+                       │   Presupuestos · Historial ·      │
+                       │   Análisis financiero             │
+                       └──────┬─────────────────┬─────────┘
+                              │                 │
+                   JDBC/MySQL │                 │ HTTP (RestClient)
+                              ▼                 ▼
+                 ┌────────────────────┐   ┌──────────────────────────┐
+                 │  MySQL 8 — puerto   │   │  ML SERVICE (Python /    │
+                 │  3306 (interno)      │   │  FastAPI) — puerto 8000  │
+                 │  esquema `financeai` │   │  Clasificador · Perfil · │
+                 └────────────────────┘   │  Recomendaciones          │
+                                            └──────────────┬───────────┘
+                                                           │ OCI Object Storage
+                                                           │ (Pre-Authenticated
+                                                           │  Request) — preparado,
+                                                           ▼  pendiente de activar
+                                            ┌──────────────────────────┐
+                                            │   OCI Object Storage      │
+                                            │   (modelos .pkl)          │
+                                            └──────────────────────────┘
+```
 
 ---
 
 ## 📌 Funcionalidades
 
-### Usuarios y seguridad
-
-- Registro e inicio de sesión.
-- JWT y refresh tokens.
-- Cierre de sesión.
-- Perfil de usuario.
-- Protección de rutas.
+### Autenticación y sesión
+- Registro e inicio de sesión con contraseña cifrada (BCrypt)
+- Sesiones con token y expiración configurable
 
 ### Transacciones
+- Registro, edición, eliminación y listado de transacciones
+- Importación por lotes
+- Clasificación automática en 12 categorías mediante el modelo entrenado
 
-- Registro de ingresos y gastos.
-- Consulta, edición y eliminación lógica.
-- Filtros y paginación.
-- Clasificación automática.
-- Clasificación por lotes.
-
-### Clasificación de gastos
-
-```text
-alimentacion, transporte, vivienda, salud, educacion, entretenimiento,
-deudas, cuidado_personal, mascotas, profesionales, impuestos_y_seguros, otros
-```
-
-Modelo entrenado (regresión logística) con 98.2% de accuracy en datos nunca vistos, elegido tras comparar 4 candidatos (regresión logística, Naive Bayes, SVM lineal, Random Forest) con validación cruzada de 5 pliegues sobre un dataset propio de 1.089 transacciones reales de Colombia, Perú, México y Chile. Si la confianza de la predicción cae por debajo del 15% (cercano al azar puro con 12 categorías), se clasifica como `otros` en vez de forzar una categoría con falsa seguridad. Si el modelo no puede cargarse, hay fallback automático a un clasificador por palabras clave — el endpoint nunca se cae.
-
+### Presupuestos
+- Definición de límites por categoría
+- Seguimiento de cuánto se ha gastado frente al límite definido
 
 ### Análisis financiero
+- Diagnóstico del perfil (`Saludable` / `En observación` / `En riesgo`), con las razones exactas detrás del veredicto
+- Métricas: ratio gasto/ingreso, nivel de endeudamiento, frecuencia de ahorro, ahorro estimado
+- Recomendaciones priorizadas (máximo 4), basadas en umbrales calibrados por categoría
 
-- Ingresos totales (`ingreso_mensual`, dato del usuario).
-- Gastos totales (`gasto_total_mes`) — suma de transacciones clasificadas, **excluyendo la categoría `deudas`** para no duplicar información con el nivel de endeudamiento.
-- Ahorro estimado (`ahorro_estimado_pct`) — calculado, no declarado por el usuario: `1 − ratio_gasto_ingreso − (nivel_endeudamiento / 100)`.
-- Porcentaje de gastos sobre el ingreso (`ratio_gasto_ingreso`) — `gasto_total_mes / ingreso_mensual`.
-- Nivel de endeudamiento (`nivel_endeudamiento`) — `(gasto categoría "deudas" / ingreso_mensual) × 100`.
-- Puntaje financiero (`probabilidad`) — confianza del modelo entrenado en el veredicto de perfil.
-- Categoría principal — la de mayor gasto dentro de `resumen_gastos`.
-- Gastos recurrentes — pendiente de definir criterio (ej. misma descripción/categoría en 3+ meses consecutivos).
+### Historial
+- Consulta, detalle y eliminación de análisis anteriores
 
-### Perfil financiero
-
-```text
-Saludable        (endeudamiento ≤ 36% y ratio_gasto_ingreso ≤ 0.80)
-En observación    (endeudamiento 36%-43% o ratio_gasto_ingreso 0.80-0.90)
-En riesgo         (endeudamiento > 43% o ratio_gasto_ingreso > 0.90)
-```
-
-Se aplica el peor caso entre ambos criterios (enfoque conservador). Umbrales validados contra el framework de Debt-to-Income de Fannie Mae (Selling Guide B3-6-02) y la regla de ahorro 50/30/20. El veredicto siempre sale de estas reglas; el modelo entrenado (Árbol de Decisión) se usa para calcular la probabilidad/confianza asociada, no el veredicto en sí.
-
-### Dashboard
-
-- Resumen financiero.
-- Gastos por categoría.
-- Evolución mensual.
-- Últimas transacciones.
-- Puntaje y perfil financiero.
-- Recomendaciones prioritarias.
-
-### Archivos
-
-- Carga y validación de CSV.
-- Procesamiento por lotes.
-- Seguimiento del estado.
-- Almacenamiento en OCI Object Storage.
+### Asistente conversacional
+- Widget de chat embebido en la página de Recomendaciones
+- Responde preguntas del usuario citando sus propios datos financieros reales
 
 ---
 
-# 🏗️ Arquitectura general
+## 🧠 Machine Learning — los 3 microservicios
 
-```text
-┌───────────────────────────────────────────────────────────────┐
-│                         USUARIO                               │
-└───────────────────────────────┬───────────────────────────────┘
-                                │ HTTPS
-                                ▼
-┌───────────────────────────────────────────────────────────────┐
-│             FRONTEND: salud-financiera                       │
-│                  React + TypeScript                           │
-└───────────────────────────────┬───────────────────────────────┘
-                                │ API REST / JSON
-                                ▼
-┌───────────────────────────────────────────────────────────────┐
-│            BACKEND: salud-financiera-api                     │
-│             Node.js + Express + TypeScript                    │
-└────────────────────┬───────────────────────┬──────────────────┘
-                     │ SQL                   │ HTTP interno
-                     ▼                       ▼
-┌────────────────────────────┐   ┌──────────────────────────────┐
-│ MySQL / MySQL HeatWave     │   │ ML Service                  │
-│                            │   │ Python + FastAPI            │
-└────────────────────────────┘   └──────────────┬───────────────┘
-                                               │ OCI SDK
-                                               ▼
-                                ┌──────────────────────────────┐
-                                │ OCI Object Storage           │
-                                │ Modelos, datasets y CSV      │
-                                └──────────────────────────────┘
-```
-
-### Flujo principal
-
-```text
-Usuario → React → Express → MySQL
-                         └→ FastAPI → Object Storage
-```
-
----
-
-# 💻 Arquitectura del frontend
-
-## Nombre
-
-```text
-salud-financiera
-```
-
-## Responsabilidad
-
-Presentar la interfaz, gestionar formularios, mostrar gráficos y consumir la API REST. No accede directamente a MySQL ni al servicio ML.
-
-## Capas
-
-```text
-domain
-application
-infrastructure
-presentation
-```
-
-- **Domain:** entidades, tipos e interfaces.
-- **Application:** hooks, queries, mutaciones y casos de uso.
-- **Infrastructure:** Axios, repositorios HTTP, adaptadores e interceptores.
-- **Presentation:** páginas, componentes, formularios, tablas y gráficos.
-
-## Estructura
-
-```text
-salud-financiera/
-├── src/
-│   ├── app/
-│   │   ├── router/
-│   │   ├── providers/
-│   │   ├── layouts/
-│   │   ├── guards/
-│   │   └── App.tsx
-│   ├── features/
-│   │   ├── auth/
-│   │   ├── transactions/
-│   │   ├── financial-analysis/
-│   │   ├── recommendations/
-│   │   ├── dashboard/
-│   │   └── files/
-│   ├── shared/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── infrastructure/
-│   │   ├── utils/
-│   │   └── types/
-│   ├── assets/
-│   └── main.tsx
-├── tests/
-├── Dockerfile
-├── package.json
-├── README.md
-└── CHANGELOG.md
-```
-
-## Páginas
-
-```text
-/login
-/register
-/dashboard
-/transactions
-/transactions/new
-/analysis
-/history
-/files
-/profile
-```
-
----
-
-# ⚙️ Arquitectura del backend
-
-## Nombre
-
-```text
-salud-financiera-api
-```
-
-## Responsabilidad
-
-Autenticar usuarios, validar datos, ejecutar casos de uso, aplicar reglas de negocio, acceder a MySQL, comunicarse con Machine Learning y exponer la API REST.
-
-## Capas
-
-```text
-presentation
-application
-domain
-infrastructure
-```
-
-```text
-Presentation → Application → Domain
-Infrastructure ────────────→ Domain
-```
-
-El dominio no depende de Express, Prisma, Axios, MySQL ni OCI.
-
-## Estructura
-
-```text
-salud-financiera-api/
-├── src/
-│   ├── modules/
-│   │   ├── auth/
-│   │   ├── users/
-│   │   ├── transactions/
-│   │   ├── financial-analysis/
-│   │   ├── recommendations/
-│   │   ├── dashboard/
-│   │   └── files/
-│   ├── shared/
-│   ├── config/
-│   ├── app.ts
-│   └── server.ts
-├── prisma/
-│   ├── schema.prisma
-│   ├── migrations/
-│   └── seed.ts
-├── tests/
-├── Dockerfile
-├── package.json
-├── README.md
-└── CHANGELOG.md
-```
-
-## API REST
-
-Prefijo:
-
-```text
-/api/v1
-```
-
-Principales endpoints:
-
-```text
-GET  /api/v1/health
-
-POST /api/v1/auth/register
-POST /api/v1/auth/login
-POST /api/v1/auth/refresh
-POST /api/v1/auth/logout
-GET  /api/v1/auth/me
-
-GET    /api/v1/transactions
-GET    /api/v1/transactions/:id
-POST   /api/v1/transactions
-PUT    /api/v1/transactions/:id
-DELETE /api/v1/transactions/:id
-POST   /api/v1/transactions/classify
-POST   /api/v1/transactions/classify-batch
-
-POST /api/v1/financial-analysis
-GET  /api/v1/financial-analysis
-GET  /api/v1/financial-analysis/:id
-
-GET /api/v1/dashboard/summary
-GET /api/v1/dashboard/category-distribution
-GET /api/v1/dashboard/monthly-evolution
-
-POST /api/v1/files/transactions-csv
-GET  /api/v1/files/:id/status
-```
-
----
-
-# 🤖 Arquitectura de Machine Learning
-
-## Nombre
-
-```text
-ml-service (Perfil Financiero)
-```
-
-> Nota: esta sección documenta la arquitectura real construida para el módulo de **Perfil Financiero**. El módulo de **Clasificación de Gastos** (modelo, notebook y diccionario de palabras clave) vive en la rama `feature/clasificador-gastos` y aún no expone un servicio HTTP propio — hoy se consume como notebook + modelo serializado. El módulo de **Recomendaciones** está en diseño, pendiente de implementación.
-
-## Responsabilidades (Perfil Financiero)
-
-- Calcular el perfil financiero del usuario (Saludable / En observación / En riesgo) mediante reglas de negocio.
-- Cargar el modelo entrenado (Árbol de Decisión) y usarlo para calcular la probabilidad/confianza del veredicto.
-- Calcular `ratio_gasto_ingreso` y `ahorro_estimado_pct` a partir de los datos que entrega backend.
-- Generar la explicabilidad (`razones`) de cada veredicto.
-- Exponer el resultado vía API REST para que backend lo consuma.
-
-## Estructura real (archivos planos, sin capas)
-
-```text
-backend_module/
-├── perfil_financiero.py           # Logica de negocio: reglas + integracion con el modelo
-├── api_perfil.py                  # Servicio FastAPI, expone el endpoint HTTP
-├── modelo_perfil_financiero.pkl   # Modelo entrenado (Arbol de Decision)
-└── README.md                      # Contrato de entrada/salida de este modulo
-
-FinanceAI_Perfil_Financiero.ipynb  # Notebook: EDA, comparacion de modelos,
-                                     # entrenamiento, validacion (vive en la raiz
-                                     # del modulo de Ciencia de Datos)
-```
-
-*(Decisión de equipo: se mantienen archivos planos en vez de la arquitectura por capas `domain/application/infrastructure/presentation` — más simple para el tamaño actual del proyecto. Se puede migrar a capas más adelante si el servicio crece.)*
-
-## Endpoints internos
-
-```text
-GET  /health
-POST /perfil-financiero
-```
-
-### `POST /perfil-financiero`
-
-**Request:**
-```json
-{
-  "ingreso_mensual": 1000000,
-  "nivel_endeudamiento": 37,
-  "gasto_total_mes": 790000,
-  "frecuencia_ahorro": "Media"
-}
-```
-`frecuencia_ahorro` es opcional — si no se envía, se calcula internamente.
-
-**Response:**
-```json
-{
-  "perfil_financiero": "En observacion",
-  "probabilidad": 0.85,
-  "razones": ["el endeudamiento esta en zona moderada (36%-43%)"],
-  "metricas": {
-    "ratio_gasto_ingreso": 0.79,
-    "nivel_endeudamiento": 37,
-    "frecuencia_ahorro": "Media",
-    "ahorro_estimado_pct": 0.05
-  }
-}
-```
-
-## Diseño del modelo: reglas + modelo entrenado (híbrido)
-
-El **veredicto** (`perfil_financiero`) siempre sale de reglas de negocio deterministas (umbrales validados contra el framework DTI de Fannie Mae y la regla de ahorro 50/30/20). El **modelo entrenado** (cargado desde el `.pkl`) se usa exclusivamente para calcular `probabilidad` — su nivel de confianza en ese mismo veredicto. Esto garantiza que el veredicto sea siempre consistente con los umbrales documentados, incluso en casos límite, mientras se cumple el requisito del reto de tener un modelo entrenado y cargado en producción. Si el modelo falla al cargar, hay fallback automático a reglas puras.
-
-## Cómo correrlo localmente
-
-```bash
-cd backend_module
-pip install fastapi uvicorn scikit-learn pandas joblib
-uvicorn api_perfil:app --port 8001
-```
-
-## Contrato con Backend (unidades)
-
-| Campo | Unidad | Quién lo calcula |
+| Servicio | Qué hace | Métrica validada |
 |---|---|---|
-| `ingreso_mensual`, `gasto_total_mes` | Monto plano, misma moneda | Backend (`gasto_total_mes` = suma de `resumen_gastos` **excluyendo** categoría `deudas`) |
-| `nivel_endeudamiento` | Porcentaje 0–100 | Backend (`deudas / ingreso_mensual × 100`) |
-| `ratio_gasto_ingreso`, `ahorro_estimado_pct`, `probabilidad` | Fracción 0–1 | Este módulo (no se recalculan en backend) |
+| **Clasificador de gastos** | Clasifica la descripción de una transacción en 1 de 12 categorías | 98.2% accuracy en datos nunca vistos (regresión logística, torneo de 4 modelos) |
+| **Perfil Financiero** | Diagnostica el perfil combinando reglas de negocio (deterministas) con un modelo entrenado que aporta la probabilidad de confianza | Umbrales calibrados contra el Debt-to-Income de Fannie Mae (Selling Guide B3-6-02) y la regla 50/30/20 |
+| **Recomendaciones** | Genera hasta 4 recomendaciones priorizadas, con umbrales específicos por categoría (no un umbral plano) | Umbrales validados contra estándares reales de presupuesto (regla del 30% de HUD para vivienda, guías USDA para alimentación, entre otros) |
 
-# 🗄️ Arquitectura de base de datos
+**Las 12 categorías oficiales:**
+`alimentacion, transporte, vivienda, salud, educacion, entretenimiento, deudas, cuidado_personal, mascotas, profesionales, impuestos_y_seguros, otros`
 
-## Nombre
-
-```text
-salud_financiera
-```
-
-## Script principal
-
-```text
-database/salud-financiera.sql
-```
-
-## Tablas
-
-```text
-users
-financial_profiles
-categories
-transactions
-financial_analyses
-analysis_category_summaries
-recommendations
-refresh_tokens
-uploaded_files
-```
-
-## Estructura
-
-```text
-database/
-├── salud-financiera.sql
-├── migrations/
-│   ├── 001_initial_schema.sql
-│   └── ...
-├── rollback/
-│   ├── 001_initial_schema_rollback.sql
-│   └── ...
-├── seeds/
-├── docs/
-│   ├── DATABASE_SCHEMA.md
-│   ├── DATABASE_CHANGELOG.md
-│   └── DATA_DICTIONARY.md
-└── README.md
-```
-
-## Reglas
-
-- Cada cambio debe incluir migración y rollback.
-- Prisma debe mantenerse sincronizado con SQL.
-- Los cambios deben registrarse en el changelog.
-- Los montos financieros deben usar `DECIMAL(12,2)`.
-- No se debe utilizar `FLOAT` para dinero.
+**Diseño híbrido (Perfil Financiero):** el veredicto siempre sale de las reglas de negocio, auditable y 100% consistente. El modelo entrenado se carga en producción y aporta únicamente la probabilidad de confianza — cumple el requisito de "modelo entrenado y cargado correctamente" sin sacrificar explicabilidad. Si el modelo no puede cargarse, el sistema cae de forma segura a reglas puras: el endpoint nunca se cae.
 
 ---
 
-# ☁️ Arquitectura OCI
+## 📁 Estructura del repositorio
 
 ```text
-┌──────────────────────────────────────────────────────────────────────┐
-│                              INTERNET                                │
-└──────────────────────────────────┬───────────────────────────────────┘
-                                   │ HTTPS
-                                   ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│                        OCI API Gateway                               │
-└──────────────────────────────────┬───────────────────────────────────┘
-                                   ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│                   Virtual Cloud Network - VCN                        │
-│                                                                      │
-│  SUBRED PÚBLICA                                                      │
-│  └── Frontend React + Nginx                                          │
-│                                                                      │
-│  SUBRED PRIVADA                                                      │
-│  ├── Backend Express                                                 │
-│  ├── FastAPI ML                                                      │
-│  └── MySQL HeatWave                                                  │
-└──────────────────────────────────┬───────────────────────────────────┘
-                                   ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│                        OCI Object Storage                            │
-│                 Modelos, datasets, CSV y reportes                    │
-└──────────────────────────────────────────────────────────────────────┘
+G9-LATAM-Team-80-FinanceAI/
+├── backend-financeAI/
+│   └── finance-ai-api/              # Backend Java/Spring Boot (fuente de verdad del Back-end)
+├── frontend-financeAI/
+│   └── financeAI/                   # Frontend React/Vite/TypeScript
+├── ml-service/                      # Los 3 microservicios ML, cada uno independiente y documentado
+│   ├── perfil/                      # modelo_perfil_financiero.pkl + perfil_financiero.py + api_perfil.py
+│   ├── recomendaciones/             # recomendaciones.py + api_recomendaciones.py (sin modelo, solo reglas)
+│   └── clasificador/                # modelo_clasificador.pkl + clasificador.py + api_clasificador.py
+├── feature-financeAI/
+│   └── ml-service/                  # Servicio orquestador (app.py) que unifica los 3 módulos ML
+│                                     # detrás de un solo endpoint POST /analisis-financiero.
+│                                     # Es el que consume el Backend en producción.
+├── database/                        # Esquema SQL (001_schema.sql) y datos semilla (002_seed.sql)
+├── tests/contract/                  # Pruebas de contrato entre Perfil Financiero y Recomendaciones
+├── docker-compose.yml               # Levanta los 4 servicios (db, ml, api, web) con un solo comando
+└── .env.example                     # Plantilla de variables de entorno para Docker Compose
 ```
 
-## Servicios OCI
+> **Nota sobre `feature-financeAI/ml-service/`:** el Backend no llama directamente a los 3 microservicios de `ml-service/` por separado — llama a un servicio orquestador (`app.py`) que internamente importa la lógica de los 3 módulos y expone un único endpoint `POST /analisis-financiero`. Los módulos dentro de `ml-service/` son la fuente de verdad de cada modelo (con sus propias pruebas y Dockerfile individual, listos para desplegarse de forma independiente si el equipo decide separarlos más adelante).
 
-| Servicio | Uso |
+---
+
+## 🛠️ Tecnologías (versiones verificadas en los archivos de configuración)
+
+| Componente | Tecnología | Versión |
+|---|---|---|
+| Backend | Java | 17 |
+| Backend | Spring Boot | 4.1.0 |
+| Backend | Build | Maven (con Maven Wrapper) |
+| Backend | Persistencia | Spring Data JPA + MySQL Connector/J |
+| Backend | Seguridad | Spring Security Crypto (BCrypt) |
+| Frontend | React | 18.3 |
+| Frontend | Vite | 8.2.1 |
+| Frontend | TypeScript | 5.7 |
+| ML — Perfil / Clasificador | FastAPI, scikit-learn 1.6.1, pandas, joblib, pytest | ver `requirements.txt` de cada módulo |
+| ML — Recomendaciones | FastAPI, pydantic, pytest (sin modelo entrenado, solo reglas) | ver `requirements.txt` |
+| Base de datos | MySQL | 8.4 (imagen Docker) — compatible con MariaDB 10.4+ en local |
+| Chat agéntico | Widget embebido (Oven), configuración inyectada en tiempo de ejecución | — |
+
+---
+
+## 🚀 Cómo levantar el proyecto localmente
+
+### Opción recomendada: Docker Compose (un solo comando)
+
+**Requisitos:** Docker y Docker Compose instalados.
+
+```bash
+git clone https://github.com/No-Country-simulation/G9-LATAM-Team-80-FinanceAI.git
+cd G9-LATAM-Team-80-FinanceAI
+cp .env.example .env
+docker compose up -d --build
+```
+
+Esto levanta 4 contenedores: base de datos MySQL, los 3 microservicios ML (vía el orquestador), el backend Java, y el frontend con nginx.
+
+**Aplicación disponible en:** `http://localhost:8081`
+**Credenciales de prueba:** `demo@financeai.local` / `FinanceAI2026!` (se crean automáticamente al primer arranque, con 6 transacciones y 4 presupuestos de ejemplo)
+
+Para detener todo: `docker compose down` (agregar `-v` si también se quiere borrar la base de datos).
+
+### Opción manual (sin Docker, para desarrollo activo de un componente)
+
+**Backend:**
+```bash
+cd backend-financeAI/finance-ai-api
+./mvnw spring-boot:run
+```
+Requiere una base de datos MySQL/MariaDB corriendo en `127.0.0.1:3306`, con el esquema de `database/001_schema.sql` ya aplicado.
+
+**Frontend:**
+```bash
+cd frontend-financeAI/financeAI
+npm install
+npm run dev
+```
+
+**Servicios ML** (cada uno por separado, en su propia terminal):
+```bash
+cd ml-service/perfil && pip install -r requirements.txt --break-system-packages && uvicorn api_perfil:app --port 8001
+cd ml-service/recomendaciones && pip install -r requirements.txt --break-system-packages && uvicorn api_recomendaciones:app --port 8002
+cd ml-service/clasificador && pip install -r requirements.txt --break-system-packages && uvicorn api_clasificador:app --port 8000
+```
+
+> Para levantar el orquestador real que usa el Backend (`feature-financeAI/ml-service/app.py`), revisar `iniciar-local.ps1` (Windows/PowerShell) — automatiza la preparación del entorno virtual de Python, la base de datos y el arranque de los 3 servicios.
+
+---
+
+## 🔐 Variables de entorno
+
+### Backend (Java) — vía `docker-compose.yml` o exportadas antes de `./mvnw spring-boot:run`
+
+| Variable | Valor por defecto | Descripción |
+|---|---|---|
+| `PORT` | `8080` | Puerto del backend |
+| `DB_URL` | `jdbc:mysql://127.0.0.1:3306/financeai?...` | Cadena de conexión completa a MySQL |
+| `DB_USER` | `financeai_app` | Usuario de la base de datos |
+| `DB_PASSWORD` | `FinanceAI_local_2026!` | Contraseña — **cambiar en cualquier entorno que no sea local** |
+| `ML_SERVICE_BASE_URL` | `http://127.0.0.1:8000` | URL del servicio ML orquestador |
+| `FRONTEND_ORIGIN` | `http://localhost:5174` | Orígenes permitidos por CORS (lista separada por comas, admite comodines) |
+| `SESSION_HOURS` | `24` | Duración de la sesión del usuario |
+
+### Frontend
+
+| Variable | Descripción |
 |---|---|
-| API Gateway | Entrada pública, CORS, autorización y rate limiting |
-| Container Registry | Almacenamiento de imágenes Docker |
-| Container Instances | Ejecución de frontend, backend y ML |
-| MySQL HeatWave | Base de datos administrada |
-| Object Storage | Modelos, datasets, CSV y reportes |
-| Vault | Secretos, contraseñas y claves |
-| IAM | Usuarios, grupos, roles y políticas |
-| Logging | Centralización de logs |
-| Monitoring | Métricas, alarmas y disponibilidad |
+| `VITE_API_URL` | URL del backend. Vacío = mismo origen (nginx/Vite hacen de proxy hacia `/api`) |
 
-## Imágenes Docker
+### Widget de chat agéntico (Oven) — backend y frontend comparten estas claves
 
-```text
-salud-financiera
-salud-financiera-api
-salud-financiera-ml-service
-```
+| Variable | Valor por defecto | Descripción |
+|---|---|---|
+| `OVEN_HABILITADO` | `true` | Activa/desactiva el widget |
+| `OVEN_TENANT` | `clinica-dandia` | ⚠️ Valor de demostración del proveedor — **debe configurarse con el tenant real de FinanceAI antes de producción** |
+| `OVEN_AGENT` | `example-tool-agent` | ⚠️ Mismo caso — agente de ejemplo, reemplazar por el agente real configurado con el prompt de FinanceAI |
+| `OVEN_API_URL` | `/oven-api` | Pasarela same-origin (evita bloqueo de CORS del proveedor) |
+| `OVEN_EMBED_KEY` | — | Clave pública del embed |
 
-## Buckets
-
-```text
-salud-financiera-models
-salud-financiera-datasets
-salud-financiera-uploads
-salud-financiera-reports
-```
-
-## Comunicación
-
-```text
-Internet
-   │
-   ▼
-API Gateway
-   │
-   ▼
-Backend Express
-   │
-   ├── MySQL HeatWave
-   └── FastAPI
-           │
-           ▼
-     Object Storage
-```
+> Ver `.env.example` en la raíz del repositorio para la lista completa y comentada de todas las variables.
 
 ---
 
-# 🛠️ Tecnologías
+## 🔌 Contratos de API (endpoints verificados en el código)
 
-| Categoría | Tecnologías |
+### Backend (Java) — todas bajo `/api`
+
+| Método | Ruta | Requiere sesión |
+|---|---|---|
+| `GET` | `/health` | No |
+| `POST` | `/auth/login` | No |
+| `GET` | `/auth/me` | Sí |
+| `POST` | `/auth/logout` | Sí |
+| `GET` / `POST` / `PUT` / `DELETE` | `/transacciones` | Sí |
+| `POST` | `/transacciones/importar` | Sí |
+| `GET` / `PUT` | `/presupuestos` | Sí |
+| `GET` / `DELETE` | `/historial`, `/historial/{id}`, `/historial/ultimo` | Sí |
+| `POST` | `/clasificar-transacciones` | Sí |
+| `POST` | `/analisis-financiero` | Sí |
+
+### Microservicios ML (Python) — contratos individuales
+
+| Servicio | Endpoint | Puerto |
+|---|---|---|
+| Clasificador | `POST /clasificar-transaccion`, `POST /clasificar-transacciones` | 8000 |
+| Perfil Financiero | `POST /perfil-financiero` | 8001 |
+| Recomendaciones | `POST /recomendaciones` | 8002 |
+
+Cada microservicio tiene su propio `README.md` con el contrato exacto de entrada/salida (`ml-service/<módulo>/README.md`).
+
+---
+
+## 🗄️ Base de datos
+
+Esquema `financeai`, definido en `database/001_schema.sql` (idempotente — se puede ejecutar varias veces sin duplicar datos):
+
+| Tabla | Contenido |
 |---|---|
-| Frontend | React, TypeScript, Vite, React Router, TanStack Query, Axios, React Hook Form, Zod, Tailwind CSS, Recharts |
-| Backend | Node.js, Express, TypeScript, Prisma, JWT, Bcrypt, Swagger, Zod, Helmet, CORS |
-| Machine Learning | Python, FastAPI, Pandas, NumPy, Scikit-learn, Joblib, Pydantic, Uvicorn |
-| Base de datos | MySQL, MySQL HeatWave, Prisma ORM, SQL |
-| Infraestructura | Docker, Docker Compose, Oracle Cloud Infrastructure |
-| Pruebas | Vitest, React Testing Library, Supertest, Pytest |
-| Herramientas | Git, GitHub, Swagger, Postman o Bruno, Figma |
+| `usuarios` | Cuenta, correo, hash de contraseña (BCrypt), rol |
+| `sesiones` | Token de sesión, usuario, expiración |
+| `transacciones` | Movimientos registrados o importados |
+| `presupuestos` | Límite por categoría y usuario |
+| `analisis_financieros` | Indicadores, perfil y respuesta completa del análisis |
+
+Datos semilla opcionales en `database/002_seed.sql`.
 
 ---
 
-# 📂 Estructura general del proyecto
+## 🧪 Pruebas
 
-```text
-salud-financiera-project/
-├── salud-financiera/
-├── salud-financiera-api/
-├── ml-service/
-├── data-science/
-├── database/
-├── infrastructure/
-├── docs/
-├── docker-compose.yml
-├── .gitignore
-├── README.md
-└── CHANGELOG.md
-```
+| Módulo | Cómo correrlas |
+|---|---|
+| Backend (Java) | `./mvnw test` (usa H2 en memoria, no depende de MySQL) |
+| Cada microservicio ML | `pytest` dentro de `ml-service/<módulo>/` |
+| Contrato entre módulos ML | `pytest tests/contract/` desde la raíz |
+
+CI configurado en `.github/workflows/ci.yml`, corre automáticamente en cada Pull Request.
 
 ---
 
-# 👥 Organización del equipo
+## ☁️ Integración con OCI (Oracle Cloud Infrastructure)
 
-| Grupo | Participantes | Responsabilidad |
-|---|---:|---|
-| Frontend | 1 y 2 | Interfaz, dashboard, formularios e integración |
-| Backend y BD | 3 y 4 | API, seguridad, Prisma, MySQL y análisis |
-| Datos y ML | 5 y 6 | Dataset, modelo, FastAPI y recomendaciones |
-| Integración y OCI | 7 | Arquitectura, Docker, OCI, documentación y despliegue |
+**Estado actual: preparado, no desplegado.** Los Dockerfiles de Perfil Financiero y Clasificador ya incluyen el mecanismo de descarga del modelo entrenado desde OCI Object Storage mediante un Pre-Authenticated Request (PAR), en vez de copiarlo directo del repositorio:
 
-### Grupo 1: Frontend
+```dockerfile
+RUN curl -f -o modelo_perfil_financiero.pkl "https://REEMPLAZAR-CON-PAR-DE-OCI/modelo_perfil_financiero.pkl"
+```
 
-- Participante 1: diseño, componentes y experiencia de usuario.
-- Participante 2: integración, consultas, gráficos y pruebas.
-
-### Grupo 2: Backend y base de datos
-
-- Participante 3: autenticación, seguridad, API y Swagger.
-- Participante 4: base de datos, transacciones, análisis e integración ML.
-
-### Grupo 3: Ciencia de Datos y Machine Learning
-
-- Participante 5: dataset, análisis exploratorio y entrenamiento.
-- Participante 6: FastAPI, clasificación, perfil y recomendaciones.
-
-### Participante 7: Integración y OCI
-
-- Arquitectura general.
-- Git y pull requests.
-- Docker y Docker Compose.
-- OCI.
-- Seguridad.
-- Documentación.
-- Pruebas integrales.
-- Despliegue y demostración.
+Falta únicamente: crear el bucket en OCI Object Storage, subir los modelos `.pkl`, generar el PAR real, y reemplazar el marcador de posición en cada Dockerfile.
 
 ---
 
-# 🚀 Instalación y ejecución
+## 👥 Equipo
 
-## Requisitos
-
-- Node.js 20 o superior.
-- npm 10 o superior.
-- Python 3.11 o superior.
-- MySQL 8 o superior.
-- Docker.
-- Docker Compose.
-- Git.
-
-## Clonar
-
-```bash
-git clone URL_DEL_REPOSITORIO
-cd salud-financiera-project
-```
-
-## Ejecutar
-
-```bash
-docker compose up --build
-```
-
-## Detener
-
-```bash
-docker compose down
-```
+**G9 LATAM Team 80** — Hackathon Oracle Next Education + Alura, 2026.
 
 ---
 
-# 🔐 Variables de entorno
+## 🤝 Cómo probar el sistema (para jurados)
 
-## Frontend
-
-```env
-VITE_API_BASE_URL=http://localhost:3000/api/v1
-```
-
-## Backend
-
-```env
-NODE_ENV=development
-PORT=3000
-DATABASE_URL=mysql://usuario:password@mysql:3306/salud_financiera
-JWT_ACCESS_SECRET=change_me
-JWT_REFRESH_SECRET=change_me
-ML_SERVICE_URL=http://ml-service:8000
-```
-
-## Machine Learning
-
-```env
-ENVIRONMENT=development
-PORT=8001
-MODEL_CLASSIFIER_PATH=/app/models/modelo_clasificador.pkl
-MODEL_PROFILE_PATH=/app/models/modelo_perfil_financiero.pkl
-OCI_BUCKET_MODELS=salud-financiera-models
-OCI_BUCKET_DATASETS=salud-financiera-datasets
-```
-
-No se deben subir archivos `.env` al repositorio.
-
-> Nota: `MODEL_PROFILE_PATH` es el modelo del módulo de Perfil Financiero (Árbol de Decisión). `MODEL_CLASSIFIER_PATH` corresponde al módulo de Clasificación de Gastos (SVM). Hoy ambos modelos se cargan desde ruta local (`modelo_perfil_financiero.pkl` junto al código) — la migración a `OCI_BUCKET_MODELS` queda pendiente como parte de la integración con OCI.
-> 
-# 📖 Documentación
-
-```text
-docs/
-├── ARCHITECTURE.md
-├── API.md
-├── DECISIONS.md
-├── DEPLOYMENT_OCI.md
-├── FINANCIAL_RULES.md
-├── MACHINE_LEARNING.md
-├── PROJECT_STATUS.md
-├── ROADMAP.md
-├── SECURITY.md
-├── SETUP.md
-└── TESTING.md
-```
-
-Toda funcionalidad debe actualizar la documentación correspondiente.
-
----
-
-# 🌿 Estrategia de ramas
-
-```text
-main
-develop
-feature/frontend-auth
-feature/frontend-dashboard
-feature/backend-auth
-feature/backend-transactions
-feature/database-initial-schema
-feature/ml-classifier
-feature/ml-api
-feature/oci-deployment
-```
-
-Reglas:
-
-1. No desarrollar directamente en `main`.
-2. Crear una rama por funcionalidad.
-3. Integrar mediante pull request.
-4. Solicitar revisión.
-5. Ejecutar pruebas.
-6. Actualizar documentación.
-
----
-
-# 📅 Roadmap
-
-- [x] Definición del problema.
-- [x] Organización del equipo.
-- [x] Selección de tecnologías.
-- [x] Arquitectura general.
-- [x] Arquitectura OCI.
-- [x] Inicialización del frontend.
-- [x] Inicialización del backend.
-- [ ] Creación de base de datos.
-- [ ] Autenticación.
-- [ ] Transacciones.
-- [ ] Dataset y modelo ML.
-- [ ] Servicio FastAPI.
-- [ ] Integración backend-ML.
-- [ ] Dashboard.
-- [ ] Procesamiento CSV.
-- [ ] Pruebas integrales.
-- [ ] Despliegue en OCI.
-- [ ] Demostración final.
-
----
-
-# 🔗 Enlaces
-
-- Repositorio: `URL_DEL_REPOSITORIO`
-- Demostración: `URL_DE_LA_DEMO`
-- Documentación: `URL_DE_DOCUMENTACION`
-- Tablero: `URL_DEL_TABLERO`
-- Video: `URL_DEL_VIDEO`
-
----
-
-<div align="center">
-
-### Desarrollado por **G9 LATAM Team 80**
-
-**Oracle Next Education · Alura · Hackathon 2026**
-
-</div>
+1. `docker compose up -d --build` desde la raíz del repositorio
+2. Esperar ~1 minuto a que los 4 servicios reporten estado saludable
+3. Entrar a `http://localhost:8081` con `demo@financeai.local` / `FinanceAI2026!`
+4. Revisar Dashboard, agregar una transacción nueva y ver su clasificación automática
+5. Ir a Análisis financiero y ver el diagnóstico con sus razones
+6. Abrir el asistente conversacional en Recomendaciones y hacerle una pregunta real sobre los datos del usuario
