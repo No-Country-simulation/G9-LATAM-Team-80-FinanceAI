@@ -26,12 +26,12 @@ public class DatosInicialesConfig {
     private void guardarTransacciones(Usuario usuario, TransaccionRepository repositorio) {
         LocalDate hoy = LocalDate.now();
         repositorio.saveAll(List.of(
-                movimiento(usuario, "Sueldo mensual", "otros", "ingreso", hoy.minusDays(8), "4500"),
+                movimiento(usuario, "Sueldo mensual", null, "ingreso", hoy.minusDays(8), "4500"),
                 movimiento(usuario, "Supermercado", "alimentacion", "gasto", hoy.minusDays(7), "420"),
                 movimiento(usuario, "Combustible", "transporte", "gasto", hoy.minusDays(6), "300"),
                 movimiento(usuario, "Streaming", "entretenimiento", "gasto", hoy.minusDays(5), "40"),
                 movimiento(usuario, "Alquiler", "vivienda", "gasto", hoy.minusDays(4), "930"),
-                movimiento(usuario, "Transferencia a ahorro", "otros", "ahorro", hoy.minusDays(3), "300")
+                movimiento(usuario, "Transferencia a ahorro", null, "ahorro", hoy.minusDays(3), "300")
         ));
     }
     private void guardarPresupuestos(Usuario usuario, PresupuestoRepository repositorio) {

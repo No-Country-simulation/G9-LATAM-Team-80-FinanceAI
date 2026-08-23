@@ -1,0 +1,227 @@
+/*
+ * Capa de presentacion del agente FinanceAI.
+ *
+ * La conversacion la sigue dibujando el widget de Oven dentro de su shadow root; aqui
+ * solo viven el lanzador, la cabecera y la linea de contexto. Por eso la burbuja no
+ * tiene cuerpo propio: el hueco de abajo lo ocupa el panel del widget, encajado por
+ * coordenadas desde AgenteFinanceAI.tsx.
+ *
+ * Escala de z-index de la app: header 30, dropdowns 40, overlay 41, sidebar 42.
+ * El agente vive por encima de todo eso, sin recurrir a valores absurdos.
+ */
+
+.fa-agente-lanzador,
+.fa-agente-burbuja {
+  --fa-primary: #2458E8;
+  --fa-deep: #153B9A;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-border: #E4E9F3;
+  --fa-bg: #F7F9FD;
+
+  /* La geometria de la burbuja se declara una sola vez: el TSX la lee del DOM para
+     encajar el panel de Oven, asi que no hay dos fuentes de verdad. */
+  --fa-agente-ancho: 370px;
+  --fa-agente-alto: 520px;
+  --fa-agente-derecha: 24px;
+  --fa-agente-abajo: 92px;
+
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+}
+
+/* --- Lanzador ------------------------------------------------------ */
+
+.fa-agente-lanzador {
+  position: fixed;
+  right: var(--fa-agente-derecha);
+  bottom: 24px;
+  z-index: 59;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: var(--fa-primary);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(36, 88, 232, 0.18);
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.fa-agente-lanzador:hover { background: var(--fa-deep); }
+.fa-agente-lanzador:active { transform: scale(0.96); }
+.fa-agente-lanzador:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 3px; }
+
+/* Con la burbuja abierta sigue visible pero deja de reclamar atencion. */
+.fa-agente-lanzador.activo { background: var(--fa-deep); box-shadow: 0 4px 14px rgba(36, 88, 232, 0.14); }
+
+/* Cerrado el boton es solo el simbolo; el texto aparece al apuntarlo o enfocarlo. */
+.fa-agente-tooltip {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 6px 11px;
+  border-radius: 8px;
+  background: var(--fa-text);
+  color: #fff;
+  font-size: 0.79rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.fa-agente-lanzador:hover .fa-agente-tooltip,
+.fa-agente-lanzador:focus-visible .fa-agente-tooltip { opacity: 1; }
+
+/*
+ * El lanzador se aparta mientras hay una hoja lateral abierta.
+ *
+ * Vive en la misma esquina que el pie del panel de transacciones y no solo lo tapaba:
+ * document.elementFromPoint sobre "Cancelar" devolvia el lanzador, o sea que se comia
+ * el click. Se oculta en vez de reubicarlo porque cualquier otra posicion sigue
+ * compitiendo con el contenido, y el chat se recupera al cerrar el panel.
+ *
+ * Es CSS puro: no toca el estado del agente ni la logica de Oven.
+ */
+body:has(.tx-panel) .fa-agente-lanzador {
+  opacity: 0;
+  transform: scale(0.92);
+  pointer-events: none;
+}
+
+/* --- Burbuja -------------------------------------------------------- */
+
+/*
+ * Ventana flotante anclada sobre el lanzador. Solo dibuja su marco y su franja
+ * superior -- cabecera y contexto --; el resto del alto lo ocupa el panel del widget,
+ * que se encaja debajo por coordenadas.
+ *
+ * El cuerpo va transparente y sin eventos a proposito. Con fondo blanco y z-index 60,
+ * esta caja quedaba por encima del panel de Oven (z-index 50) y lo tapaba entero:
+ * elementFromPoint sobre las sugerencias, el compositor o el boton de enviar devolvia
+ * .fa-agente-burbuja, asi que ademas de no verse, el chat no recibia un solo click.
+ * Solo la cabecera pinta y captura; el borde y la sombra siguen dibujando el marco por
+ * encima, que es justo lo que se quiere.
+ */
+.fa-agente-burbuja {
+  position: fixed;
+  right: var(--fa-agente-derecha);
+  bottom: var(--fa-agente-abajo);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: var(--fa-agente-ancho);
+  max-width: calc(100vw - 32px);
+  height: var(--fa-agente-alto);
+  max-height: calc(100vh - 110px);
+  overflow: hidden;
+  border: 1px solid var(--fa-border);
+  border-radius: 20px;
+  background: transparent;
+  pointer-events: none;
+  box-shadow: 0 18px 50px rgba(13, 24, 56, 0.14);
+  animation: faAgenteEntra 180ms cubic-bezier(.32, .72, 0, 1) both;
+}
+
+/* Nace desde el lanzador: sube un poco y termina de escalar. Sin slide lateral. */
+@keyframes faAgenteEntra {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fa-agente-burbuja { animation: none; }
+  .fa-agente-lanzador { transition: none; }
+}
+
+.fa-agente-cabeceras { flex: 0 0 auto; background: #FFFFFF; pointer-events: auto; }
+
+.fa-agente-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 66px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--fa-border);
+}
+
+/* Solo el simbolo, sin card azul detras. */
+.fa-agente-avatar {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  flex: 0 0 26px;
+  color: var(--fa-primary);
+}
+
+.fa-agente-cabecera div { flex: 1; min-width: 0; }
+.fa-agente-cabecera strong { display: block; color: var(--fa-text); font-size: 0.95rem; font-weight: 700; }
+.fa-agente-cabecera small { display: block; color: var(--fa-muted); font-size: 0.79rem; }
+
+.fa-agente-cerrar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border: 1px solid var(--fa-border);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--fa-muted);
+  padding: 0;
+  cursor: pointer;
+}
+
+.fa-agente-cerrar:hover { background: var(--fa-bg); color: var(--fa-text); }
+.fa-agente-cerrar:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+
+/* Una linea discreta, no una seccion. */
+.fa-agente-contexto {
+  align-self: flex-start;
+  margin: 10px 14px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--fa-bg);
+  color: var(--fa-muted);
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.3;
+  max-width: calc(100% - 28px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fa-agente-contexto span { font-weight: 700; }
+
+/* --- Responsive ----------------------------------------------------- */
+
+/* Tablet: se mantiene ventana flotante, solo un punto mas estrecha. */
+@media (max-width: 1080px) {
+  .fa-agente-lanzador,
+  .fa-agente-burbuja { --fa-agente-ancho: 360px; }
+}
+
+/*
+ * Movil: sigue siendo ventana flotante, anclada a los dos margenes en vez de a un
+ * ancho fijo. No se convierte en drawer ni en sheet completa.
+ */
+@media (max-width: 560px) {
+  .fa-agente-lanzador,
+  .fa-agente-burbuja {
+    --fa-agente-derecha: 12px;
+    --fa-agente-abajo: 82px;
+    --fa-agente-alto: min(560px, calc(100vh - 110px));
+  }
+  .fa-agente-burbuja {
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
+  .fa-agente-lanzador { bottom: 16px; }
+}

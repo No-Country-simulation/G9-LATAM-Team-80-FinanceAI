@@ -9,6 +9,8 @@ import com.financeai.persistence.repository.TransaccionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.time.YearMonth;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -34,9 +36,27 @@ public class PresupuestoService {
         return respuesta(item, gasto(item.getCategoria(), transacciones.findByUsuarioIdOrderByFechaDescIdDesc(usuario.getId())));
     }
 
+    /**
+     * Gasto de la categoria en UN mes.
+     *
+     * Antes sumaba todas las transacciones del usuario sin filtrar por fecha, asi que un
+     * presupuesto mensual se comparaba contra el gasto de todo el historial: con tres
+     * meses cargados, cualquier limite aparecia excedido.
+     *
+     * Se usa el mes mas reciente con movimientos, la misma regla que aplica el frontend
+     * para el analisis, para que las dos pantallas hablen del mismo periodo.
+     */
     private BigDecimal gasto(String categoria, List<TransaccionEntity> items) {
-        return items.stream().filter(item -> "gasto".equals(item.getTipo()) && categoria.equals(item.getCategoria()))
+        YearMonth mes = mesMasReciente(items);
+        return items.stream()
+                .filter(item -> "gasto".equals(item.getTipo()) && categoria.equals(item.getCategoria()))
+                .filter(item -> mes == null || YearMonth.from(item.getFecha()).equals(mes))
                 .map(TransaccionEntity::getMonto).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private YearMonth mesMasReciente(List<TransaccionEntity> items) {
+        return items.stream().map(TransaccionEntity::getFecha)
+                .max(Comparator.naturalOrder()).map(YearMonth::from).orElse(null);
     }
     private PresupuestoResponse respuesta(PresupuestoEntity item, BigDecimal gasto) {
         return new PresupuestoResponse(item.getId(), item.getCategoria(), item.getMonto(), gasto);

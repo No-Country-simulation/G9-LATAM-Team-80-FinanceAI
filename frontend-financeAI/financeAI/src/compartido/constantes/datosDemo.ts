@@ -4,12 +4,12 @@ export const transaccionesIniciales: Transaccion[] = [
   { id: 't-1', descripcion: 'Supermercado Wong', categoria: 'alimentacion', tipo: 'gasto', fecha: '31 May 2025', monto: -120.5 },
   { id: 't-2', descripcion: 'Combustible Repsol', categoria: 'transporte', tipo: 'gasto', fecha: '30 May 2025', monto: -80 },
   { id: 't-3', descripcion: 'Netflix', categoria: 'entretenimiento', tipo: 'gasto', fecha: '28 May 2025', monto: -40 },
-  { id: 't-4', descripcion: 'Sueldo', categoria: 'otros', tipo: 'ingreso', fecha: '25 May 2025', monto: 4500 },
+  { id: 't-4', descripcion: 'Sueldo', categoria: null, tipo: 'ingreso', fecha: '25 May 2025', monto: 4500 },
   { id: 't-5', descripcion: 'Luz del Sur', categoria: 'vivienda', tipo: 'gasto', fecha: '23 May 2025', monto: -150 },
   { id: 't-6', descripcion: 'Alquiler', categoria: 'vivienda', tipo: 'gasto', fecha: '20 May 2025', monto: -930 },
   { id: 't-7', descripcion: 'Farmacia Inkafarma', categoria: 'salud', tipo: 'gasto', fecha: '18 May 2025', monto: -60 },
   { id: 't-8', descripcion: 'Universidad', categoria: 'educacion', tipo: 'gasto', fecha: '15 May 2025', monto: -320 },
-  { id: 't-9', descripcion: 'Transferencia a ahorro', categoria: 'otros', tipo: 'ahorro', fecha: '10 May 2025', monto: -200 },
+  { id: 't-9', descripcion: 'Transferencia a ahorro', categoria: null, tipo: 'ahorro', fecha: '10 May 2025', monto: -200 },
   { id: 't-10', descripcion: 'Cena', categoria: 'entretenimiento', tipo: 'gasto', fecha: '08 May 2025', monto: -35 }
 ];
 

@@ -29,7 +29,7 @@ public class TransaccionPersistenciaService {
     @Transactional
     public TransaccionResponse actualizar(Usuario usuario, Long id, TransaccionGuardarRequest request) {
         TransaccionEntity item = obtener(usuario, id);
-        item.actualizar(request.descripcion(), request.categoria(), request.tipo(), request.fecha(), request.monto());
+        item.actualizar(request.descripcion(), request.categoriaNormalizada(), request.tipo(), request.fecha(), request.monto());
         return respuesta(item);
     }
     @Transactional
@@ -40,7 +40,7 @@ public class TransaccionPersistenciaService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaccion no encontrada"));
     }
     private TransaccionEntity nueva(Usuario usuario, TransaccionGuardarRequest request) {
-        return new TransaccionEntity(usuario, request.descripcion().trim(), request.categoria(), request.tipo(), request.fecha(), request.monto().abs());
+        return new TransaccionEntity(usuario, request.descripcion().trim(), request.categoriaNormalizada(), request.tipo(), request.fecha(), request.monto().abs());
     }
     private TransaccionResponse respuesta(TransaccionEntity item) {
         return new TransaccionResponse(item.getId(), item.getDescripcion(), item.getCategoria(), item.getTipo(), item.getFecha(), item.getMonto());

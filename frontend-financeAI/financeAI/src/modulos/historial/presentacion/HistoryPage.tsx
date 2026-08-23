@@ -17,11 +17,11 @@ export function HistoryPage({ workspace }: PageProps) {
   }
 
   return <section className="page-stack">
-    <PageHeader title="Historial de analisis" subtitle="Consulta los analisis guardados en tu cuenta." />
+    <PageHeader title="Historial de análisis" subtitle="Consulta los análisis guardados en tu cuenta." />
     <div className="metric-grid">
-      <MetricCard icon={<Eye size={30} />} title="Analisis realizados" value={String(workspace.historial.length)} tone="green" />
+      <MetricCard icon={<Eye size={30} />} title="Análisis realizados" value={String(workspace.historial.length)} tone="green" />
       <MetricCard icon={<Eye size={30} />} title="Perfiles saludables" value={String(saludables)} tone="blue" />
-      <MetricCard icon={<Eye size={30} />} title="Ultimo perfil" value={workspace.historial[0]?.perfilFinanciero ?? 'Sin datos'} tone="orange" />
+      <MetricCard icon={<Eye size={30} />} title="Último perfil" value={workspace.historial[0]?.perfilFinanciero ?? 'Sin datos'} tone="orange" />
       <MetricCard icon={<Eye size={30} />} title="Ahorro registrado" value={formatCurrency(ahorro)} tone="blue" />
     </div>
     {seleccionado && <Card title="Detalle seleccionado">
@@ -32,7 +32,7 @@ export function HistoryPage({ workspace }: PageProps) {
         <p><span>Ahorro</span><strong>{formatCurrency(seleccionado.ahorroTotal)}</strong></p>
       </div>
     </Card>}
-    <Card title="Historial de analisis">
+    <Card title="Historial de análisis">
       <table className="data-table roomy">
         <thead><tr><th>Fecha y hora</th><th>Ingreso</th><th>Endeudamiento</th><th>Ahorro</th><th>Perfil</th><th>Probabilidad</th><th>Acciones</th></tr></thead>
         <tbody>{workspace.historial.map((item) => <tr key={item.id}>
@@ -45,7 +45,7 @@ export function HistoryPage({ workspace }: PageProps) {
             <button aria-label="Eliminar" onClick={() => workspace.eliminarAnalisis(item.id)}><Trash size={18} /></button></td>
         </tr>)}</tbody>
       </table>
-      {!workspace.historial.length && <p className="muted-copy">Todavia no hay analisis guardados.</p>}
+      {!workspace.historial.length && <p className="muted-copy">Todavía no hay análisis guardados.</p>}
     </Card>
   </section>;
 }

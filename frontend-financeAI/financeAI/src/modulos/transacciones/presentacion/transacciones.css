@@ -1,0 +1,855 @@
+/*
+ * Estilos de Transacciones.
+ *
+ * Mismo criterio que dashboard.css: todo cuelga de .transacciones para que el Design
+ * System nuevo conviva con las pantallas que todavia usan la hoja global.
+ *
+ * A diferencia del Dashboard, esta es una pantalla operacional: mas densa, sin KPIs y
+ * con el color casi ausente -- solo los ingresos lo llevan.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+.transacciones {
+  --fa-primary: #2458E8;
+  --fa-deep: #153B9A;
+  --fa-green: #15AD77;
+  --fa-red: #E9566C;
+  --fa-bg: #F7F9FD;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-border: #E4E9F3;
+  --fa-card: #FFFFFF;
+  --fa-radio-card: 16px;
+  --fa-radio-control: 11px;
+
+  display: grid;
+  gap: 16px;
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+  color: var(--fa-text);
+}
+
+/* --- Cabecera ------------------------------------------------------- */
+
+.transacciones .tx-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.transacciones .tx-cabecera h1 {
+  margin: 0 0 4px;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.transacciones .tx-cabecera p { margin: 0; color: var(--fa-muted); font-size: 0.93rem; }
+
+/* --- Botones -------------------------------------------------------- */
+
+.transacciones .tx-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 15px;
+  border: 1px solid transparent;
+  border-radius: var(--fa-radio-control);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.transacciones .tx-boton.primario { background: var(--fa-primary); color: #fff; }
+.transacciones .tx-boton.primario:hover { background: var(--fa-deep); }
+.transacciones .tx-boton.secundario { background: var(--fa-card); color: var(--fa-text); border-color: var(--fa-border); }
+.transacciones .tx-boton.secundario:hover { background: var(--fa-bg); }
+.transacciones .tx-boton:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+.transacciones .tx-boton:disabled { opacity: 0.55; cursor: default; }
+
+.transacciones .tx-enlace {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--fa-primary);
+  font: inherit;
+  font-size: 0.89rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.transacciones .tx-enlace:hover { text-decoration: underline; }
+.transacciones .tx-enlace:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; border-radius: 4px; }
+
+/* --- Franja de contexto --------------------------------------------- */
+
+/* Reemplaza a los KPIs: una sola tira que dice que periodo se esta viendo. */
+.transacciones .tx-contexto {
+  display: flex;
+  align-items: center;
+  gap: 12px 26px;
+  flex-wrap: wrap;
+  padding: 13px 18px;
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-card);
+  background: var(--fa-card);
+}
+
+.transacciones .tx-conteo { font-size: 0.93rem; font-weight: 600; }
+.transacciones .tx-conteo span { color: var(--fa-muted); font-weight: 500; }
+
+.transacciones .tx-separador { width: 1px; height: 22px; background: var(--fa-border); }
+
+.transacciones .tx-cifra { display: flex; align-items: baseline; gap: 7px; font-size: 0.93rem; }
+
+.transacciones .tx-cifra small {
+  color: var(--fa-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.transacciones .tx-cifra strong { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* --- Controles ------------------------------------------------------ */
+
+.transacciones .tx-controles { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.transacciones .tx-busqueda { position: relative; flex: 1 1 260px; min-width: 190px; max-width: 380px; }
+
+.transacciones .tx-busqueda svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fa-muted);
+  pointer-events: none;
+}
+
+.transacciones .tx-busqueda input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px 0 38px;
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-control);
+  background: var(--fa-card);
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--fa-text);
+}
+
+.transacciones .tx-busqueda input::placeholder { color: var(--fa-muted); }
+.transacciones .tx-busqueda input:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: -1px; }
+
+.transacciones .tx-filtro {
+  height: 40px;
+  padding: 0 32px 0 13px;
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-control);
+  background: var(--fa-card);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--fa-text);
+  cursor: pointer;
+  /* Punta propia: la nativa cambia de forma en cada navegador. */
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236D7897' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+}
+
+/* Activo: el usuario debe ver de un vistazo que la lista esta recortada. */
+.transacciones .tx-filtro.activo {
+  border-color: var(--fa-primary);
+  color: var(--fa-primary);
+  background-color: #F4F7FF;
+  font-weight: 600;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%232458E8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.transacciones .tx-filtro:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+
+.transacciones .tx-limpiar { display: inline-flex; align-items: center; gap: 6px; height: 40px; }
+.transacciones .tx-controles .tx-derecha { margin-left: auto; }
+
+/* --- Listado -------------------------------------------------------- */
+
+/*
+ * Una sola superficie: el borde y el radio viven en el contenedor, no en cada fila.
+ * Sin bordes verticales, sin zebra y sin sombra por fila.
+ */
+.transacciones .tx-tabla {
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-card);
+  background: var(--fa-card);
+  overflow: hidden;
+}
+
+.transacciones .tx-lista { margin: 0; padding: 0; list-style: none; }
+
+/* Rejilla compartida por la cabecera y las filas: una sola fuente de anchos. */
+.transacciones .tx-encabezado,
+.transacciones .tx-fila {
+  display: grid;
+  /*
+   * Proporciones en fr, no en px ni en %: los porcentajes no descuentan los gaps y
+   * desbordan. 12/40/11/18/12/7 con un suelo en Acciones para que los dos botones
+   * nunca queden apretados.
+   */
+  grid-template-columns:
+    minmax(88px, 12fr)
+    minmax(0, 40fr)
+    minmax(72px, 11fr)
+    minmax(0, 18fr)
+    minmax(96px, 12fr)
+    minmax(76px, 7fr);
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+}
+
+/*
+ * Sentence case, no versalitas. En mayusculas la cabecera pesaba mas que los propios
+ * datos y competia con las descripciones.
+ */
+.transacciones .tx-encabezado {
+  height: 44px;
+  border-bottom: 1px solid var(--fa-border);
+  background: #FCFDFF;
+  color: var(--fa-muted);
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+
+.transacciones .tx-encabezado .tx-col-monto { text-align: right; }
+.transacciones .tx-encabezado .tx-col-acciones { text-align: center; }
+
+.transacciones .tx-fila {
+  min-height: 66px;
+  border-bottom: 1px solid var(--fa-border);
+}
+
+.transacciones .tx-fila:last-child { border-bottom: 0; }
+.transacciones .tx-fila:hover { background: #F8FAFE; }
+.transacciones .tx-fila.resaltada { background: #F4F7FF; }
+
+/* Una sola linea, en minusculas: el periodo ya esta anunciado arriba. */
+.transacciones .tx-fecha {
+  font-size: 0.87rem;
+  font-weight: 500;
+  color: var(--fa-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* El movimiento es el texto principal de la fila. */
+.transacciones .tx-desc {
+  min-width: 0;
+  font-size: 0.97rem;
+  font-weight: 600;
+  color: var(--fa-text);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transacciones .tx-celda { min-width: 0; }
+.transacciones .tx-vacio { color: var(--fa-muted); font-size: 0.95rem; }
+
+/*
+ * Pill neutra a proposito. coloresCategoria usa hoy una paleta ajena a la identidad
+ * (#2563eb, #f97316, #a855f7...) que aqui, repetida doce veces en una lista, la
+ * convertiria en un arcoiris. Cambiar esa paleta afecta al donut del Dashboard.
+ */
+.transacciones .tx-pill {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  height: 22px;
+  padding: 0 9px;
+  border: 1px solid var(--fa-border);
+  border-radius: 999px;
+  background: var(--fa-bg);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--fa-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * El tipo si lleva color, porque son tres valores y el color ayuda a barrer la
+ * columna. Fondos muy lavados: el dato sigue siendo el texto, no el relleno.
+ */
+.transacciones .tx-pill-tipo {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.transacciones .tx-pill-tipo.gasto { background: #FDECEF; color: #B23A4C; }
+.transacciones .tx-pill-tipo.ingreso { background: #E8F7F1; color: #0C7A55; }
+.transacciones .tx-pill-tipo.ahorro { background: #EFECFE; color: #4B36B8; }
+
+/* El gasto va en texto primario: en una lista de gastos, todo rojo no informa nada. */
+.transacciones .tx-monto {
+  text-align: right;
+  font-size: 0.97rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--fa-text);
+}
+
+.transacciones .tx-monto.ingreso { color: var(--fa-green); }
+.transacciones .tx-monto.ahorro { color: var(--fa-deep); }
+
+/* --- Acciones por fila ---------------------------------------------- */
+
+/* Dos acciones a la vista: el menu de tres puntos escondia lo mas frecuente. */
+.transacciones .tx-acciones { display: flex; justify-content: center; gap: 6px; }
+.transacciones .tx-col-monto { text-align: right; }
+
+.transacciones .tx-icono {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--fa-border);
+  border-radius: 9px;
+  background: var(--fa-card);
+  color: var(--fa-muted);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.transacciones .tx-icono:hover { background: var(--fa-bg); color: var(--fa-text); border-color: #D3DCEC; }
+.transacciones .tx-icono:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 1px; }
+
+/* Rojo solo en el simbolo: un boton rojo solido pesaria mas que el propio dato. */
+.transacciones .tx-icono.peligro { color: var(--fa-red); }
+.transacciones .tx-icono.peligro:hover { background: #FDECEF; border-color: #F6C9D1; color: #B23A4C; }
+
+.transacciones .tx-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 156px;
+  padding: 5px;
+  border: 1px solid var(--fa-border);
+  border-radius: 12px;
+  background: var(--fa-card);
+  box-shadow: 0 12px 32px rgba(13, 24, 56, 0.12);
+}
+
+.transacciones .tx-menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 0.89rem;
+  font-weight: 500;
+  color: var(--fa-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.transacciones .tx-menu button:hover { background: var(--fa-bg); }
+.transacciones .tx-menu button:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: -2px; }
+.transacciones .tx-menu button.peligro { color: var(--fa-red); }
+.transacciones .tx-menu button.peligro:hover { background: #FDECEF; }
+
+/* Confirmacion dentro de la fila: el usuario no pierde de vista que esta borrando. */
+/* Al confirmar, las cuatro columnas de la derecha ceden su sitio al aviso. */
+.transacciones .tx-fila.confirmando { background: #FDF5F6; grid-template-columns: 108px minmax(0, 1fr) auto; }
+
+.transacciones .tx-confirmar { display: flex; align-items: center; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.transacciones .tx-confirmar p { margin: 0; font-size: 0.88rem; }
+
+.transacciones .tx-mini {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--fa-border);
+  border-radius: 9px;
+  background: var(--fa-card);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fa-muted);
+  cursor: pointer;
+}
+
+.transacciones .tx-mini.peligro { border-color: transparent; background: var(--fa-red); color: #fff; }
+.transacciones .tx-mini:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+.transacciones .tx-mini:disabled { opacity: 0.6; cursor: default; }
+
+/* --- Avisos --------------------------------------------------------- */
+
+.transacciones .tx-aviso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-card);
+  background: var(--fa-card);
+  font-size: 0.9rem;
+}
+
+.transacciones .tx-aviso.problema { border-color: #F6C9D1; background: #FDF5F6; }
+.transacciones .tx-aviso p { margin: 0; flex: 1; }
+.transacciones .tx-aviso .tx-icono { flex: 0 0 32px; }
+
+/* --- Estados -------------------------------------------------------- */
+
+.transacciones .tx-estado {
+  padding: 44px 32px;
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-card);
+  background: var(--fa-card);
+  text-align: center;
+}
+
+.transacciones .tx-estado-simbolo {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  border-radius: 15px;
+  background: var(--fa-bg);
+  color: var(--fa-muted);
+}
+
+.transacciones .tx-estado.problema .tx-estado-simbolo { background: #FDECEF; color: var(--fa-red); }
+.transacciones .tx-estado h2 { margin: 0 0 7px; font-size: 1.08rem; font-weight: 700; }
+.transacciones .tx-estado p { margin: 0 auto 20px; max-width: 46ch; color: var(--fa-muted); font-size: 0.93rem; }
+.transacciones .tx-estado-acciones { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* Salida hacia otro periodo: la lista vacia casi siempre es un mes equivocado. */
+.transacciones .tx-pista {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--fa-border);
+  font-size: 0.89rem;
+  color: var(--fa-muted);
+}
+
+.transacciones .tx-pista strong { color: var(--fa-text); font-weight: 600; }
+
+/* --- Esqueleto de carga --------------------------------------------- */
+
+.transacciones .tx-encabezado span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.transacciones .tx-esqueleto {
+  border-radius: 7px;
+  background: linear-gradient(100deg, #EEF2FA, #F7F9FD 55%, #EEF2FA);
+  background-size: 200% 100%;
+  animation: txBrillo 1.5s ease-in-out infinite;
+}
+
+@keyframes txBrillo {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transacciones .tx-esqueleto { animation: none; }
+}
+
+/* --- Modal de alta y edicion ---------------------------------------- */
+
+/*
+ * Velo suave: oscurece lo justo para que el modal mande, pero la tabla, los filtros y
+ * el resumen siguen reconociendose detras. Sin desenfoque, que ademas cuesta caro de
+ * pintar en listas largas.
+ *
+ * z-index 55/56: por debajo del lanzador del agente (59), que debe seguir visible en
+ * su esquina. Como el modal esta centrado, no se estorban.
+ */
+.tx-velo {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(13, 24, 56, 0.28);
+  animation: txVeloEntra 160ms ease both;
+}
+
+.tx-modal {
+  --fa-primary: #2458E8;
+  --fa-deep: #153B9A;
+  --fa-green: #15AD77;
+  --fa-red: #E9566C;
+  --fa-bg: #F7F9FD;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-border: #E4E9F3;
+  --fa-card: #FFFFFF;
+
+  position: relative;
+  z-index: 56;
+  width: 520px;
+  max-width: calc(100vw - 32px);
+  /* Alto segun contenido: el formulario no tiene por que llenar la pantalla. */
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--fa-border);
+  border-radius: 20px;
+  background: var(--fa-card);
+  box-shadow: 0 20px 56px rgba(13, 24, 56, 0.16);
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+  color: var(--fa-text);
+  animation: txModalEntra 180ms cubic-bezier(.32, .72, 0, 1) both;
+}
+
+@keyframes txVeloEntra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes txModalEntra {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tx-velo, .tx-modal { animation: none; }
+}
+
+.tx-modal-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 0 0 auto;
+  padding: 22px 24px 18px;
+}
+
+.tx-modal-cabecera h2 {
+  margin: 0;
+  font-size: 1.32rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.tx-modal-cerrar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  padding: 0;
+  border: 1px solid var(--fa-border);
+  border-radius: 11px;
+  background: var(--fa-card);
+  color: var(--fa-muted);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.tx-modal-cerrar:hover { background: var(--fa-bg); color: var(--fa-text); }
+.tx-modal-cerrar:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+
+.tx-modal-cuerpo {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  flex: 1 1 auto;
+  padding: 0 24px;
+  overflow-y: auto;
+}
+
+.tx-modal-pie {
+  display: grid;
+  gap: 2px;
+  flex: 0 0 auto;
+  padding: 22px 24px 24px;
+}
+
+.tx-modal-pie .tx-boton.primario { width: 100%; height: 50px; justify-content: center; font-size: 0.95rem; }
+.tx-modal-pie .tx-enlace { justify-self: center; padding: 10px 14px; color: var(--fa-muted); }
+.tx-modal-pie .tx-enlace:hover { color: var(--fa-text); }
+
+/*
+ * La ayuda del clasificador acompaña, no compite: sin caja, sin borde y en color
+ * secundario. Con recuadro azul pesaba mas que los propios campos.
+ */
+.tx-ayuda {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: -2px 0 0;
+  color: var(--fa-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.tx-ayuda svg { flex: 0 0 auto; margin-top: 2px; color: var(--fa-primary); }
+.tx-ayuda strong { color: var(--fa-text); font-weight: 600; }
+
+/* Confirmacion de que el modelo ya respondio: verde discreto, no una alerta. */
+.tx-ayuda.ok svg { color: var(--fa-green); }
+
+.tx-usar-sugerencia { font-size: inherit; }
+
+@media (max-width: 560px) {
+  /*
+   * Centrado tambien en movil, no pegado abajo: anclado al borde inferior el modal
+   * llegaba hasta y=813 y el lanzador del agente --que debe seguir visible-- se
+   * montaba sobre el boton Guardar.
+   */
+  .tx-velo { padding: 12px; }
+  .tx-modal { width: 100%; max-height: calc(100vh - 24px); border-radius: 18px; }
+  .tx-modal-cabecera { padding: 18px 18px 14px; }
+  .tx-modal-cuerpo { padding: 0 18px; }
+  .tx-modal-pie { padding: 18px; }
+  .tx-duo { grid-template-columns: 1fr; }
+}
+
+/* --- Panel lateral de importacion ------------------------------------ */
+
+/*
+ * Mismo gesto que la burbuja del agente: hoja a la derecha, sin velo oscuro, para que
+ * la lista siga visible mientras se corrige una fila.
+ * Escala de z-index de la app: header 30, dropdowns 40, overlay 41, sidebar 42, agente 59-60.
+ */
+.tx-panel {
+  --fa-primary: #2458E8;
+  --fa-deep: #153B9A;
+  --fa-green: #15AD77;
+  --fa-red: #E9566C;
+  --fa-bg: #F7F9FD;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-border: #E4E9F3;
+  --fa-card: #FFFFFF;
+
+  position: fixed;
+  top: 0;
+  right: 0;
+  /*
+   * Alto segun contenido, no toda la pantalla. Con cinco campos, la hoja completa
+   * dejaba 284px de vacio entre el ultimo campo y un pie clavado abajo, que ademas
+   * caia justo encima del lanzador del agente.
+   */
+  bottom: auto;
+  max-height: 100vh;
+  /* Por encima de la burbuja del agente (60): si el chat esta abierto, manda el panel. */
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  width: 344px;
+  max-width: 100vw;
+  border-left: 1px solid var(--fa-border);
+  border-bottom: 1px solid var(--fa-border);
+  border-radius: 0 0 0 18px;
+  background: var(--fa-card);
+  box-shadow: -18px 0 50px rgba(13, 24, 56, 0.1);
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+  color: var(--fa-text);
+  animation: txPanelEntra 200ms cubic-bezier(.32, .72, 0, 1) both;
+}
+
+@keyframes txPanelEntra {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tx-panel { animation: none; }
+}
+
+.tx-panel-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--fa-border);
+}
+
+.tx-panel-cabecera h2 { margin: 0; font-size: 1.02rem; font-weight: 700; }
+.tx-panel-cabecera p { margin: 2px 0 0; font-size: 0.82rem; color: var(--fa-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.tx-panel-cerrar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  padding: 0;
+  border: 1px solid var(--fa-border);
+  border-radius: 9px;
+  background: var(--fa-card);
+  color: var(--fa-muted);
+  cursor: pointer;
+}
+
+.tx-panel-cerrar:hover { background: var(--fa-bg); color: var(--fa-text); }
+.tx-panel-cerrar:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+
+/* flex 0 1 auto: el cuerpo no crece, asi el pie queda junto a los campos. */
+.tx-panel-cuerpo { display: grid; align-content: start; gap: 15px; flex: 0 1 auto; padding: 18px; overflow-y: auto; }
+
+.tx-panel-pie {
+  display: grid;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 16px 18px 18px;
+  border-top: 1px solid var(--fa-border);
+  background: var(--fa-card);
+}
+
+.tx-panel-pie .tx-boton.primario { width: 100%; justify-content: center; }
+.tx-panel-pie .tx-enlace { justify-self: center; padding: 9px 12px; color: var(--fa-muted); }
+.tx-panel-pie .tx-enlace:hover { color: var(--fa-text); }
+
+/* --- Campos --------------------------------------------------------- */
+
+.tx-campo { display: grid; gap: 6px; }
+.tx-campo > span { font-size: 0.79rem; font-weight: 700; color: var(--fa-muted); letter-spacing: 0.03em; }
+
+.tx-campo > span { font-size: 0.84rem; }
+
+.tx-campo input,
+.tx-campo select {
+  width: 100%;
+  height: 50px;
+  padding: 0 14px;
+  border: 1px solid var(--fa-border);
+  border-radius: 12px;
+  background: var(--fa-card);
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--fa-text);
+}
+
+.tx-campo input::placeholder { color: var(--fa-muted); }
+
+.tx-campo input:focus,
+.tx-campo select:focus {
+  border-color: var(--fa-primary);
+  outline: 2px solid rgba(36, 88, 232, 0.16);
+  outline-offset: 0;
+}
+
+.tx-campo input:focus-visible,
+.tx-campo select:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: -1px; }
+.tx-campo.invalido input { border-color: var(--fa-red); background: #FDF5F6; }
+
+.tx-campo-error { display: flex; align-items: center; gap: 6px; font-size: 0.81rem; font-weight: 500; color: var(--fa-red); }
+.tx-campo-nota { margin: 0; font-size: 0.79rem; color: var(--fa-muted); }
+
+/*
+ * La nota del clasificador acompaña, no compite: sin caja ni fondo. Con recuadro azul
+ * pesaba mas que los propios campos y se leia como una alerta.
+ */
+.tx-nota-modelo {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: -5px;
+  line-height: 1.45;
+}
+
+.tx-nota-modelo svg { flex: 0 0 auto; margin-top: 2px; color: var(--fa-primary); }
+.tx-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+/* Zona de carga del CSV. */
+.tx-suelta {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 26px 18px;
+  border: 1px dashed var(--fa-border);
+  border-radius: 14px;
+  background: var(--fa-bg);
+  text-align: center;
+  color: var(--fa-muted);
+}
+
+.tx-suelta p { margin: 0; font-size: 0.87rem; }
+.tx-exito { padding: 11px 14px; border-radius: 11px; background: #E8F7F1; color: #0C7A55; font-size: 0.88rem; }
+
+/* Archivo leido que quedo pendiente de reintentar. */
+.tx-reintento {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--fa-border);
+  border-radius: 12px;
+  background: var(--fa-bg);
+}
+
+.tx-reintento p { margin: 0; font-size: 0.85rem; color: var(--fa-muted); }
+.tx-reintento strong { color: var(--fa-text); font-weight: 600; word-break: break-all; }
+.tx-reintento .tx-boton { justify-content: center; }
+
+/* --- Responsive ----------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .transacciones .tx-cabecera { flex-direction: column; align-items: stretch; }
+  .transacciones .tx-cabecera .tx-boton { justify-content: center; }
+  .transacciones .tx-busqueda { flex: 1 1 100%; max-width: none; }
+  .transacciones .tx-filtro { flex: 1; }
+  .transacciones .tx-controles .tx-derecha { margin-left: 0; flex: 1 1 100%; }
+  .transacciones .tx-controles .tx-derecha .tx-boton { width: 100%; justify-content: center; }
+
+  /*
+   * En movil las seis columnas no caben. Cada movimiento pasa a una tarjeta compacta
+   * de dos filas que conserva TODOS los datos: fecha, movimiento, tipo, clasificacion,
+   * monto y las dos acciones. Sin scroll horizontal y sin pantalla de detalle.
+   */
+  .transacciones .tx-encabezado { display: none; }
+
+  .transacciones .tx-fila {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px 12px;
+    padding: 14px;
+    min-height: 0;
+  }
+
+  .transacciones .tx-fecha { grid-column: 1; grid-row: 1; font-size: 0.78rem; }
+  .transacciones .tx-monto { grid-column: 2; grid-row: 1; align-self: center; }
+  .transacciones .tx-desc { grid-column: 1 / -1; grid-row: 2; white-space: normal; }
+
+  /* Tipo y clasificacion comparten la tercera linea. */
+  .transacciones .tx-celda { grid-row: 3; }
+  .transacciones .tx-celda:nth-of-type(3) { grid-column: 1; justify-self: start; }
+  .transacciones .tx-celda:nth-of-type(4) { grid-column: 1; justify-self: start; }
+  .transacciones .tx-acciones { grid-column: 2; grid-row: 3; align-self: center; }
+  .transacciones .tx-fila.confirmando { grid-template-columns: minmax(0, 1fr); }
+  .transacciones .tx-confirmar { justify-content: flex-start; }
+  .transacciones .tx-estado { padding: 32px 20px; }
+
+  /* El panel pasa a hoja casi completa, como el agente. */
+  .tx-panel { width: min(384px, 100vw); }
+}
+
+@media (max-width: 420px) {
+  .tx-panel { width: 100vw; border-left: 0; }
+  .tx-duo { grid-template-columns: 1fr; }
+}

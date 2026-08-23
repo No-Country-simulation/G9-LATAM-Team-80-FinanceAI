@@ -94,7 +94,7 @@ export async function solicitarAnalisisFinanciero(
 
   if (!response.ok) {
     const error = await response.json().catch(() => null) as { mensaje?: string; detail?: string } | null;
-    throw new Error(error?.mensaje ?? error?.detail ?? 'No fue posible generar el analisis financiero.');
+    throw new Error(error?.mensaje ?? error?.detail ?? 'No fue posible generar el análisis financiero.');
   }
 
   return transformarRespuesta(await response.json() as AnalisisApiResponse);
@@ -133,7 +133,7 @@ function convertirRecomendacion(texto: string, index: number): Recomendacion {
   const prioridad: Recomendacion['prioridad'] = normalizada.startsWith('alerta') || normalizada.includes('requiere atencion')
     ? 'Alta'
     : normalizada.includes('por encima') ? 'Media' : 'Baja';
-  const titulo = texto.split(':')[0].replace(/[.]$/, '') || 'Recomendacion financiera';
+  const titulo = texto.split(':')[0].replace(/[.]$/, '') || 'Recomendación financiera';
 
   return { id: `r-${index + 1}`, titulo, descripcion: texto, prioridad, tipo };
 }

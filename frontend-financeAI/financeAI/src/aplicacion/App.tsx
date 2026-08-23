@@ -53,13 +53,16 @@ export function App() {
     return paginas[rutaActiva];
   }, [rutaActiva, workspace]);
 
-  if (comprobando) return <main className="login-page"><section className="login-card"><h2>Comprobando sesion...</h2></section></main>;
+  if (comprobando) return <main className="login-page"><section className="login-card"><h2>Comprobando sesión...</h2></section></main>;
   if (!sesion) return <LoginPage onLogin={login} />;
 
   const partes = sesion.usuario.nombre.split(' ').filter(Boolean);
   const iniciales = partes.slice(0, 2).map((parte) => parte[0]).join('').toUpperCase();
   return <DashboardLayout rutas={rutasAplicacion} rutaActiva={rutaActiva} onNavigate={setRutaActiva}
-    usuario={{ nombre: sesion.usuario.nombre, iniciales, rol: sesion.usuario.rol }} onLogout={logout}>
+    usuario={{ nombre: sesion.usuario.nombre, iniciales, rol: sesion.usuario.rol, email: sesion.usuario.email }} onLogout={logout}
+    mesAnalizado={workspace.mesAnalizado} mesesDelAnio={workspace.mesesDelAnio}
+    onSeleccionarMes={workspace.seleccionarMes} anioAnalizado={workspace.anioAnalizado}
+    aniosDisponibles={workspace.aniosDisponibles} onSeleccionarAnio={workspace.seleccionarAnio}>
     {pagina}
   </DashboardLayout>;
 }

@@ -3,19 +3,12 @@ import { useState } from 'react';
 import type { Recomendacion } from '../../../compartido/tipos/finanzas';
 import type { PageProps } from '../../../compartido/tipos/workspace';
 import { Badge, Card, PageHeader } from '../../tablero/presentacion/DashboardPage';
-import { OvenChatWidget } from '../../../compartido/componentes/OvenChatWidget';
 
 type RecommendationTab = 'todas' | 'gastos' | 'ahorro' | 'deudas' | 'ingresos';
 
 export function RecommendationsPage(props: PageProps) {
-  // El widget se monta junto a las tres vistas del modulo para que el asistente
-  // agentico siga disponible al abrir el detalle o la proyeccion.
-  return (
-    <>
-      <RecommendationsContent {...props} />
-      <OvenChatWidget />
-    </>
-  );
+  // El agente ya no se monta aca: vive en DashboardLayout y acompaña a toda la app.
+  return <RecommendationsContent {...props} />;
 }
 
 function RecommendationsContent({ workspace }: PageProps) {
@@ -77,8 +70,8 @@ function RecommendationsContent({ workspace }: PageProps) {
           {recomendacionesFiltradas.length === 0 && (
             <article className="subview-card empty-state">
               <Target size={42} />
-              <h2>No hay recomendaciones en esta categoria</h2>
-              <p>Cuando el analisis detecte oportunidades, apareceran aqui.</p>
+              <h2>No hay recomendaciones en esta categoría</h2>
+              <p>Cuando el análisis detecte oportunidades, aparecerán aquí.</p>
             </article>
           )}
         </div>
@@ -106,7 +99,7 @@ function RecommendationDetailView({
   return (
     <section className="page-stack">
       <PageHeader
-        title="Detalle de recomendacion"
+        title="Detalle de recomendación"
         subtitle="Acciones sugeridas para aplicar esta mejora financiera."
         action={<button className="outline-button" onClick={onBack}><ArrowLeft size={18} /> Volver</button>}
       />
@@ -117,14 +110,14 @@ function RecommendationDetailView({
         <div className="detail-grid">
           <article><small>Tipo</small><strong>{recomendacion.tipo}</strong></article>
           <article><small>Prioridad</small><strong>{recomendacion.prioridad}</strong></article>
-          <article><small>Plazo sugerido</small><strong>30 dias</strong></article>
+          <article><small>Plazo sugerido</small><strong>30 días</strong></article>
         </div>
         <div className="action-checklist">
-          <p><CheckCircle size={20} weight="fill" /> Revisar movimientos de los ultimos 30 dias.</p>
-          <p><CheckCircle size={20} weight="fill" /> Definir un limite mensual para la categoria afectada.</p>
-          <p><CheckCircle size={20} weight="fill" /> Medir el impacto en el siguiente analisis.</p>
+          <p><CheckCircle size={20} weight="fill" /> Revisar movimientos de los últimos 30 días.</p>
+          <p><CheckCircle size={20} weight="fill" /> Definir un límite mensual para la categoría afectada.</p>
+          <p><CheckCircle size={20} weight="fill" /> Medir el impacto en el siguiente análisis.</p>
         </div>
-        <button className="primary-button" onClick={() => setMarcada(true)}>{marcada ? 'Añadida al plan de esta sesion' : 'Marcar como plan de accion'}</button>
+        <button className="primary-button" onClick={() => setMarcada(true)}>{marcada ? 'Añadida al plan de esta sesión' : 'Marcar como plan de acción'}</button>
       </article>
     </section>
   );
@@ -137,7 +130,7 @@ function ProjectionView({ workspace, onBack }: { workspace: PageProps['workspace
     <section className="page-stack">
       <PageHeader
         title="Proyeccion detallada"
-        subtitle="Estimacion de impacto si aplicas las recomendaciones principales."
+        subtitle="Estimación de impacto si aplicas las recomendaciones principales."
         action={<button className="outline-button" onClick={onBack}><ArrowLeft size={18} /> Volver</button>}
       />
       <div className="two-column-grid">

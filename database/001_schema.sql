@@ -38,7 +38,9 @@ CREATE TABLE IF NOT EXISTS transacciones (
     id BIGINT NOT NULL AUTO_INCREMENT,
     usuario_id BIGINT NOT NULL,
     descripcion VARCHAR(200) NOT NULL,
-    categoria VARCHAR(50) NOT NULL,
+    -- Solo los gastos tienen categoria: las doce son categorias de gasto.
+    -- Los ingresos y los ahorros guardan NULL, no una categoria artificial.
+    categoria VARCHAR(50) NULL,
     tipo VARCHAR(20) NOT NULL,
     fecha DATE NOT NULL,
     monto DECIMAL(15,2) NOT NULL,

@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { analisisInicial, solicitarAnalisisFinanciero } from '../servicios/analisisFinanciero.service';
 import {
   actualizarTransaccion as actualizarTransaccionApi,
+  clasificarDescripcion as clasificarDescripcionApi,
+  clasificarDescripciones as clasificarDescripcionesApi,
   crearTransaccion,
   eliminarAnalisis as eliminarAnalisisApi,
   eliminarTransaccion as eliminarTransaccionApi,
@@ -15,6 +17,33 @@ import type { CategoriaFinanciera, HistorialAnalisis, TipoTransaccion, Transacci
 
 const INGRESO_POR_DEFECTO = 4500;
 const ENDEUDAMIENTO_POR_DEFECTO = 25;
+
+/**
+ * Mes mas reciente que tiene movimientos, en formato YYYY-MM.
+ *
+ * El analisis se llama "gasto_total_mes" pero no habia ningun filtro por fecha: se
+ * enviaban TODAS las transacciones del usuario, asi que con tres meses cargados el
+ * gasto se triplicaba y el perfil salia peor de lo real.
+ *
+ * Se elige el mes mas reciente con datos, y no el mes calendario actual, para que la
+ * app siga mostrando algo cuando los movimientos son de meses anteriores -- con el mes
+ * actual, importar un CSV viejo dejaba el tablero en cero sin explicar por que.
+ *
+ * Las fechas llegan de la API como YYYY-MM-DD, asi que comparar los primeros 7
+ * caracteres como texto ya ordena cronologicamente.
+ */
+function mesMasReciente(movimientos: Transaccion[]): string | null {
+  return movimientos.reduce<string | null>((reciente, item) => {
+    const mes = item.fecha.slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(mes)) return reciente;
+    return reciente === null || mes > reciente ? mes : reciente;
+  }, null);
+}
+
+function movimientosDelMes(movimientos: Transaccion[], mes: string | null): Transaccion[] {
+  if (mes === null) return movimientos;
+  return movimientos.filter((item) => item.fecha.startsWith(mes));
+}
 
 /**
  * Deriva el ingreso mensual y el nivel de endeudamiento de los movimientos del usuario.
@@ -59,6 +88,78 @@ export function useFinancialWorkspace(token: string | null) {
   const [errorAnalisis, setErrorAnalisis] = useState('');
   const [revision, setRevision] = useState(0);
   const [hidratado, setHidratado] = useState(false);
+  // Distingue "todavia no hay analisis" de "el analisis dio cero". Sin este flag, el
+  // estado inicial (perfil Saludable y todo en cero) es indistinguible de un resultado
+  // real, y el tablero mostraria un diagnostico que nadie calculo.
+  const [analisisListo, setAnalisisListo] = useState(false);
+
+  const [mesSeleccionado, setMesSeleccionado] = useState<string | null>(null);
+
+  // El analisis y los totales miran UN mes. La lista de transacciones sigue mostrando
+  // todo el historial: es un libro de movimientos, no un resumen mensual.
+  const mesesDisponibles = useMemo(() => {
+    const meses = new Set<string>();
+    transacciones.forEach((item) => {
+      const mes = item.fecha.slice(0, 7);
+      if (/^\d{4}-\d{2}$/.test(mes)) meses.add(mes);
+    });
+    return [...meses].sort().reverse();
+  }, [transacciones]);
+
+  // Si el mes elegido se queda sin movimientos (se borraron, o se cambio de usuario)
+  // se vuelve al mas reciente en vez de mostrar un tablero vacio sin explicacion.
+  const mesAnalizado = useMemo(
+    () => (mesSeleccionado !== null && mesesDisponibles.includes(mesSeleccionado)
+      ? mesSeleccionado
+      : mesesDisponibles[0] ?? null),
+    [mesSeleccionado, mesesDisponibles]
+  );
+
+  const transaccionesDelMes = useMemo(
+    () => movimientosDelMes(transacciones, mesAnalizado),
+    [transacciones, mesAnalizado]
+  );
+
+  /**
+   * Cambiar de mes re-deduce ingreso y endeudamiento de ESE mes, en la misma tanda de
+   * setState. Si no, al pasar de agosto a julio se veria el ingreso de agosto contra los
+   * gastos de julio; y si se dedujera en un efecto aparte, el analisis correria dos veces
+   * y la primera dejaria una fila equivocada en el historial.
+   */
+  const seleccionarMes = useCallback((mes: string) => {
+    setMesSeleccionado(mes);
+    const supuestos = deducirSupuestos(movimientosDelMes(transacciones, mes));
+    if (supuestos) {
+      setIngresoMensual(supuestos.ingresoMensual);
+      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
+    }
+  }, [transacciones]);
+
+  // El anio no es un estado aparte: se deriva del mes elegido. Con dos estados habria
+  // que mantenerlos en sincronia y siempre queda el caso de un anio sin ningun mes.
+  const aniosDisponibles = useMemo(
+    () => [...new Set(mesesDisponibles.map((mes) => mes.slice(0, 4)))],
+    [mesesDisponibles]
+  );
+  const anioAnalizado = mesAnalizado?.slice(0, 4) ?? null;
+  const mesesDelAnio = useMemo(
+    () => (anioAnalizado === null ? [] : mesesDisponibles.filter((mes) => mes.startsWith(anioAnalizado))),
+    [mesesDisponibles, anioAnalizado]
+  );
+
+  /**
+   * Cambiar de anio conserva el mes: de agosto 2026 se pasa a agosto 2025, no a
+   * diciembre. Solo si ese mes no tiene movimientos en el anio destino se cae al mas
+   * reciente que si los tenga, para no dejar el tablero sin datos que analizar.
+   */
+  const seleccionarAnio = useCallback((anio: string) => {
+    const numeroDeMes = mesAnalizado?.slice(5, 7);
+    const mismoMes = numeroDeMes ? `${anio}-${numeroDeMes}` : null;
+    const destino = (mismoMes !== null && mesesDisponibles.includes(mismoMes))
+      ? mismoMes
+      : mesesDisponibles.find((mes) => mes.startsWith(anio));
+    if (destino) seleccionarMes(destino);
+  }, [mesesDisponibles, mesAnalizado, seleccionarMes]);
 
   const recargarHistorial = useCallback(async () => {
     if (token) setHistorial(await listarHistorial(token));
@@ -70,7 +171,7 @@ export function useFinancialWorkspace(token: string | null) {
 
   useEffect(() => {
     if (!token) {
-      setTransacciones([]); setPresupuestos([]); setHistorial([]); setHidratado(false);
+      setTransacciones([]); setPresupuestos([]); setHistorial([]); setHidratado(false); setAnalisisListo(false);
       return;
     }
     setCargandoDatos(true);
@@ -81,7 +182,7 @@ export function useFinancialWorkspace(token: string | null) {
         // hidratado, y React agrupa estos setState. Si se dedujera despues, el analisis
         // correria dos veces y la primera guardaria en el historial una fila calculada con
         // los valores por defecto.
-        const supuestos = deducirSupuestos(movimientos);
+        const supuestos = deducirSupuestos(movimientosDelMes(movimientos, mesMasReciente(movimientos)));
         if (supuestos) {
           setIngresoMensual(supuestos.ingresoMensual);
           setNivelEndeudamiento(supuestos.nivelEndeudamiento);
@@ -93,21 +194,26 @@ export function useFinancialWorkspace(token: string | null) {
   }, [token]);
 
   useEffect(() => {
-    if (!token || !hidratado || transacciones.length === 0) return;
+    if (!token || !hidratado || transaccionesDelMes.length === 0) return;
     const controller = new AbortController();
     setCargandoAnalisis(true); setErrorAnalisis('');
-    solicitarAnalisisFinanciero(token, transacciones, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, controller.signal)
-      .then(async (resultado) => { setAnalisis(resultado); await recargarHistorial(); })
+    solicitarAnalisisFinanciero(token, transaccionesDelMes, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, controller.signal)
+      .then(async (resultado) => { setAnalisis(resultado); setAnalisisListo(true); await recargarHistorial(); })
       .catch((error: Error) => { if (error.name !== 'AbortError') setErrorAnalisis(error.message); })
       .finally(() => { if (!controller.signal.aborted) setCargandoAnalisis(false); });
     return () => controller.abort();
-  }, [token, hidratado, transacciones, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, revision, recargarHistorial]);
+  }, [token, hidratado, transaccionesDelMes, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, revision, recargarHistorial]);
 
-  async function agregarTransaccion(data: { descripcion: string; categoria: CategoriaFinanciera; tipo: TipoTransaccion; monto: number }) {
+  /*
+   * La fecha llega desde el formulario. Antes se forzaba siempre a hoy, asi que no
+   * habia forma de registrar un movimiento pasado salvo importando un CSV. Se mantiene
+   * el dia actual como valor por defecto para quien no la envie.
+   */
+  async function agregarTransaccion(data: { descripcion: string; categoria: CategoriaFinanciera | null; tipo: TipoTransaccion; monto: number; fecha?: string }) {
     if (!token) return;
     const nueva = await crearTransaccion(token, {
       descripcion: data.descripcion, categoria: data.categoria, tipo: data.tipo,
-      fecha: new Date().toISOString().slice(0, 10), monto: Math.abs(data.monto)
+      fecha: data.fecha ?? new Date().toISOString().slice(0, 10), monto: Math.abs(data.monto)
     });
     setTransacciones((actuales) => [nueva, ...actuales]);
     await recargarPresupuestos();
@@ -118,6 +224,23 @@ export function useFinancialWorkspace(token: string | null) {
     const actualizada = await actualizarTransaccionApi(token, id, data);
     setTransacciones((actuales) => actuales.map((item) => item.id === id ? actualizada : item));
     await recargarPresupuestos();
+  }
+
+  /**
+   * Categoria sugerida por el modelo para una descripcion de GASTO.
+   *
+   * No se guarda nada aqui: solo consulta. Quien llama decide que hacer si falla,
+   * porque con el ML caido el cortacircuitos responde 502 y el alta no debe perderse.
+   */
+  async function clasificarDescripcion(descripcion: string, monto: number) {
+    if (!token) throw new Error('Sesion no disponible.');
+    return clasificarDescripcionApi(token, descripcion, Math.abs(monto));
+  }
+
+  /** Version por lote: una sola peticion para todos los gastos sin categoria de un CSV. */
+  async function clasificarDescripciones(items: { descripcion: string; valor: number }[]) {
+    if (!token) throw new Error('Sesion no disponible.');
+    return clasificarDescripcionesApi(token, items);
   }
 
   async function eliminarTransaccion(id: string) {
@@ -153,14 +276,16 @@ export function useFinancialWorkspace(token: string | null) {
     setFrecuenciaAhorro(datos.frecuenciaAhorro); setRevision((actual) => actual + 1);
   }, []);
 
-  function obtenerCategoria(transaccion: Transaccion): CategoriaFinanciera {
-    if (transaccion.tipo !== 'gasto') return transaccion.categoria;
+  function obtenerCategoria(transaccion: Transaccion): CategoriaFinanciera | null {
+    // Ingresos y ahorros no tienen categoria: no hay nada que inferir.
+    if (transaccion.tipo !== 'gasto') return null;
     return analisis.clasificaciones.find((item) => item.descripcion === transaccion.descripcion)?.categoria ?? transaccion.categoria;
   }
 
   return {
-    transacciones, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
-    cargandoDatos, cargandoAnalisis, errorAnalisis, agregarTransaccion, actualizarTransaccion,
+    transacciones, transaccionesDelMes, mesAnalizado, mesesDisponibles, mesesDelAnio, seleccionarMes,
+    anioAnalizado, aniosDisponibles, seleccionarAnio, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
+    cargandoDatos, cargandoAnalisis, errorAnalisis, analisisListo, hidratado, agregarTransaccion, actualizarTransaccion, clasificarDescripcion, clasificarDescripciones,
     eliminarTransaccion, importarTransacciones, agregarPresupuesto, eliminarAnalisis, generarAnalisis, obtenerCategoria
   };
 }
