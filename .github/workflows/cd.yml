@@ -211,6 +211,12 @@ jobs:
           echo "Aplicando database/002_seed.sql..."
           run_mysql < database/002_seed.sql
 
+          # 001_schema.sql usa CREATE TABLE IF NOT EXISTS: sobre una base que ya
+          # existe no altera nada. Los cambios posteriores al esquema viajan en
+          # migraciones numeradas, que si deben aplicarse en cada despliegue.
+          echo "Aplicando database/003_categoria_solo_gastos.sql..."
+          run_mysql < database/003_categoria_solo_gastos.sql
+
   # ---------------------------------------------------------------------
   # 5. Frontend: build estatico y subida al bucket. Independiente de los
   #    jobs de build de imagenes; solo necesita los outputs de terraform.
