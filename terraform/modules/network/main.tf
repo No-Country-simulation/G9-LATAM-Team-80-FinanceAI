@@ -57,11 +57,6 @@ resource "oci_core_security_list" "public" {
     protocol    = "all"
     destination = "0.0.0.0/0"
   }
-
-  ingress_security_rules {
-    protocol = "6"
-    source   = "0.0.0.0/0"
-  }
 }
 
 resource "oci_core_security_list" "private" {
@@ -73,11 +68,6 @@ resource "oci_core_security_list" "private" {
   egress_security_rules {
     protocol    = "all"
     destination = "0.0.0.0/0"
-  }
-
-  ingress_security_rules {
-    protocol = "6"
-    source   = var.vcn_cidr
   }
 }
 
