@@ -3,16 +3,24 @@ import {
   ArrowRight,
   ArrowUp,
   CaretDown,
+  CaretUp,
   ChartLineUp,
+  Coins,
+  Info,
   FileArrowUp,
   PiggyBank,
-  Scales,
   TrendDown,
   Wallet
 } from '@phosphor-icons/react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { coloresCategoria, etiquetasCategoria } from '../../../compartido/constantes/categorias';
-import { gastosSinDeudas } from '../../../compartido/servicios/analisisFinanciero.service';
+import {
+  calcularDisponible,
+  gastosSinDeudas,
+  gastosVisibles,
+  pagosDeDeuda,
+  ratioGastoVisible
+} from '../../../compartido/servicios/analisisFinanciero.service';
 import { formatCurrency, formatPercent } from '../../../compartido/utilidades/formato';
 import type { CategoriaFinanciera, TipoTransaccion, Transaccion } from '../../../compartido/tipos/finanzas';
 import type { PageProps } from '../../../compartido/tipos/workspace';
@@ -20,13 +28,6 @@ import './dashboard.css';
 
 /** Cuantas categorias se listan antes de agrupar el resto. */
 const CATEGORIAS_VISIBLES = 5;
-
-/** Umbrales de endeudamiento del backend (calcular_perfil_reglas): 36% y 43%. */
-function estadoEndeudamiento(nivel: number) {
-  if (nivel > 43) return { texto: 'Nivel alto', tono: 'riesgo' as const };
-  if (nivel >= 36) return { texto: 'Zona de atención', tono: 'atencion' as const };
-  return { texto: 'Nivel saludable', tono: 'sano' as const };
-}
 
 /** Luces del semaforo, de arriba abajo como en uno real. */
 const ETIQUETAS_TIPO_MOVIMIENTO: Record<TipoTransaccion, string> = {
@@ -51,9 +52,93 @@ function lecturaDelPerfil(perfil: string) {
   return { frase: 'Vas por buen camino.', tono: 'sano' as const };
 }
 
+/**
+ * Nombres del ML que repiten la palabra "gastos" dentro de la frase.
+ *
+ * El servicio manda "otros gastos" y "gastos profesionales" como nombre legible, y la
+ * plantilla los mete en "tu gasto en {nombre}": sale "tu gasto en otros gastos". Aqui se
+ * nombran como categoria y la repeticion desaparece. Los otros diez nombres llegan bien
+ * y pasan sin tocar, asi que nada queda fijado en el codigo salvo estas dos excepciones.
+ */
+const NOMBRE_DE_CATEGORIA: Record<string, string> = {
+  'otros gastos': 'la categoría Otros',
+  'gastos profesionales': 'la categoría Profesionales'
+};
+
+/**
+ * Reescrituras del copy que llega del servicio de recomendaciones.
+ *
+ * Son plantillas ancladas, no reemplazos sueltos: cada expresion describe una frase
+ * completa del generador y solo actua si encaja entera. Un texto que no coincida sale
+ * intacto -- pasar un corrector de tildes por encima de una respuesta dinamica es la
+ * forma segura de estropear una palabra que si estaba bien escrita.
+ *
+ * Se aplica SOLO al pintar. La cadena original es la que clasifica la prioridad y el
+ * tipo en convertirRecomendacion (mira si empieza por "alerta", si contiene "deuda"...),
+ * asi que tocarla antes cambiaria que recomendacion se considera la principal.
+ */
+const REESCRITURAS: { patron: RegExp; reemplazo: (...partes: string[]) => string }[] = [
+  {
+    patron: /^Alerta: tu gasto en (.+?) supera el (\d+)% de tu ingreso mensual, revisalo con prioridad\.$/,
+    reemplazo: (_todo, nombre, porcentaje) =>
+      `Alerta: tus gastos en ${NOMBRE_DE_CATEGORIA[nombre] ?? nombre} superan el ${porcentaje}\u00A0% de tu ingreso mensual. Revísalos con prioridad.`
+  },
+  {
+    patron: /^Estas destinando mas del (\d+)% de tu ingreso a (.+?), por encima de lo recomendado para esa categoria\.$/,
+    reemplazo: (_todo, porcentaje, nombre) =>
+      `Estás destinando más del ${porcentaje}\u00A0% de tu ingreso a ${NOMBRE_DE_CATEGORIA[nombre] ?? nombre}, por encima de lo recomendado para esa categoría.`
+  },
+  {
+    patron: /^Tu situacion actual requiere atencion: (.+)$/,
+    reemplazo: (_todo, resto) => `Tu situación actual requiere atención: ${resto}`
+  },
+  {
+    patron: /^Estas en una zona de alerta temprana: revisa tus categorias de mayor gasto (.+)$/,
+    reemplazo: (_todo, resto) => `Estás en una zona de alerta temprana: revisa tus categorías de mayor gasto ${resto}`
+  },
+  {
+    patron: /^Tu perfil es saludable, pero tu margen de ahorro real es bajo: conviene generar un colchon de emergencia\.$/,
+    reemplazo: () => 'Tu perfil es saludable, pero tu margen de ahorro real es bajo: conviene generar un colchón de emergencia.'
+  },
+  {
+    patron: /^el endeudamiento esta en zona moderada \((\d+)%-(\d+)%\)$/,
+    reemplazo: (_todo, desde, hasta) => `el endeudamiento está en zona moderada (${desde}\u00A0%-${hasta}\u00A0%)`
+  },
+  {
+    patron: /^los gastos representan mas del (\d+)% del ingreso mensual$/,
+    reemplazo: (_todo, porcentaje) => `los gastos representan más del ${porcentaje}\u00A0% del ingreso mensual`
+  },
+  {
+    patron: /^Aumenta tu frecuencia de ahorro: hoy te queda menos del (\d+)% de tu ingreso disponible\.$/,
+    reemplazo: (_todo, porcentaje) =>
+      `Aumenta tu frecuencia de ahorro: hoy te queda menos del ${porcentaje}\u00A0% de tu ingreso disponible.`
+  }
+];
+
+/** Aplica la reescritura que corresponda, o devuelve el texto sin tocar. */
+function pulirCopy(texto: string) {
+  for (const { patron, reemplazo } of REESCRITURAS) {
+    const partes = texto.match(patron);
+    if (partes) return reemplazo(...partes);
+  }
+  return texto;
+}
+
+/**
+ * En español el simbolo de porcentaje va separado del numero. Se usa un espacio duro
+ * para que "43 %" no se parta al final de un renglon.
+ *
+ * Solo sobre prosa: las cifras de las tarjetas las escribe formatPercent y no pasan por
+ * aqui, y ninguna comparacion del proyecto se hace contra este texto ya pintado.
+ */
+function espacioAntesDelPorcentaje(texto: string) {
+  return texto.replace(/(\d)%/g, '$1\u00A0%');
+}
+
 /** Las razones llegan en minuscula desde el backend; aca solo se presentan. */
 function comoOracion(texto: string) {
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
+  const pulido = espacioAntesDelPorcentaje(texto);
+  return pulido.charAt(0).toUpperCase() + pulido.slice(1);
 }
 
 export function DashboardPage({ workspace, navegar }: PageProps) {
@@ -134,21 +219,107 @@ function PanelSuperior({ workspace, navegar }: { workspace: PageProps['workspace
       <Oportunidad workspace={workspace} navegar={navegar} />
 
       {detalleVisible && razones.length > 0 && (
-        <div className="dash-salud-detalle" id={ID_DETALLE_SALUD}>
-          <section>
-            <h3>¿Por qué obtuviste este resultado?</h3>
-            <ul>{razones.map((razon) => <li key={razon}>{comoOracion(razon)}</li>)}</ul>
-          </section>
-          <section>
-            <h3>Cómo se determinó</h3>
-            <p>El resultado considera tus gastos, tu ahorro y tu nivel de endeudamiento.</p>
-            {/* Secundario a proposito: el modelo no decide el perfil, solo coincide o
-                no con el veredicto de las reglas. No es un puntaje de salud. */}
-            <small>El modelo entrenado coincide con este resultado en un {Math.round(analisis.probabilidad * 100)}%.</small>
-          </section>
-        </div>
+        <PorQueEsteResultado analisis={analisis} razones={razones} />
       )}
     </article>
+  );
+}
+
+/*
+ * Cada razon del servicio, contada en dos tiempos: que pasa y que significa.
+ *
+ * El servicio devuelve una frase tecnica que nombra el umbral contra el que salto la
+ * regla -- "el nivel de endeudamiento supera el 43% del ingreso" --, util para depurar
+ * pero no para decidir nada. Aqui se traduce a un titulo corto y una explicacion de lo
+ * que implica.
+ *
+ * Cada entrada esta anclada a una de las cinco razones que emite calcular_perfil_reglas.
+ * No hay factores inventados: si el analisis devuelve una razon, aparece una; si no
+ * devuelve ninguna que encaje, la frase original se muestra tal cual.
+ *
+ * Solo la cifra de endeudamiento entra en el texto, porque no esta en ninguna tarjeta.
+ * Las razones de gasto se cuentan sin porcentaje: el suyo mide el gasto SIN deuda y
+ * chocaria con el que muestra Egresos, que si la incluye.
+ */
+function explicarRazon(razon: string, analisis: PageProps['workspace']['analisis']) {
+  const endeudamiento = formatPercent(analisis.nivelEndeudamiento);
+
+  if (/^el nivel de endeudamiento supera el \d+% del ingreso$/.test(razon)) {
+    return {
+      titulo: 'Endeudamiento elevado',
+      cuerpo: `El ${endeudamiento} de tus ingresos está comprometido con deuda. Esto reduce tu margen financiero para cubrir otros gastos y ahorrar.`
+    };
+  }
+  if (/^el endeudamiento esta en zona moderada \(\d+%-\d+%\)$/.test(razon)) {
+    return {
+      titulo: 'Endeudamiento en zona moderada',
+      cuerpo: `El ${endeudamiento} de tus ingresos está comprometido con deuda. Todavía tienes margen, pero conviene no aumentarlo.`
+    };
+  }
+  if (/^los gastos representan mas del \d+% del ingreso mensual$/.test(razon)) {
+    return {
+      titulo: 'Gastos muy cercanos a tus ingresos',
+      cuerpo: 'Casi todo lo que ingresas se va en gastos. Queda poco margen para imprevistos o para ahorrar.'
+    };
+  }
+  if (/^los gastos representan entre el \d+% y \d+% del ingreso$/.test(razon)) {
+    return {
+      titulo: 'Gastos altos frente a tus ingresos',
+      cuerpo: 'La mayor parte de lo que ingresas se va en gastos, así que el margen para imprevistos es reducido.'
+    };
+  }
+  if (/^endeudamiento controlado y gasto razonable frente al ingreso$/.test(razon)) {
+    return {
+      titulo: 'Endeudamiento y gastos bajo control',
+      cuerpo: 'Tu deuda y tus gastos están en un rango razonable frente a lo que ingresas.'
+    };
+  }
+  // Una razon que no encaje se muestra como venga, solo con el pulido tipografico.
+  return { titulo: comoOracion(pulirCopy(razon)), cuerpo: null };
+}
+
+/** Titulo del acordeon segun el veredicto. Ninguna variante inventa un perfil nuevo. */
+const PREGUNTA_POR_TONO = {
+  riesgo: '¿Por qué estás en riesgo?',
+  atencion: '¿Por qué estás en observación?',
+  sano: '¿Por qué tu perfil es saludable?'
+} as const;
+
+/*
+ * Por que el modelo clasifico asi, y nada mas.
+ *
+ * Antes aqui vivian cuatro cifras -- endeudamiento, deuda pagada, gasto y ahorro -- que
+ * ya estaban en las tarjetas de arriba. Repetirlas no respondia "por que estoy asi",
+ * que es lo unico que se viene a buscar al abrir esto.
+ *
+ * Las razones salen de analisis.razonesPerfil, que es lo que el servicio devuelve como
+ * justificacion del veredicto. Son como mucho dos: el generador para en cuanto encuentra
+ * las que aplican, asi que no hay nada que recortar ni que rellenar.
+ */
+function PorQueEsteResultado({ analisis, razones }: {
+  analisis: PageProps['workspace']['analisis'];
+  razones: string[];
+}) {
+  const { tono } = lecturaDelPerfil(analisis.perfilFinanciero);
+
+  return (
+    <div className="dash-salud-detalle" id={ID_DETALLE_SALUD}>
+      <h3>{PREGUNTA_POR_TONO[tono]}</h3>
+      <ul>
+        {razones.map((razon) => {
+          const { titulo, cuerpo } = explicarRazon(razon, analisis);
+          return (
+            <li key={razon}>
+              <span className={`dash-punto-razon tono-${tono}`} aria-hidden="true" />
+              <div>
+                <p className="dash-razon-titulo">{titulo}</p>
+                {cuerpo && <p className="dash-razon-cuerpo">{cuerpo}</p>}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -180,7 +351,7 @@ function Diagnostico({
         </header>
 
         <h2 className="dash-salud-frase">{frase}</h2>
-        {razones[0] && <p className="dash-salud-razon">{comoOracion(razones[0])}</p>}
+        {razones[0] && <p className="dash-salud-razon">{comoOracion(pulirCopy(razones[0]))}</p>}
 
         {razones.length > 0 && (
           <button
@@ -190,7 +361,8 @@ function Diagnostico({
             aria-controls={ID_DETALLE_SALUD}
             onClick={alternarDetalle}
           >
-            Ver por que este resultado <CaretDown size={14} />
+            {detalleVisible ? 'Ocultar explicación' : 'Ver por qué este resultado'}
+            {detalleVisible ? <CaretUp size={14} /> : <CaretDown size={14} />}
           </button>
         )}
       </div>
@@ -221,44 +393,150 @@ function Semaforo({ tono, perfil }: { tono: 'sano' | 'atencion' | 'riesgo'; perf
 
 function Kpis({ workspace }: { workspace: PageProps['workspace'] }) {
   const { analisis } = workspace;
-  const deuda = estadoEndeudamiento(analisis.nivelEndeudamiento);
   const hayIngreso = analisis.ingresoMensual > 0;
+  /*
+   * El endeudamiento dejo de ser tarjeta: la fila responde que entro, que salio, que se
+   * ahorro y que queda. El porque del diagnostico vive en el detalle del semaforo.
+   */
+  const disponible = calcularDisponible(analisis);
+  const enNegativo = disponible < 0;
+  /*
+   * La tarjeta muestra todo lo que salio, deuda incluida. Con gastoTotalMes a secas la
+   * fila no cuadraba -- Ingresos menos Gastos menos Ahorro no daba Disponible -- porque
+   * faltaba un sumando que no estaba en ninguna tarjeta.
+   */
+  const deuda = pagosDeDeuda(analisis);
+  const egresos = gastosVisibles(analisis);
+  const [verComposicion, setVerComposicion] = useState(false);
 
   return (
     <div className="dash-kpis">
-      <Kpi icono={<Wallet size={20} />} titulo="Ingresos" valor={formatCurrency(analisis.ingresoMensual)} />
       <Kpi
-        icono={<TrendDown size={20} />}
-        titulo="Gastos"
-        valor={formatCurrency(analisis.gastoTotalMes)}
-        pie={hayIngreso ? `${formatPercent(analisis.ratioGastoIngreso)} de tus ingresos` : undefined}
+        color="ingresos"
+        icono={<Wallet size={20} />}
+        titulo="Ingresos"
+        valor={formatCurrency(analisis.ingresoMensual)}
+        pie="Total recibido este mes"
       />
       <Kpi
+        color="gastos"
+        icono={<TrendDown size={20} />}
+        titulo="Egresos"
+        ayuda="Los egresos incluyen los gastos del período y los pagos de deuda realizados."
+        valor={formatCurrency(egresos)}
+        pie={hayIngreso ? `${formatPercent(ratioGastoVisible(analisis))} de tus ingresos` : undefined}
+        composicion={{
+          activa: verComposicion,
+          alternar: () => setVerComposicion((activa) => !activa),
+          /*
+           * Las dos partes que suman el total. "Pagos de deuda" es lo que se pago este
+           * periodo -- resumenGastos.deudas --, no el saldo pendiente: por eso no se
+           * llama "Deudas" a secas ni sale de nivelEndeudamiento.
+           */
+          filas: [
+            { etiqueta: 'Gastos', valor: formatCurrency(analisis.gastoTotalMes) },
+            { etiqueta: 'Pagos de deuda', valor: formatCurrency(deuda) }
+          ]
+        }}
+      />
+      <Kpi
+        color="ahorro"
         icono={<PiggyBank size={20} />}
         titulo="Ahorro"
         valor={formatCurrency(analisis.ahorroTotal)}
         pie={hayIngreso ? `${formatPercent(analisis.tasaAhorro)} de tus ingresos` : undefined}
       />
       <Kpi
-        icono={<Scales size={20} />}
-        titulo="Endeudamiento"
-        valor={formatPercent(analisis.nivelEndeudamiento)}
-        pie={deuda.texto}
-        tono={deuda.tono}
+        color="disponible"
+        icono={<Coins size={20} />}
+        titulo="Disponible"
+        ayuda="Disponible después de gastos, pagos de deuda y ahorro del período."
+        valor={formatCurrency(disponible)}
+        /* En positivo no se tiñe de verde: queda en el color normal de una cifra. */
+        tonoValor={enNegativo ? 'riesgo' : undefined}
+        pie={enNegativo ? 'Saldo negativo este mes' : 'Lo que te queda este mes'}
+        tono={enNegativo ? 'riesgo' : undefined}
       />
     </div>
   );
 }
 
-function Kpi({ icono, titulo, valor, pie, tono }: {
-  icono: JSX.Element; titulo: string; valor: string; pie?: string; tono?: 'sano' | 'atencion' | 'riesgo';
+type Composicion = {
+  activa: boolean;
+  alternar: () => void;
+  filas: { etiqueta: string; valor: string }[];
+};
+
+function Kpi({ icono, titulo, valor, pie, tono, tonoValor, ayuda, color, composicion }: {
+  icono: JSX.Element; titulo: string; valor: string; pie?: string;
+  tono?: 'sano' | 'atencion' | 'riesgo'; tonoValor?: 'sano' | 'atencion' | 'riesgo';
+  ayuda?: string;
+  /* Un tinte por concepto: lo que entra, lo que sale, lo guardado y lo que queda. */
+  color: 'ingresos' | 'gastos' | 'ahorro' | 'disponible';
+  /* Solo Egresos: la otra vista de la misma tarjeta, no una seccion que se despliega. */
+  composicion?: Composicion;
 }) {
+  const idVistas = useId();
+
   return (
     <article className="dash-kpi">
-      <span className="dash-kpi-icono">{icono}</span>
-      <small>{titulo}</small>
-      <strong>{valor}</strong>
-      {pie && <p className={tono ? `dash-kpi-pie tono-${tono}` : 'dash-kpi-pie'}>{pie}</p>}
+      <span className={`dash-kpi-icono ${color}`}>{icono}</span>
+      <small>
+        {titulo}
+        {ayuda && (
+          /* Enfocable a proposito: en un puntero se lee al pasar por encima, y con
+             teclado o lector de pantalla se llega por tabulacion. */
+          <span className="dash-kpi-ayuda" title={ayuda} role="note" aria-label={ayuda} tabIndex={0}>
+            <Info size={13} />
+          </span>
+        )}
+      </small>
+      {!composicion ? (
+        <>
+          <strong className={tonoValor ? `tono-${tonoValor}` : undefined}>{valor}</strong>
+          {pie && <p className={tono ? `dash-kpi-pie tono-${tono}` : 'dash-kpi-pie'}>{pie}</p>}
+        </>
+      ) : (
+        <>
+          {/*
+            * Las dos vistas ocupan la MISMA celda del grid, apiladas. La inactiva no se
+            * desmonta ni se oculta con display:none: sigue midiendo, asi que la celda
+            * mide siempre lo que la mas alta y la tarjeta no cambia de altura al
+            * alternar. visibility:hidden ademas la saca del foco y de los lectores.
+            */}
+          <div className="dash-kpi-vistas" id={idVistas}>
+            <div className="dash-kpi-vista" aria-hidden={composicion.activa}>
+              <strong className={tonoValor ? `tono-${tonoValor}` : undefined}>{valor}</strong>
+              {pie && <p className={tono ? `dash-kpi-pie tono-${tono}` : 'dash-kpi-pie'}>{pie}</p>}
+            </div>
+
+            {/*
+              * Sin encabezado propio: "Egresos" ya esta arriba y las dos etiquetas dicen
+              * que es cada cifra. Un titulo mas hacia la vista mas alta de las dos y
+              * engordaba las cuatro tarjetas de la fila.
+              */}
+            <dl className="dash-kpi-vista dash-kpi-composicion" aria-hidden={!composicion.activa}>
+              {composicion.filas.map((fila) => (
+                <div key={fila.etiqueta}>
+                  <dt title={fila.etiqueta}>{fila.etiqueta}</dt>
+                  <dd>{fila.valor}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <button
+            type="button"
+            className="dash-kpi-desplegar"
+            aria-pressed={composicion.activa}
+            aria-controls={idVistas}
+            onClick={composicion.alternar}
+          >
+            {composicion.activa ? 'Ver total' : 'Ver composición'}
+            {composicion.activa ? <CaretUp size={13} /> : <CaretDown size={13} />}
+          </button>
+        </>
+      )}
     </article>
   );
 }
@@ -287,7 +565,7 @@ function DistribucionGasto({ resumen, total }: { resumen: Record<CategoriaFinanc
     const montoResto = resto.reduce((suma, [, monto]) => suma + monto, 0);
     return [...principales, {
       clave: 'resto',
-      etiqueta: `Otras ${resto.length} categorias`,
+      etiqueta: `Otras ${resto.length} categorías`,
       monto: montoResto,
       color: '#B7C0D6',
       porcentaje: (montoResto / total) * 100
@@ -297,7 +575,12 @@ function DistribucionGasto({ resumen, total }: { resumen: Record<CategoriaFinanc
   return (
     <article className="dash-card">
       <header className="dash-card-head">
-        <h2>Asi se mueve tu dinero</h2>
+        <div>
+          <h2>Así se mueve tu dinero</h2>
+          {/* El grafico se alimenta de gastosSinDeudas: la categoria queda fuera a
+              proposito y callarlo haria pensar que el total es todo el gasto. */}
+          <p className="dash-card-nota">Sin incluir pagos de deuda</p>
+        </div>
       </header>
       {segmentos.length === 0
         ? <p className="dash-vacio-inline">Todavía no hay gastos clasificados en este mes.</p>
@@ -390,7 +673,7 @@ function EvolucionGastos({ puntos }: { puntos: PuntoEvolucion[] }) {
   if (puntos.length === 0) {
     return (
       <article className="dash-card">
-        <header className="dash-card-head"><h2>Evolucion de gastos</h2></header>
+        <header className="dash-card-head"><h2>Evolución de gastos</h2></header>
         <p className="dash-vacio-inline">Todavía no hay gastos registrados.</p>
       </article>
     );
@@ -420,7 +703,7 @@ function EvolucionGastos({ puntos }: { puntos: PuntoEvolucion[] }) {
   return (
     <article className="dash-card">
       <header className="dash-card-head">
-        <h2>Evolucion de gastos</h2>
+        <h2>Evolución de gastos</h2>
       </header>
 
       <div className="dash-evolucion-resumen">
@@ -537,7 +820,7 @@ function Oportunidad({ workspace, navegar }: { workspace: PageProps['workspace']
     );
   }
 
-  const { accion, apoyo } = separarInstruccion(principal.descripcion);
+  const { accion, apoyo } = separarInstruccion(pulirCopy(principal.descripcion));
 
   return (
     <section className="dash-oportunidad">
