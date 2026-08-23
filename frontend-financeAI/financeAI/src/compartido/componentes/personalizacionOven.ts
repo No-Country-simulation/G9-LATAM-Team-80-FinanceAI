@@ -29,7 +29,7 @@ const ATRIBUTO_INYECTADO = 'data-financeai';
 const SALUDO_ORIGINAL = 'How can we help you today?';
 
 const TRADUCCIONES: Record<string, string> = {
-  [SALUDO_ORIGINAL]: 'Hablemos de tu plata, sin juicios. ¿Por dónde empezamos?'
+  [SALUDO_ORIGINAL]: '¿Qué quieres revisar?'
 };
 
 /**
@@ -37,10 +37,9 @@ const TRADUCCIONES: Record<string, string> = {
  * Al pulsarlas se escriben en el compositor y se envian al agente.
  */
 const PREGUNTAS_INICIALES = [
-  '🔍 ¿En qué se me fue la plata este mes?',
-  '📊 ¿Cómo voy con mis finanzas? Sé honesto.',
-  '✈️ ¿Me alcanza para ese viaje o es puro sueño?',
-  '💡 Dame un truco para ahorrar sin sufrir'
+  '¿Qué significa el nivel de endeudamiento?',
+  '¿Cómo puedo organizar mejor mis gastos?',
+  '¿Cómo construir un fondo de emergencia?'
 ];
 
 export type PersonalizacionOven = {
@@ -77,22 +76,33 @@ function crearPregunta(raiz: ShadowRoot, pregunta: string): HTMLButtonElement {
   boton.type = 'button';
   boton.setAttribute(ATRIBUTO_INYECTADO, 'pregunta-inicial');
   boton.textContent = pregunta;
-  // Estilos en linea con las variables del propio widget: asi sigue su tema sin depender
-  // de las clases de utilidad que genere su bundle.
+  /*
+   * Sugerencia de conversacion, no campo de formulario: fondo blanco y borde neutro.
+   * Con fondo relleno y borde azul se leian como inputs y competian con el compositor.
+   */
   boton.style.cssText = [
     'display:block',
     'width:100%',
     'text-align:left',
     'cursor:pointer',
-    'padding:8px 12px',
+    'padding:9px 12px',
     'font:inherit',
     'font-size:13px',
     'line-height:1.35',
-    'border:1px solid color-mix(in srgb, var(--oven-widget-primary, #0288D1) 35%, transparent)',
-    'border-radius:calc(var(--oven-widget-border-radius, 16px) / 2)',
-    'background:var(--oven-widget-surface, #E1F5FE)',
-    'color:var(--oven-widget-text, #01579B)'
+    'border:1px solid #E4E9F3',
+    'border-radius:11px',
+    'background:#FFFFFF',
+    'color:#0D1838',
+    'transition:background 140ms ease, border-color 140ms ease'
   ].join(';');
+  boton.addEventListener('mouseenter', () => {
+    boton.style.background = '#F4F7FF';
+    boton.style.borderColor = '#C9D8FA';
+  });
+  boton.addEventListener('mouseleave', () => {
+    boton.style.background = '#FFFFFF';
+    boton.style.borderColor = '#E4E9F3';
+  });
   boton.addEventListener('click', () => enviarPregunta(raiz, pregunta));
   return boton;
 }
@@ -125,7 +135,14 @@ function pintarPreguntasIniciales(raiz: ShadowRoot): void {
 
   const lista = document.createElement('div');
   lista.setAttribute(ATRIBUTO_INYECTADO, 'preguntas-iniciales');
-  lista.style.cssText = 'display:flex;flex-direction:column;gap:8px;width:100%;max-width:20rem';
+  lista.style.cssText = 'display:flex;flex-direction:column;gap:8px;width:100%;text-align:left';
+
+  const rotulo = document.createElement('p');
+  rotulo.setAttribute(ATRIBUTO_INYECTADO, 'rotulo-sugerencias');
+  rotulo.textContent = 'Sugerencias';
+  rotulo.style.cssText = 'margin:6px 0 0;font-size:11px;font-weight:700;letter-spacing:0.11em;text-transform:uppercase;color:#6D7897';
+  lista.appendChild(rotulo);
+
   PREGUNTAS_INICIALES.forEach((pregunta) => lista.appendChild(crearPregunta(raiz, pregunta)));
   estadoVacio.appendChild(lista);
 }
