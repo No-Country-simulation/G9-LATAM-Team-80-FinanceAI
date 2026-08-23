@@ -295,6 +295,7 @@ jobs:
           OCIR_ENDPOINT: ${{ needs.terraform.outputs.ocir_endpoint }}
           OCIR_USERNAME: ${{ secrets.OCIR_USERNAME }}
           OCIR_AUTH_TOKEN: ${{ secrets.OCIR_AUTH_TOKEN }}
+          ACME_CA: ${{ vars.ACME_CA }}
           OVEN_HABILITADO: ${{ vars.OVEN_HABILITADO }}
           OVEN_WIDGET_SRC: ${{ vars.OVEN_WIDGET_SRC }}
           OVEN_API_URL: ${{ vars.OVEN_API_URL }}
@@ -327,6 +328,7 @@ jobs:
 
           ssh $SSH_OPTS "$TARGET" "sudo tee /opt/financeai/.env > /dev/null" <<EOF
           SITE_ADDRESS=${APP_HOSTNAME}
+          ACME_CA=${ACME_CA}
           OS_NAMESPACE=${OS_NAMESPACE}
           OS_BUCKET=${OS_BUCKET}
           OCI_REGION=${OCI_REGION}

@@ -21,3 +21,6 @@ crash.log
 .oci/
 *.pem
 !**/gh-actions-deployer-*_public.pem
+plan.json
+tfplan.bin
+*.tfplan

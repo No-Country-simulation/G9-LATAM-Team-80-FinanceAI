@@ -1,52 +1,66 @@
+# Autoridad ACME. Se controla por variable para poder validar toda la cadena contra el
+# entorno de staging de Let's Encrypt (cuotas altisimas, certificado no confiable) antes
+# de pedir el certificado real. Produccion solo tolera 5 validaciones fallidas por
+# hostname y hora: un Caddyfile mal escrito nos deja una hora bloqueados.
+#   staging    : https://acme-staging-v02.api.letsencrypt.org/directory
+#   produccion : https://acme-v02.api.letsencrypt.org/directory
+{
+	acme_ca {$ACME_CA}
+}
+
 {$SITE_ADDRESS} {
-    encode zstd gzip
+	encode zstd gzip
 
-    header {
-        Content-Security-Policy "{$OVEN_CSP}"
-        X-Content-Type-Options   "nosniff"
-        Referrer-Policy          "strict-origin-when-cross-origin"
-    }
+	header {
+		Content-Security-Policy "{$OVEN_CSP}"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
 
-    # API Java. NO hacer strip_prefix: los controladores Spring estan mapeados en /api/**
-    # (GET /api/health, POST /api/auth/login, ...). nginx hacia proxy_pass sin path, que
-    # reenvia el URI completo. Strippear /api aqui daria 404 en TODOS los endpoints.
-    handle /api/* {
-        reverse_proxy backend:8080
-    }
+	# API Java. NO hacer strip_prefix: los controladores Spring estan mapeados en /api/**
+	# (GET /api/health, POST /api/auth/login, ...). nginx hacia proxy_pass sin path, que
+	# reenvia el URI completo. Strippear /api aqui daria 404 en TODOS los endpoints.
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
 
-    # ml-service: SI se strippea, porque expone /health y /analisis-financiero en la raiz.
-    handle /ml/* {
-        uri strip_prefix /ml
-        reverse_proxy ml-service:8000
-    }
+	# ml-service: SI se strippea, porque expone /health y /analisis-financiero en la raiz.
+	handle /ml/* {
+		uri strip_prefix /ml
+		reverse_proxy ml-service:8000
+	}
 
-    # Pasarela hacia el backend de Oven. Obligatoria: su API responde 200 pero SIN
-    # Access-Control-Allow-Origin, asi que la llamada directa del navegador muere por CORS.
-    # El salto cruzado lo hace Caddy (servidor a servidor), donde CORS no aplica.
-    handle /oven-api/* {
-        uri strip_prefix /oven-api
-        reverse_proxy {$OVEN_API_ORIGIN} {
-            header_up Host   {$OVEN_API_HOST}
-            header_up Origin {$OVEN_API_ORIGIN}
-            flush_interval -1          # CRITICO: el flujo agentico responde por SSE
-            transport http { read_timeout 300s }
-        }
-    }
+	# Pasarela hacia el backend de Oven. Obligatoria: su API responde 200 pero SIN
+	# Access-Control-Allow-Origin, asi que la llamada directa del navegador muere por CORS.
+	# El salto cruzado lo hace Caddy (servidor a servidor), donde CORS no aplica.
+	handle /oven-api/* {
+		uri strip_prefix /oven-api
+		reverse_proxy {$OVEN_API_ORIGIN} {
+			header_up Host {$OVEN_API_HOST}
+			header_up Origin {$OVEN_API_ORIGIN}
+			# CRITICO: el flujo agentico responde por SSE. Sin esto el chat parece
+			# colgado y las respuestas llegan de golpe al final.
+			flush_interval -1
+			transport http {
+				read_timeout 300s
+			}
+		}
+	}
 
-    # Config del widget: archivo local escrito por el job de deploy, nunca cacheado.
-    handle /oven-config.js {
-        root * /opt/financeai/web
-        file_server
-        header Cache-Control "no-store"
-    }
+	# Config del widget: archivo local escrito por el job de deploy, nunca cacheado.
+	handle /oven-config.js {
+		root * /opt/financeai/web
+		file_server
+		header Cache-Control "no-store"
+	}
 
-    # Todo lo demas: el bucket del frontend.
-    handle {
-        @root path /
-        rewrite @root /index.html
-        rewrite * /n/{$OS_NAMESPACE}/b/{$OS_BUCKET}/o{uri}
-        reverse_proxy https://objectstorage.{$OCI_REGION}.oraclecloud.com {
-            header_up Host objectstorage.{$OCI_REGION}.oraclecloud.com
-        }
-    }
+	# Todo lo demas: el bucket del frontend.
+	handle {
+		@root path /
+		rewrite @root /index.html
+		rewrite * /n/{$OS_NAMESPACE}/b/{$OS_BUCKET}/o{uri}
+		reverse_proxy https://objectstorage.{$OCI_REGION}.oraclecloud.com {
+			header_up Host objectstorage.{$OCI_REGION}.oraclecloud.com
+		}
+	}
 }

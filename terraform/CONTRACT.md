@@ -276,8 +276,12 @@ generado en el deploy. Cambiar tenant, agente o API no requiere rebuild ni re-su
         reverse_proxy {$OVEN_API_ORIGIN} {
             header_up Host   {$OVEN_API_HOST}
             header_up Origin {$OVEN_API_ORIGIN}
-            flush_interval -1          # CRITICO: el flujo agentico responde por SSE
-            transport http { read_timeout 300s }
+            # CRITICO: el flujo agentico responde por SSE. Sin esto el chat parece
+            # colgado y las respuestas llegan de golpe al final.
+            flush_interval -1
+            transport http {
+                read_timeout 300s
+            }
         }
     }
 
