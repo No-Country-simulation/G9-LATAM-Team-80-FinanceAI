@@ -27,6 +27,13 @@ jobs:
       # Backend "s3" contra Object Storage compatible con S3 de OCI.
       AWS_ACCESS_KEY_ID: ${{ secrets.OCI_S3_ACCESS_KEY }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.OCI_S3_SECRET_KEY }}
+      # El endpoint S3-compatible de OCI devuelve 501 NotImplemented ante el
+      # "AWS chunked encoding" que el SDK de AWS Go v2 usa por defecto desde
+      # que calcula checksums en cada PutObject. Sin esto, terraform aplica los
+      # cambios pero NO consigue guardar el estado, dejando recursos huerfanos.
+      # skip_s3_checksum del bloque backend no cubre este caso.
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
       # Variables de entrada del modulo raiz (envs/prod), via TF_VAR_*.
       TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
       TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}

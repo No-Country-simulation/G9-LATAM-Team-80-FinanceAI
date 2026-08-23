@@ -138,6 +138,17 @@ backend "s3" {
 }
 ```
 
+El job que corre terraform DEBE exportar ademas:
+
+```
+AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+```
+
+Sin ellas el endpoint S3-compatible de OCI responde `501 NotImplemented: AWS chunked encoding
+not supported` al guardar el estado. Terraform crea los recursos igualmente pero no persiste el
+state, dejandolos huerfanos. `skip_s3_checksum` NO cubre este caso. Verificado el 2026-08-23.
+
 NADA de `use_lockfile` (OCI no implementa If-None-Match de forma fiable).
 Se serializa con `concurrency` en Actions.
 
