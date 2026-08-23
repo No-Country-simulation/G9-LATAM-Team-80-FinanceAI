@@ -74,16 +74,24 @@ if ($movimientos.Count -eq 0) { throw "No quedo ninguna fila cargable." }
 $creadas = Invoke-RestMethod -Method Post -Uri "$ApiUrl/api/transacciones/importar" -Headers $headers `
     -ContentType "application/json" -Body (@{ transacciones = $movimientos } | ConvertTo-Json -Depth 5)
 
-$porTipo = $movimientos | Group-Object tipo | ForEach-Object {
+# La app analiza UN mes: el mas reciente con movimientos. El resumen tiene que hablar
+# del mismo periodo, o sugiere un "ingreso mensual" que es la suma de varios meses.
+$mesAnalizado = ($movimientos | ForEach-Object { $_.fecha.Substring(0, 7) } | Sort-Object -Descending | Select-Object -First 1)
+$delMes = @($movimientos | Where-Object { $_.fecha.StartsWith($mesAnalizado) })
+
+$porTipo = $delMes | Group-Object tipo | ForEach-Object {
     $suma = ($_.Group | Measure-Object -Property monto -Sum).Sum
     "{0}={1:N0}" -f $_.Name, $suma
 }
-$deudas = ($movimientos | Where-Object { $_.categoria -eq "deudas" } | Measure-Object -Property monto -Sum).Sum
-$ingreso = ($movimientos | Where-Object { $_.tipo -eq "ingreso" } | Measure-Object -Property monto -Sum).Sum
+$deudas = ($delMes | Where-Object { $_.categoria -eq "deudas" } | Measure-Object -Property monto -Sum).Sum
+$ingreso = ($delMes | Where-Object { $_.tipo -eq "ingreso" } | Measure-Object -Property monto -Sum).Sum
 
 Write-Host ""
 Write-Host "Cargadas $(@($creadas).Count) transacciones desde $(Split-Path -Leaf $ruta)" -ForegroundColor Green
-Write-Host "  $($porTipo -join '  ')"
+if (@($movimientos).Count -ne $delMes.Count) {
+    Write-Host "  El archivo tiene varios meses. La app analiza el mas reciente: $mesAnalizado ($($delMes.Count) de $(@($movimientos).Count) movimientos)." -ForegroundColor Yellow
+}
+Write-Host "  mes $mesAnalizado -> $($porTipo -join '  ')"
 if ($deudas -gt 0 -and $ingreso -gt 0) {
     Write-Host ("  categoria deudas = {0:N0}  ->  usa nivel_endeudamiento = {1:N1}% en la pantalla de Analisis" -f $deudas, ($deudas / $ingreso * 100)) -ForegroundColor Cyan
 }

@@ -59,7 +59,8 @@ export function App() {
   const partes = sesion.usuario.nombre.split(' ').filter(Boolean);
   const iniciales = partes.slice(0, 2).map((parte) => parte[0]).join('').toUpperCase();
   return <DashboardLayout rutas={rutasAplicacion} rutaActiva={rutaActiva} onNavigate={setRutaActiva}
-    usuario={{ nombre: sesion.usuario.nombre, iniciales, rol: sesion.usuario.rol }} onLogout={logout}>
+    usuario={{ nombre: sesion.usuario.nombre, iniciales, rol: sesion.usuario.rol }} onLogout={logout}
+    mesAnalizado={workspace.mesAnalizado}>
     {pagina}
   </DashboardLayout>;
 }

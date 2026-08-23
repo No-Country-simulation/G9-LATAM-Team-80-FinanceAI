@@ -13,7 +13,21 @@ type DashboardLayoutProps = PropsWithChildren<{
     rol: string;
   };
   onLogout: () => void;
+  /** Mes que esta mirando el analisis, en formato YYYY-MM. */
+  mesAnalizado: string | null;
 }>;
+
+/**
+ * La pastilla del encabezado mostraba siempre el mes calendario actual, aunque los
+ * numeros del tablero fueran de todo el historial. Ahora muestra el mes que realmente
+ * se esta analizando, que es el mas reciente con movimientos.
+ */
+function etiquetaDeMes(mes: string | null) {
+  if (mes === null) return 'Sin movimientos';
+  const [anio, numeroMes] = mes.split('-').map(Number);
+  return new Intl.DateTimeFormat('es-PE', { month: 'long', year: 'numeric' })
+    .format(new Date(anio, numeroMes - 1, 1));
+}
 
 export function DashboardLayout({
   rutas,
@@ -21,6 +35,7 @@ export function DashboardLayout({
   onNavigate,
   usuario,
   onLogout,
+  mesAnalizado,
   children
 }: DashboardLayoutProps) {
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -94,7 +109,7 @@ export function DashboardLayout({
             </div>
           </div>
           <div className="topbar-actions">
-            <button className="date-pill">{new Intl.DateTimeFormat('es-PE', { month: 'long', year: 'numeric' }).format(new Date())}</button>
+            <button className="date-pill">{etiquetaDeMes(mesAnalizado)}</button>
             <button className="notification-button" aria-label="Notificaciones">
               <Bell size={21} />
               <span>3</span>

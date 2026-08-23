@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { analisisInicial, solicitarAnalisisFinanciero } from '../servicios/analisisFinanciero.service';
 import {
   actualizarTransaccion as actualizarTransaccionApi,
@@ -15,6 +15,33 @@ import type { CategoriaFinanciera, HistorialAnalisis, TipoTransaccion, Transacci
 
 const INGRESO_POR_DEFECTO = 4500;
 const ENDEUDAMIENTO_POR_DEFECTO = 25;
+
+/**
+ * Mes mas reciente que tiene movimientos, en formato YYYY-MM.
+ *
+ * El analisis se llama "gasto_total_mes" pero no habia ningun filtro por fecha: se
+ * enviaban TODAS las transacciones del usuario, asi que con tres meses cargados el
+ * gasto se triplicaba y el perfil salia peor de lo real.
+ *
+ * Se elige el mes mas reciente con datos, y no el mes calendario actual, para que la
+ * app siga mostrando algo cuando los movimientos son de meses anteriores -- con el mes
+ * actual, importar un CSV viejo dejaba el tablero en cero sin explicar por que.
+ *
+ * Las fechas llegan de la API como YYYY-MM-DD, asi que comparar los primeros 7
+ * caracteres como texto ya ordena cronologicamente.
+ */
+function mesMasReciente(movimientos: Transaccion[]): string | null {
+  return movimientos.reduce<string | null>((reciente, item) => {
+    const mes = item.fecha.slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(mes)) return reciente;
+    return reciente === null || mes > reciente ? mes : reciente;
+  }, null);
+}
+
+function movimientosDelMes(movimientos: Transaccion[], mes: string | null): Transaccion[] {
+  if (mes === null) return movimientos;
+  return movimientos.filter((item) => item.fecha.startsWith(mes));
+}
 
 /**
  * Deriva el ingreso mensual y el nivel de endeudamiento de los movimientos del usuario.
@@ -60,6 +87,14 @@ export function useFinancialWorkspace(token: string | null) {
   const [revision, setRevision] = useState(0);
   const [hidratado, setHidratado] = useState(false);
 
+  // El analisis y los totales miran UN mes. La lista de transacciones sigue mostrando
+  // todo el historial: es un libro de movimientos, no un resumen mensual.
+  const mesAnalizado = useMemo(() => mesMasReciente(transacciones), [transacciones]);
+  const transaccionesDelMes = useMemo(
+    () => movimientosDelMes(transacciones, mesAnalizado),
+    [transacciones, mesAnalizado]
+  );
+
   const recargarHistorial = useCallback(async () => {
     if (token) setHistorial(await listarHistorial(token));
   }, [token]);
@@ -81,7 +116,7 @@ export function useFinancialWorkspace(token: string | null) {
         // hidratado, y React agrupa estos setState. Si se dedujera despues, el analisis
         // correria dos veces y la primera guardaria en el historial una fila calculada con
         // los valores por defecto.
-        const supuestos = deducirSupuestos(movimientos);
+        const supuestos = deducirSupuestos(movimientosDelMes(movimientos, mesMasReciente(movimientos)));
         if (supuestos) {
           setIngresoMensual(supuestos.ingresoMensual);
           setNivelEndeudamiento(supuestos.nivelEndeudamiento);
@@ -93,15 +128,15 @@ export function useFinancialWorkspace(token: string | null) {
   }, [token]);
 
   useEffect(() => {
-    if (!token || !hidratado || transacciones.length === 0) return;
+    if (!token || !hidratado || transaccionesDelMes.length === 0) return;
     const controller = new AbortController();
     setCargandoAnalisis(true); setErrorAnalisis('');
-    solicitarAnalisisFinanciero(token, transacciones, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, controller.signal)
+    solicitarAnalisisFinanciero(token, transaccionesDelMes, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, controller.signal)
       .then(async (resultado) => { setAnalisis(resultado); await recargarHistorial(); })
       .catch((error: Error) => { if (error.name !== 'AbortError') setErrorAnalisis(error.message); })
       .finally(() => { if (!controller.signal.aborted) setCargandoAnalisis(false); });
     return () => controller.abort();
-  }, [token, hidratado, transacciones, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, revision, recargarHistorial]);
+  }, [token, hidratado, transaccionesDelMes, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, revision, recargarHistorial]);
 
   async function agregarTransaccion(data: { descripcion: string; categoria: CategoriaFinanciera; tipo: TipoTransaccion; monto: number }) {
     if (!token) return;
@@ -159,7 +194,7 @@ export function useFinancialWorkspace(token: string | null) {
   }
 
   return {
-    transacciones, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
+    transacciones, transaccionesDelMes, mesAnalizado, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
     cargandoDatos, cargandoAnalisis, errorAnalisis, agregarTransaccion, actualizarTransaccion,
     eliminarTransaccion, importarTransacciones, agregarPresupuesto, eliminarAnalisis, generarAnalisis, obtenerCategoria
   };
