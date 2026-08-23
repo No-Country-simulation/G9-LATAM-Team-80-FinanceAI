@@ -26,8 +26,8 @@ services:
 
   ml:
     build:
-      context: ./feature-financeAI
-      dockerfile: ml-service/Dockerfile
+      context: .
+      dockerfile: feature-financeAI/ml-service/Dockerfile
     container_name: financeai-ml
     ports:
       - "${ML_PORT:-8001}:8000"

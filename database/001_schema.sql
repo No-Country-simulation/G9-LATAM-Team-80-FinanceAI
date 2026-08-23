@@ -1,22 +1,14 @@
-CREATE DATABASE IF NOT EXISTS financeai
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
-CREATE USER IF NOT EXISTS 'financeai_app'@'localhost'
-    IDENTIFIED BY 'FinanceAI_local_2026!';
-CREATE USER IF NOT EXISTS 'financeai_app'@'127.0.0.1'
-    IDENTIFIED BY 'FinanceAI_local_2026!';
-
-ALTER USER 'financeai_app'@'localhost'
-    IDENTIFIED BY 'FinanceAI_local_2026!';
-ALTER USER 'financeai_app'@'127.0.0.1'
-    IDENTIFIED BY 'FinanceAI_local_2026!';
-
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
-    ON financeai.* TO 'financeai_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
-    ON financeai.* TO 'financeai_app'@'127.0.0.1';
-FLUSH PRIVILEGES;
+-- database/001_schema.sql
+--
+-- DDL de tablas de FinanceAI. Requiere que database/000_admin.sql ya se
+-- haya ejecutado (crea la base `financeai` y el usuario de aplicacion).
+--
+-- Este archivo NO crea bases de datos, usuarios ni privilegios: solo
+-- define tablas. Es idempotente (CREATE TABLE IF NOT EXISTS) y no cambia
+-- nombres de tabla ni de columna -- el backend corre con
+-- spring.jpa.hibernate.ddl-auto=validate, asi que cualquier diferencia de
+-- nombre entre este esquema y las entidades de Hibernate impide que el
+-- backend arranque.
 
 USE financeai;
 

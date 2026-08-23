@@ -1,0 +1,27 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+
+packages:
+  - docker.io
+  - docker-compose-v2
+  - iptables-persistent
+  - netfilter-persistent
+  - mysql-client
+
+
+# NOTA: el Caddyfile y docker-compose.prod.yml NO se escriben aqui a proposito.
+# Van dentro de user_data, y cualquier cambio en user_data fuerza a Terraform a
+# DESTRUIR Y RECREAR la instancia. En una region con capacidad ajustada eso puede
+# dejarte sin VM. Ahora los sincroniza el job `deploy` del pipeline en cada corrida.
+
+runcmd:
+  - mkdir -p /opt/financeai/web
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker ubuntu
+  # Las imagenes base de OCI dropean todo el trafico entrante salvo el 22/tcp.
+  # Sin esto, Caddy nunca recibe el challenge HTTP-01 de ACME y no hay certificado.
+  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80  -j ACCEPT
+  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+  - netfilter-persistent save
