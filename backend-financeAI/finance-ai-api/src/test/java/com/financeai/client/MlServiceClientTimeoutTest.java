@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -81,7 +82,8 @@ class MlServiceClientTimeoutTest {
         MlServiceClient cliente = new MlServiceClient(
                 "http://127.0.0.1:" + servidorMudo.getLocalPort(),
                 Duration.ofSeconds(1),
-                Duration.ofSeconds(2)
+                Duration.ofSeconds(2),
+                new CortacircuitosMl(0, Duration.ZERO, Clock.systemUTC())  // desactivado: aqui se prueba solo el timeout
         );
 
         long inicio = System.nanoTime();
@@ -94,6 +96,37 @@ class MlServiceClientTimeoutTest {
         assertThat(transcurrido)
                 .as("debe cortar cerca del read timeout de 2s, no esperar indefinidamente")
                 .isLessThan(Duration.ofSeconds(20));
+    }
+
+    /**
+     * Lo que de verdad importa del cortacircuitos: con el circuito abierto la llamada
+     * ni siquiera intenta abrir el socket, asi que no gasta un hilo esperando el read
+     * timeout. Se mide por tiempo -- 2 llamadas con timeout de 2s tardarian mas de 4s
+     * si ambas salieran a la red.
+     */
+    @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
+    void conElCircuitoAbiertoFallaAlInstanteSinLlamarAlServicio() {
+        MlServiceClient cliente = new MlServiceClient(
+                "http://127.0.0.1:" + servidorMudo.getLocalPort(),
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(2),
+                new CortacircuitosMl(1, Duration.ofMinutes(5), Clock.systemUTC())  // abre al primer fallo
+        );
+
+        // Primera llamada: sale a la red y agota el read timeout. Con eso abre el circuito.
+        assertThatThrownBy(() -> cliente.analizar(peticionDeEjemplo()))
+                .isInstanceOf(RestClientException.class);
+
+        long inicio = System.nanoTime();
+        assertThatThrownBy(() -> cliente.analizar(peticionDeEjemplo()))
+                .as("la segunda ya no debe intentar")
+                .isInstanceOf(MlNoDisponibleException.class);
+        Duration segunda = Duration.ofNanos(System.nanoTime() - inicio);
+
+        assertThat(segunda)
+                .as("debe fallar al instante, no volver a esperar los 2s del read timeout")
+                .isLessThan(Duration.ofMillis(500));
     }
 
     private AnalisisFinancieroRequest peticionDeEjemplo() {
