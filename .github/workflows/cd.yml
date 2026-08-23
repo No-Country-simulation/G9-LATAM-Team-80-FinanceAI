@@ -173,10 +173,10 @@ jobs:
           DB_PORT: ${{ needs.terraform.outputs.db_port }}
           DB_ADMIN_USER: ${{ vars.DB_ADMIN_USERNAME }}
           DB_ADMIN_PASSWORD: ${{ secrets.DB_ADMIN_PASSWORD }}
-          # No existe un secret dedicado para la password del usuario de
-          # aplicacion (ver terraform/CONTRACT.md seccion 7): se reutiliza
-          # DB_ADMIN_PASSWORD tambien como password de financeai_app.
-          APP_DB_PASSWORD: ${{ secrets.DB_ADMIN_PASSWORD }}
+          # Password del usuario de aplicacion financeai_app. Es un secret
+          # distinto del admin de HeatWave a proposito: la capa de aplicacion
+          # tiene mucha mas superficie de exposicion que la cuenta admin.
+          APP_DB_PASSWORD: ${{ secrets.APP_DB_PASSWORD }}
         run: |
           set -euo pipefail
           SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
@@ -291,9 +291,7 @@ jobs:
           ML_IMAGE: ${{ needs.terraform.outputs.ml_image_repo }}:${{ github.sha }}
           DB_URL: ${{ needs.terraform.outputs.jdbc_url }}
           DB_USER: financeai_app
-          # Ver nota en el job db-migrate: se reutiliza DB_ADMIN_PASSWORD
-          # como password del usuario de aplicacion financeai_app.
-          DB_PASSWORD: ${{ secrets.DB_ADMIN_PASSWORD }}
+          DB_PASSWORD: ${{ secrets.APP_DB_PASSWORD }}
           OCIR_ENDPOINT: ${{ needs.terraform.outputs.ocir_endpoint }}
           OCIR_USERNAME: ${{ secrets.OCIR_USERNAME }}
           OCIR_AUTH_TOKEN: ${{ secrets.OCIR_AUTH_TOKEN }}
