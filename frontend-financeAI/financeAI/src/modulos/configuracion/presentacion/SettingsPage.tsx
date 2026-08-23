@@ -4,24 +4,24 @@ import type { PageProps } from '../../../compartido/tipos/workspace';
 
 export function SettingsPage({ workspace, navegar }: PageProps) {
   return <section className="page-stack">
-    <PageHeader title="Configuracion del sistema" subtitle="Estado de las funciones disponibles en esta instalacion local." />
+    <PageHeader title="Configuración del sistema" subtitle="Estado de las funciones disponibles en esta instalación local." />
     <div className="settings-grid">
       <Card title="Persistencia MySQL">
         <div className="settings-list">
           <p><Database size={24} /> Base de datos <strong>financeai</strong></p>
           <p><CheckCircle size={24} /> Transacciones guardadas <strong>{workspace.transacciones.length}</strong></p>
-          <p><CheckCircle size={24} /> Analisis guardados <strong>{workspace.historial.length}</strong></p>
+          <p><CheckCircle size={24} /> Análisis guardados <strong>{workspace.historial.length}</strong></p>
           <p><CheckCircle size={24} /> Presupuestos guardados <strong>{workspace.presupuestos.length}</strong></p>
         </div>
       </Card>
       <Card title="Seguridad local">
         <div className="settings-list">
           <p><LockKey size={24} /> Contrasenas <strong>BCrypt</strong></p>
-          <p><CheckCircle size={24} /> Acceso a datos <strong>Sesion requerida</strong></p>
+          <p><CheckCircle size={24} /> Acceso a datos <strong>Sesión requerida</strong></p>
           <p><CheckCircle size={24} /> Separacion por usuario <strong>Activa</strong></p>
         </div>
       </Card>
-      <Card title="Importacion">
+      <Card title="Importación">
         <div className="settings-list"><p><CloudArrowUp size={24} /> Archivos CSV <strong>Disponible</strong></p></div>
         <button className="primary-button wide" onClick={() => navegar('archivos')}>Ir a importar CSV</button>
       </Card>

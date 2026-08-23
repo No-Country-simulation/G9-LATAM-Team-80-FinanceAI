@@ -28,18 +28,18 @@ export function BudgetsPage({ workspace }: PageProps) {
       <section className="page-stack">
         <PageHeader
           title="Nuevo presupuesto"
-          subtitle="Define un limite mensual para una categoria financiera."
+          subtitle="Define un límite mensual para una categoría financiera."
           action={<button className="outline-button" onClick={() => setVista('listado')}><ArrowLeft size={18} /> Volver</button>}
         />
         <form className="subview-card form-panel" onSubmit={guardarPresupuesto}>
-          <label>Categoria<select value={categoria} onChange={(event) => setCategoria(event.target.value as CategoriaFinanciera)}>
+          <label>Categoría<select value={categoria} onChange={(event) => setCategoria(event.target.value as CategoriaFinanciera)}>
             {Object.entries(etiquetasCategoria).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
           </select></label>
           <label>Presupuesto mensual<input value={presupuesto} onChange={(event) => setPresupuesto(event.target.value)} type="number" min="1" /></label>
           <div className="budget-preview">
             <span>Disponible inicial</span>
             <strong>{formatCurrency(Number(presupuesto || 0))}</strong>
-            <p>Este limite se usara para alertas y recomendaciones por categoria.</p>
+            <p>Este límite se usará para alertas y recomendaciones por categoría.</p>
           </div>
           <div className="form-actions">
             <button className="outline-button" type="button" onClick={() => setVista('listado')}>Cancelar</button>
@@ -68,7 +68,7 @@ export function BudgetsPage({ workspace }: PageProps) {
             <p>Disponible <b className="positive">{formatCurrency(disponible)}</b></p>
           </div>
         </Card>
-        <Card title="Progreso por categoria">
+        <Card title="Progreso por categoría">
           <div className="category-bars compact">
             {workspace.presupuestos.map((item) => (
               <div key={item.categoria}>
@@ -79,9 +79,9 @@ export function BudgetsPage({ workspace }: PageProps) {
           </div>
         </Card>
       </div>
-      <Card title="Limites por categoria">
+      <Card title="Límites por categoría">
         <table className="data-table roomy">
-          <thead><tr><th>Categoria</th><th>Presupuesto</th><th>Gastado</th><th>Disponible</th><th>% Utilizado</th></tr></thead>
+          <thead><tr><th>Categoría</th><th>Presupuesto</th><th>Gastado</th><th>Disponible</th><th>% Utilizado</th></tr></thead>
           <tbody>
             {workspace.presupuestos.map((item) => (
               <tr key={item.categoria}>

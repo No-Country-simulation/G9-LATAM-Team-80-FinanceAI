@@ -20,15 +20,15 @@ export function FinancialAnalysisPage({ workspace }: PageProps) {
   if (vista === 'nuevo') return <NewAnalysisView workspace={workspace} onBack={() => setVista('resumen')} />;
 
   return <section className="page-stack">
-    <PageHeader title="Analisis financiero" subtitle="Resultados actualizados de tu salud financiera."
-      action={<button className="primary-button" onClick={() => setVista('nuevo')}>Nuevo analisis</button>} />
+    <PageHeader title="Análisis financiero" subtitle="Resultados actualizados de tu salud financiera."
+      action={<button className="primary-button" onClick={() => setVista('nuevo')}>Nuevo análisis</button>} />
     {workspace.cargandoAnalisis && <div className="info-strip"><p>Analizando tus movimientos...</p></div>}
     {workspace.errorAnalisis && <p className="form-error">{workspace.errorAnalisis} Verifica que el backend y el servicio ML esten encendidos.</p>}
     <div className="tabs">
       <button className={tabActiva === 'resumen' ? 'active' : ''} onClick={() => setTabActiva('resumen')}>Resumen</button>
-      <button className={tabActiva === 'categorias' ? 'active' : ''} onClick={() => setTabActiva('categorias')}>Gastos por categoria</button>
+      <button className={tabActiva === 'categorias' ? 'active' : ''} onClick={() => setTabActiva('categorias')}>Gastos por categoría</button>
       <button className={tabActiva === 'indicadores' ? 'active' : ''} onClick={() => setTabActiva('indicadores')}>Indicadores</button>
-      <button className={tabActiva === 'detalles' ? 'active' : ''} onClick={() => setTabActiva('detalles')}>Como se obtuvo</button>
+      <button className={tabActiva === 'detalles' ? 'active' : ''} onClick={() => setTabActiva('detalles')}>Cómo se obtuvo</button>
     </div>
     {tabActiva === 'resumen' && <AnalysisSummary workspace={workspace} rows={rows} total={total} />}
     {tabActiva === 'categorias' && <CategoryExpenses rows={rows} total={total} />}
@@ -62,14 +62,14 @@ function AnalysisSummary({ workspace, rows, total }: { workspace: PageProps['wor
 
 function CategoryExpenses({ rows, total }: { rows: [string, number][]; total: number }) {
   return <div className="analysis-wide-grid">
-    <Card title="Ranking de gasto por categoria" className="span-2">
+    <Card title="Ranking de gasto por categoría" className="span-2">
       <table className="data-table roomy">
-        <thead><tr><th>Categoria</th><th>Gasto</th><th>Participacion</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Categoría</th><th>Gasto</th><th>Participación</th><th>Estado</th></tr></thead>
         <tbody>{rows.map(([categoria, value]) => {
           const percent = total ? (value / total) * 100 : 0;
           return <tr key={categoria}><td>{etiquetasCategoria[categoria as keyof typeof etiquetasCategoria]}</td>
             <td>{formatCurrency(value)}</td><td>{formatPercent(percent)}</td>
-            <td>{percent > 30 ? 'Revisar limite' : percent > 15 ? 'Monitorear' : 'Controlado'}</td></tr>;
+            <td>{percent > 30 ? 'Revisar límite' : percent > 15 ? 'Monitorear' : 'Controlado'}</td></tr>;
         })}</tbody>
       </table>
     </Card>
@@ -105,7 +105,7 @@ function AnalysisDetails({ workspace }: { workspace: PageProps['workspace'] }) {
       <p><span>Ahorro registrado</span><strong>{formatCurrency(workspace.analisis.ahorroTotal)}</strong></p>
     </div></Card>
     <Card title="Explicacion del resultado"><div className="action-checklist">
-      <p><CheckCircle size={20} weight="fill" /> Cada gasto se clasifica automaticamente a partir de su descripcion.</p>
+      <p><CheckCircle size={20} weight="fill" /> Cada gasto se clasifica automáticamente a partir de su descripción.</p>
       <p><CheckCircle size={20} weight="fill" /> Se comparan gastos, ingreso, ahorro y deuda para evaluar tu perfil.</p>
       <p><CheckCircle size={20} weight="fill" /> Las sugerencias priorizan los indicadores con mayor desviacion.</p>
     </div></Card>
@@ -147,7 +147,7 @@ function NewAnalysisView({ workspace, onBack }: { workspace: PageProps['workspac
   }
 
   return <section className="page-stack">
-    <PageHeader title="Nuevo analisis" subtitle="Actualiza tus datos para recalcular tu salud financiera."
+    <PageHeader title="Nuevo análisis" subtitle="Actualiza tus datos para recalcular tu salud financiera."
       action={<button className="outline-button" onClick={onBack}><ArrowLeft size={18} /> Volver</button>} />
     <form className="subview-card form-panel" onSubmit={submit}>
       <label>Ingreso mensual<input value={ingreso} onChange={(event) => setIngreso(event.target.value)} type="number" min="0.01" step="0.01" /></label>
@@ -157,7 +157,7 @@ function NewAnalysisView({ workspace, onBack }: { workspace: PageProps['workspac
       </select></label>
       <div className="success-note"><Sparkle size={20} weight="fill" /> Se analizaran {workspace.transacciones.length} transacciones registradas.</div>
       {error && <p className="form-error">{error}</p>}
-      <button className="primary-button" type="submit"><Sparkle size={18} /> Generar analisis</button>
+      <button className="primary-button" type="submit"><Sparkle size={18} /> Generar análisis</button>
     </form>
   </section>;
 }
