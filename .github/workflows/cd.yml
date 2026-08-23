@@ -107,7 +107,7 @@ jobs:
   #    aarch64: una imagen amd64 muere con "exec format error".
   # ---------------------------------------------------------------------
   build-backend:
-    name: build-backend (arm64)
+    name: build-backend (amd64)
     needs: terraform
     # La VM es VM.Standard.E5.Flex (x86_64), asi que las imagenes van en amd64.
     # Si algun dia se vuelve a VM.Standard.A1.Flex (arm64), cambiar a ubuntu-24.04-arm.
@@ -134,7 +134,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=backend
 
   build-ml:
-    name: build-ml (arm64)
+    name: build-ml (amd64)
     needs: terraform
     # La VM es VM.Standard.E5.Flex (x86_64), asi que las imagenes van en amd64.
     # Si algun dia se vuelve a VM.Standard.A1.Flex (arm64), cambiar a ubuntu-24.04-arm.
