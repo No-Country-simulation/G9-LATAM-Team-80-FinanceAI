@@ -15,7 +15,12 @@ public class TransaccionEntity {
     private Usuario usuario;
     @Column(nullable = false, length = 200)
     private String descripcion;
-    @Column(nullable = false, length = 50)
+    /**
+     * Solo los gastos tienen categoria. Ingresos y ahorros guardan null: las doce
+     * categorias del catalogo son de gasto y usar "otros" como relleno inventaba un
+     * dato que despues aparecia en pantalla como si fuera real.
+     */
+    @Column(length = 50)
     private String categoria;
     @Column(nullable = false, length = 20)
     private String tipo;

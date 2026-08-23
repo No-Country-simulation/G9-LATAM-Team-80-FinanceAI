@@ -19,7 +19,11 @@ export type PerfilFinanciero = 'Saludable' | 'En observacion' | 'En riesgo';
 export type Transaccion = {
   id: string;
   descripcion: string;
-  categoria: CategoriaFinanciera;
+  /**
+   * Solo los gastos tienen categoria. Las doce del catalogo son categorias de gasto,
+   * asi que ingresos y ahorros llevan null en vez de un valor de relleno.
+   */
+  categoria: CategoriaFinanciera | null;
   tipo: TipoTransaccion;
   fecha: string;
   monto: number;

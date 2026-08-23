@@ -14,7 +14,7 @@ import { useMemo, useState } from 'react';
 import { coloresCategoria, etiquetasCategoria } from '../../../compartido/constantes/categorias';
 import { gastosSinDeudas } from '../../../compartido/servicios/analisisFinanciero.service';
 import { formatCurrency, formatPercent } from '../../../compartido/utilidades/formato';
-import type { CategoriaFinanciera, Transaccion } from '../../../compartido/tipos/finanzas';
+import type { CategoriaFinanciera, TipoTransaccion, Transaccion } from '../../../compartido/tipos/finanzas';
 import type { PageProps } from '../../../compartido/tipos/workspace';
 import './dashboard.css';
 
@@ -29,6 +29,12 @@ function estadoEndeudamiento(nivel: number) {
 }
 
 /** Luces del semaforo, de arriba abajo como en uno real. */
+const ETIQUETAS_TIPO_MOVIMIENTO: Record<TipoTransaccion, string> = {
+  gasto: 'Gasto',
+  ingreso: 'Ingreso',
+  ahorro: 'Ahorro'
+};
+
 const LUCES = ['riesgo', 'atencion', 'sano'] as const;
 
 /**
@@ -568,7 +574,8 @@ function UltimosMovimientos({ transacciones, navegar }: { transacciones: Transac
             </span>
             <span className="dash-movimiento-detalle">
               <strong>{item.descripcion}</strong>
-              <small>{etiquetasCategoria[item.categoria]}</small>
+              {/* Ingresos y ahorros no tienen categoria: se nombra el tipo. */}
+              <small>{item.categoria ? etiquetasCategoria[item.categoria] : ETIQUETAS_TIPO_MOVIMIENTO[item.tipo]}</small>
             </span>
             <span className={item.monto < 0 ? 'dash-movimiento-monto' : 'dash-movimiento-monto entrada'}>
               {formatCurrency(item.monto)}
