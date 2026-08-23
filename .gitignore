@@ -9,3 +9,15 @@
 .env
 *.rar
 *.zip
+
+# --- infra / CD ---
+terraform/**/.terraform/
+terraform/**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+.oci/
+*.pem
+!**/gh-actions-deployer-*_public.pem
