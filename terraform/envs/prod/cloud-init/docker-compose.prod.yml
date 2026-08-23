@@ -1,0 +1,53 @@
+name: financeai
+
+services:
+  backend:
+    image: ${BACKEND_IMAGE}
+    restart: unless-stopped
+    env_file:
+      - .env
+    mem_limit: 2g
+    cpus: 0.75
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  ml-service:
+    image: ${ML_IMAGE}
+    restart: unless-stopped
+    env_file:
+      - .env
+    mem_limit: 2g
+    cpus: 0.75
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /opt/financeai/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/financeai/web:/opt/financeai/web:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    mem_limit: 256m
+    cpus: 0.5
+    depends_on:
+      - backend
+      - ml-service
+
+volumes:
+  caddy_data:
+  caddy_config:
