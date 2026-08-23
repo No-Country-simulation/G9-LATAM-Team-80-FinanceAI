@@ -54,11 +54,20 @@
 		header Cache-Control "no-store"
 	}
 
+	# Raiz: Object Storage no tiene "index document", asi que hay que pedir el objeto
+	# por su nombre. Va en su propio handle porque encadenar dos rewrite (uno para / y
+	# otro generico con {uri}) NO funciona: el segundo no ve el resultado del primero
+	# y a Object Storage le llega la ruta vacia -> 404. Verificado en la VM.
+	handle / {
+		rewrite * /n/{$OS_NAMESPACE}/b/{$OS_BUCKET}/o/index.html
+		reverse_proxy https://objectstorage.{$OCI_REGION}.oraclecloud.com {
+			header_up Host objectstorage.{$OCI_REGION}.oraclecloud.com
+		}
+	}
+
 	# Todo lo demas: el bucket del frontend.
 	handle {
-		@root path /
-		rewrite @root /index.html
-		rewrite * /n/{$OS_NAMESPACE}/b/{$OS_BUCKET}/o{uri}
+		rewrite * /n/{$OS_NAMESPACE}/b/{$OS_BUCKET}/o{path}
 		reverse_proxy https://objectstorage.{$OCI_REGION}.oraclecloud.com {
 			header_up Host objectstorage.{$OCI_REGION}.oraclecloud.com
 		}
