@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { analisisInicial, solicitarAnalisisFinanciero } from '../servicios/analisisFinanciero.service';
 import {
   actualizarTransaccion as actualizarTransaccionApi,
+  clasificarDescripcion as clasificarDescripcionApi,
+  clasificarDescripciones as clasificarDescripcionesApi,
   crearTransaccion,
   eliminarAnalisis as eliminarAnalisisApi,
   eliminarTransaccion as eliminarTransaccionApi,
@@ -207,7 +209,7 @@ export function useFinancialWorkspace(token: string | null) {
    * habia forma de registrar un movimiento pasado salvo importando un CSV. Se mantiene
    * el dia actual como valor por defecto para quien no la envie.
    */
-  async function agregarTransaccion(data: { descripcion: string; categoria: CategoriaFinanciera; tipo: TipoTransaccion; monto: number; fecha?: string }) {
+  async function agregarTransaccion(data: { descripcion: string; categoria: CategoriaFinanciera | null; tipo: TipoTransaccion; monto: number; fecha?: string }) {
     if (!token) return;
     const nueva = await crearTransaccion(token, {
       descripcion: data.descripcion, categoria: data.categoria, tipo: data.tipo,
@@ -222,6 +224,23 @@ export function useFinancialWorkspace(token: string | null) {
     const actualizada = await actualizarTransaccionApi(token, id, data);
     setTransacciones((actuales) => actuales.map((item) => item.id === id ? actualizada : item));
     await recargarPresupuestos();
+  }
+
+  /**
+   * Categoria sugerida por el modelo para una descripcion de GASTO.
+   *
+   * No se guarda nada aqui: solo consulta. Quien llama decide que hacer si falla,
+   * porque con el ML caido el cortacircuitos responde 502 y el alta no debe perderse.
+   */
+  async function clasificarDescripcion(descripcion: string, monto: number) {
+    if (!token) throw new Error('Sesion no disponible.');
+    return clasificarDescripcionApi(token, descripcion, Math.abs(monto));
+  }
+
+  /** Version por lote: una sola peticion para todos los gastos sin categoria de un CSV. */
+  async function clasificarDescripciones(items: { descripcion: string; valor: number }[]) {
+    if (!token) throw new Error('Sesion no disponible.');
+    return clasificarDescripcionesApi(token, items);
   }
 
   async function eliminarTransaccion(id: string) {
@@ -257,15 +276,16 @@ export function useFinancialWorkspace(token: string | null) {
     setFrecuenciaAhorro(datos.frecuenciaAhorro); setRevision((actual) => actual + 1);
   }, []);
 
-  function obtenerCategoria(transaccion: Transaccion): CategoriaFinanciera {
-    if (transaccion.tipo !== 'gasto') return transaccion.categoria;
+  function obtenerCategoria(transaccion: Transaccion): CategoriaFinanciera | null {
+    // Ingresos y ahorros no tienen categoria: no hay nada que inferir.
+    if (transaccion.tipo !== 'gasto') return null;
     return analisis.clasificaciones.find((item) => item.descripcion === transaccion.descripcion)?.categoria ?? transaccion.categoria;
   }
 
   return {
     transacciones, transaccionesDelMes, mesAnalizado, mesesDisponibles, mesesDelAnio, seleccionarMes,
     anioAnalizado, aniosDisponibles, seleccionarAnio, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
-    cargandoDatos, cargandoAnalisis, errorAnalisis, analisisListo, hidratado, agregarTransaccion, actualizarTransaccion,
+    cargandoDatos, cargandoAnalisis, errorAnalisis, analisisListo, hidratado, agregarTransaccion, actualizarTransaccion, clasificarDescripcion, clasificarDescripciones,
     eliminarTransaccion, importarTransacciones, agregarPresupuesto, eliminarAnalisis, generarAnalisis, obtenerCategoria
   };
 }
