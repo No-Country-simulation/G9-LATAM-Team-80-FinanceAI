@@ -200,7 +200,7 @@ jobs:
           # cloud-init instala el cliente mysql; si la VM acaba de crearse todavia
           # puede estar a medias. Sin esta espera el job muere con
           # "mysql: command not found".
-          ssh $SSH_OPTS "$TARGET" "sudo cloud-init status --wait"
+          ssh $SSH_OPTS "ubuntu@${APP_HOST}" "sudo cloud-init status --wait"
 
           echo "Aplicando database/000_admin.sql..."
           APP_DB_PASSWORD="${APP_DB_PASSWORD}" envsubst '${APP_DB_PASSWORD}' < database/000_admin.sql | run_mysql
