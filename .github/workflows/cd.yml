@@ -1,8 +1,11 @@
 name: CD - FinanceAI (OCI)
 
 on:
+  # Despliega lo que hay en main. Antes escuchaba a feature/cd-oci-terraform, que se
+  # quedo 21 commits por detras: lo desplegado dejo de corresponder a lo integrado y
+  # nadie sabia que version estaba viva en OCI.
   push:
-    branches: [feature/cd-oci-terraform]
+    branches: [main]
   workflow_dispatch: {}
 
 concurrency:
