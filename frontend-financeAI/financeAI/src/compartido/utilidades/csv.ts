@@ -9,78 +9,90 @@ import type { CategoriaFinanciera, TipoTransaccion, Transaccion } from '../tipos
  */
 export type FilaImportada = Omit<Transaccion, 'id'>;
 
-/** Resultado de la lectura, con lo que hubo que descartar por incompatible. */
+/** Una fila que no se pudo leer, con el motivo en lenguaje llano. */
+export type ProblemaFila = { fila: number; motivo: string };
+
 export type LecturaCsv = {
   filas: FilaImportada[];
-  /** Filas de ingreso o ahorro que traian categoria y se guardaron sin ella. */
+  /** Filas de ingreso o ahorro que traian categoria y se leyeron sin ella. */
   categoriasDescartadas: number;
+  /** Filas que necesitan revision. Si hay alguna, no se importa nada. */
+  problemas: ProblemaFila[];
 };
 
-/** Nombres tecnicos de las columnas. Son contrato: van sin tildes y no se traducen. */
-const COLUMNAS = ['descripcion', 'categoria', 'tipo', 'fecha', 'monto'];
+/**
+ * Columnas del contrato. La categoria ya no se pide: en los gastos la resuelve
+ * FinanceAI y en ingresos y ahorros no corresponde. Se sigue leyendo si viene, para
+ * no romper los archivos anteriores al cambio.
+ */
+export const COLUMNAS_REQUERIDAS = ['descripcion', 'tipo', 'fecha', 'monto'];
+
 const TIPOS: TipoTransaccion[] = ['ingreso', 'gasto', 'ahorro'];
 
-/** "la fila 8" / "las filas 8, 12 y 15" / "17 filas (2, 5, 8, 11, 14, 20...)" */
-function enumerar(filas: number[], limite = 6): string {
-  if (filas.length === 1) return `la fila ${filas[0]}`;
-  if (filas.length <= limite) {
-    return `las filas ${filas.slice(0, -1).join(', ')} y ${filas[filas.length - 1]}`;
-  }
-  return `${filas.length} filas (${filas.slice(0, limite).join(', ')}...)`;
-}
+/**
+ * Tope de la columna monto: DECIMAL(15,2). Por encima, el backend responde 500 al
+ * volcar la transaccion, asi que conviene frenarlo aqui y decirlo con claridad.
+ */
+const MONTO_MAXIMO = 9999999999999.99;
 
 /**
  * Lector del CSV de movimientos.
  *
- * La columna "categoria" sigue en la cabecera --es contrato-- pero su contenido depende
- * del tipo:
+ * Los problemas se acumulan y se devuelven todos juntos: abortar en la primera fila
+ * obligaba a corregir el archivo de a un error por intento.
  *
- *   - gasto: opcional. Si viene se respeta, porque escribirla es una decision explicita
- *     de quien prepara el archivo. Si falta la resuelve el clasificador.
- *   - ingreso y ahorro: no corresponde. Las doce categorias son de gasto.
- *
- * Un archivo antiguo puede traer categoria en un ingreso, porque hasta ahora era
- * obligatoria. Rechazarlo dejaria inservibles todos los CSV ya existentes por un dato
- * que de todos modos era de relleno, asi que se descarta el valor y se informa cuantas
- * filas quedaron afectadas. Descartar sin avisar seria peor: la persona creeria que su
- * categoria se guardo.
- *
- * Los problemas se acumulan y se informan juntos. Abortar en la primera fila obligaba a
- * corregir el archivo de a un error por intento.
+ * Un archivo antiguo puede traer categoria en un ingreso, porque hasta un tiempo atras
+ * era obligatoria. Rechazarlo dejaria inservibles todos los CSV ya existentes por un
+ * dato que de todos modos era de relleno, asi que se descarta el valor y se informa
+ * cuantas filas quedaron afectadas.
  */
 export function parsearCsv(texto: string): LecturaCsv {
   const lineas = texto.replace(/^﻿/, '').split(/\r?\n/).filter((linea) => linea.trim());
-  if (lineas.length < 2) throw new Error('El archivo no contiene transacciones.');
+  if (lineas.length < 2) throw new Error('El archivo no contiene movimientos.');
 
   const cabecera = lineas[0].split(',').map((valor) => valor.trim().toLowerCase());
-  const faltantes = COLUMNAS.filter((campo) => !cabecera.includes(campo));
+  const faltantes = COLUMNAS_REQUERIDAS.filter((campo) => !cabecera.includes(campo));
   if (faltantes.length > 0) {
-    throw new Error(`Faltan columnas en la cabecera: ${faltantes.join(', ')}. Usa: ${COLUMNAS.join(',')}`);
+    throw new Error(
+      `Al archivo le faltan columnas: ${faltantes.join(', ')}. La cabecera debe ser ${COLUMNAS_REQUERIDAS.join(',')}.`
+    );
   }
 
-  const invalidas: number[] = [];
-  const desconocidas: { fila: number; valor: string }[] = [];
+  const problemas: ProblemaFila[] = [];
   const filas: FilaImportada[] = [];
   let categoriasDescartadas = 0;
 
   lineas.slice(1).forEach((linea, indice) => {
     const numeroDeFila = indice + 2; // +1 por la cabecera, +1 porque se cuenta desde uno
     const celdas = linea.split(',').map((valor) => valor.trim().replace(/^"|"$/g, ''));
-    const valor = (campo: string) => celdas[cabecera.indexOf(campo)] ?? '';
+    const valor = (campo: string) => (cabecera.includes(campo) ? celdas[cabecera.indexOf(campo)] ?? '' : '');
 
     const descripcion = valor('descripcion');
-    const tipo = valor('tipo') as TipoTransaccion;
+    const tipo = valor('tipo').toLowerCase() as TipoTransaccion;
     const fecha = valor('fecha');
-    const monto = Number(valor('monto'));
+    const bruto = valor('monto');
+    const monto = Number(bruto);
     const categoriaCruda = valor('categoria');
 
-    if (!descripcion || !TIPOS.includes(tipo) || !/^\d{4}-\d{2}-\d{2}$/.test(fecha) || !(monto > 0)) {
-      invalidas.push(numeroDeFila);
+    if (!descripcion) { problemas.push({ fila: numeroDeFila, motivo: 'Falta la descripción' }); return; }
+    if (!TIPOS.includes(tipo)) { problemas.push({ fila: numeroDeFila, motivo: 'Tipo desconocido' }); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || Number.isNaN(Date.parse(fecha))) {
+      problemas.push({ fila: numeroDeFila, motivo: 'Fecha no válida' });
+      return;
+    }
+    if (!bruto || Number.isNaN(monto) || monto <= 0) {
+      problemas.push({ fila: numeroDeFila, motivo: 'Monto no válido' });
+      return;
+    }
+    if (monto > MONTO_MAXIMO) {
+      // Se frena aqui: mas alla de este valor la columna no lo admite y el guardado
+      // fallaria entero, llevandose por delante todas las demas filas del archivo.
+      problemas.push({ fila: numeroDeFila, motivo: 'Monto demasiado grande' });
       return;
     }
     // Solo se valida el catalogo cuando la categoria va a usarse, o sea en un gasto.
     if (tipo === 'gasto' && categoriaCruda !== '' && !(categoriaCruda in etiquetasCategoria)) {
-      desconocidas.push({ fila: numeroDeFila, valor: categoriaCruda });
+      problemas.push({ fila: numeroDeFila, motivo: `Categoría desconocida (${categoriaCruda})` });
       return;
     }
     if (tipo !== 'gasto' && categoriaCruda !== '') categoriasDescartadas += 1;
@@ -90,25 +102,13 @@ export function parsearCsv(texto: string): LecturaCsv {
       tipo,
       fecha,
       monto,
+      // Un gasto con categoria explicita la conserva: escribirla es una decision humana.
       categoria: tipo === 'gasto' && categoriaCruda !== '' ? (categoriaCruda as CategoriaFinanciera) : null
     });
   });
 
-  const problemas: string[] = [];
-  if (invalidas.length > 0) {
-    problemas.push(`${enumerar(invalidas)} ${invalidas.length === 1 ? 'contiene' : 'contienen'} datos no válidos.`);
+  if (filas.length === 0 && problemas.length === 0) {
+    throw new Error('El archivo no contiene movimientos.');
   }
-  if (desconocidas.length > 0) {
-    const nombres = [...new Set(desconocidas.map((item) => item.valor))].slice(0, 4).join(', ');
-    problemas.push(
-      `${enumerar(desconocidas.map((item) => item.fila))} ${desconocidas.length === 1 ? 'tiene' : 'tienen'} una categoría desconocida (${nombres}).`
-    );
-  }
-  if (problemas.length > 0) {
-    // Los fragmentos empiezan con "la fila" / "las filas": se capitaliza el inicio.
-    throw new Error(problemas.map((frase) => frase.charAt(0).toUpperCase() + frase.slice(1)).join(' '));
-  }
-
-  if (filas.length === 0) throw new Error('El archivo no contiene transacciones.');
-  return { filas, categoriasDescartadas };
+  return { filas, categoriasDescartadas, problemas };
 }

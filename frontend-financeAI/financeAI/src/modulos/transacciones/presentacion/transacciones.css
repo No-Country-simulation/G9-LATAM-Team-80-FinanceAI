@@ -100,12 +100,30 @@
   background: var(--fa-card);
 }
 
-.transacciones .tx-conteo { font-size: 0.93rem; font-weight: 600; }
-.transacciones .tx-conteo span { color: var(--fa-muted); font-weight: 500; }
+.transacciones .tx-separador { width: 1px; height: 36px; background: var(--fa-border); }
 
-.transacciones .tx-separador { width: 1px; height: 22px; background: var(--fa-border); }
+/* Etiqueta arriba y cifra abajo: en una sola linea, con el icono delante, la etiqueta
+   competia con el numero por el mismo renglon y la franja se leia peor, no mejor. */
+.transacciones .tx-cifra { display: flex; align-items: center; gap: 10px; font-size: 0.93rem; }
+.transacciones .tx-cifra-texto { display: grid; gap: 1px; min-width: 0; }
 
-.transacciones .tx-cifra { display: flex; align-items: baseline; gap: 7px; font-size: 0.93rem; }
+/*
+ * Los fondos son los mismos de .tx-pill-tipo, que ya viven en esta pantalla, y el azul
+ * es el del icono de las tarjetas del tablero. No hay ningun tono nuevo.
+ */
+.transacciones .tx-cifra-icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+}
+
+.transacciones .tx-cifra-icono.movimientos { background: #EEF2FE; color: var(--fa-primary); }
+.transacciones .tx-cifra-icono.ingreso { background: #E8F7F1; color: #0C7A55; }
+.transacciones .tx-cifra-icono.gasto { background: #FDECEF; color: #B23A4C; }
+.transacciones .tx-cifra-icono.ahorro { background: #EFECFE; color: #4B36B8; }
 
 .transacciones .tx-cifra small {
   color: var(--fa-muted);
@@ -114,6 +132,9 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+
+/* El periodo es una frase, no una etiqueta: sin versalitas ni tracking. */
+.transacciones .tx-cifra-periodo { letter-spacing: 0; text-transform: none; font-weight: 500; }
 
 .transacciones .tx-cifra strong { font-weight: 700; font-variant-numeric: tabular-nums; }
 
@@ -580,6 +601,12 @@
   overflow-y: auto;
 }
 
+/*
+ * En el paso de eleccion de archivo no hay pie, y era el pie el que cerraba el modal
+ * por abajo. Sin el, el ultimo bloque queda pegado al borde.
+ */
+.tx-modal-cuerpo:last-child { padding-bottom: 24px; }
+
 .tx-modal-pie {
   display: grid;
   gap: 2px;
@@ -613,13 +640,176 @@
 
 .tx-usar-sugerencia { font-size: inherit; }
 
+/* El paso de revision necesita mas ancho que el formulario. */
+.tx-modal.ancho { width: 760px; }
+
+.tx-modal-sub { margin: 4px 0 0; color: var(--fa-muted); font-size: 0.88rem; }
+
+/* --- Zona de carga --------------------------------------------------- */
+
+.tx-soltar {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 30px 20px;
+  border: 1px dashed #CBD6EA;
+  border-radius: 14px;
+  background: var(--fa-bg);
+  color: var(--fa-muted);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.tx-soltar:hover,
+.tx-soltar.activa { border-color: var(--fa-primary); background: #F4F7FF; }
+.tx-soltar svg { color: var(--fa-primary); }
+.tx-soltar strong { color: var(--fa-text); font-size: 0.97rem; font-weight: 600; }
+.tx-soltar span { font-size: 0.86rem; }
+.tx-soltar .tx-boton { pointer-events: none; margin-top: 2px; }
+
+/*
+ * Seccion informativa, no una segunda card. Con el mismo borde, el mismo radio y el
+ * mismo padding que la zona de carga leia como un segundo bloque protagonista y
+ * competia con ella. Queda un separador superior y nada mas.
+ *
+ * Sin padding lateral: asi el texto cae en la misma linea vertical que el resto del
+ * cuerpo del modal en vez de meterse 16px hacia dentro, que era de donde venia la
+ * sensacion de bloque suelto.
+ */
+.tx-plantilla {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  /* Sin padding inferior: el cuerpo del modal ya aporta su propio cierre. */
+  padding: 14px 0 0;
+  border-top: 1px solid var(--fa-border);
+  /* Un item de grid no encoge por debajo de su contenido si no se le dice. */
+  min-width: 0;
+}
+
+.tx-plantilla p { margin: 0; color: var(--fa-muted); font-size: 0.85rem; font-weight: 600; }
+
+/* El boton acompaña, no encabeza: mas bajo y mas estrecho que los del pie. */
+.transacciones .tx-plantilla .tx-boton { height: 34px; padding: 0 12px; font-size: 0.84rem; }
+
+/* Dos lineas cortas se leen de un vistazo; el parrafo corrido anterior no. */
+.tx-plantilla small {
+  display: grid;
+  gap: 2px;
+  max-width: 100%;
+  color: var(--fa-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.tx-plantilla strong { color: var(--fa-text); font-weight: 600; }
+
+/* --- Filas con problemas --------------------------------------------- */
+
+.tx-problemas {
+  padding: 14px 16px;
+  border: 1px solid #F6C9D1;
+  border-radius: 14px;
+  background: #FDF5F6;
+}
+
+.tx-problemas p { margin: 0 0 8px; font-size: 0.9rem; font-weight: 600; color: #8A2F40; }
+.tx-problemas ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.tx-problemas li { font-size: 0.86rem; color: #8A2F40; }
+.tx-problemas small { display: block; margin-top: 7px; color: #8A2F40; font-size: 0.82rem; }
+
+/* --- Revision antes de importar --------------------------------------- */
+
+.tx-revision-resumen { margin: 0; font-size: 0.93rem; color: var(--fa-muted); }
+.tx-revision-resumen strong { color: var(--fa-text); font-weight: 700; }
+
+.tx-revision {
+  border: 1px solid var(--fa-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.tx-revision-cabecera,
+.tx-revision-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px 200px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+}
+
+.tx-revision-cabecera {
+  height: 40px;
+  border-bottom: 1px solid var(--fa-border);
+  background: #FCFDFF;
+  color: var(--fa-muted);
+  font-size: 0.81rem;
+  font-weight: 600;
+}
+
+/* Solo la zona de filas hace scroll: el modal no se convierte en un panel gigante. */
+.tx-revision-filas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 296px;
+  overflow-y: auto;
+}
+
+.tx-revision-fila { min-height: 56px; border-bottom: 1px solid var(--fa-border); }
+.tx-revision-fila:last-child { border-bottom: 0; }
+
+.tx-revision-desc {
+  min-width: 0;
+  font-size: 0.93rem;
+  font-weight: 600;
+  color: var(--fa-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-revision-select {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--fa-border);
+  border-radius: 10px;
+  background: var(--fa-card);
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--fa-text);
+}
+
+.tx-revision-select:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: -1px; }
+
 @media (max-width: 560px) {
+  /* Apilada, el separador vertical queda como una rayita suelta entre dos filas. */
+  .transacciones .tx-separador { display: none; }
+
   /*
    * Centrado tambien en movil, no pegado abajo: anclado al borde inferior el modal
    * llegaba hasta y=813 y el lanzador del agente --que debe seguir visible-- se
    * montaba sobre el boton Guardar.
    */
   .tx-velo { padding: 12px; }
+  .tx-modal.ancho { width: 100%; }
+
+  /* La revision pasa a dos lineas por movimiento. */
+  .tx-revision-cabecera { display: none; }
+  .tx-revision-fila {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px 10px;
+    padding: 12px 14px;
+    min-height: 0;
+  }
+  .tx-revision-desc { grid-column: 1; }
+  .tx-revision-fila .tx-pill-tipo { grid-column: 2; justify-self: end; }
+  .tx-revision-select,
+  .tx-revision-fila .tx-vacio { grid-column: 1 / -1; }
   .tx-modal { width: 100%; max-height: calc(100vh - 24px); border-radius: 18px; }
   .tx-modal-cabecera { padding: 18px 18px 14px; }
   .tx-modal-cuerpo { padding: 0 18px; }

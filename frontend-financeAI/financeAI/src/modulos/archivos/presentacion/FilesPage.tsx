@@ -10,7 +10,15 @@ export function FilesPage({ workspace }: PageProps) {
   async function importar(event: React.ChangeEvent<HTMLInputElement>) {
     const archivo = event.target.files?.[0]; if (!archivo) return;
     try {
-      const { filas, categoriasDescartadas } = parsearCsv(await archivo.text());
+      const { filas, categoriasDescartadas, problemas } = parsearCsv(await archivo.text());
+      // Todo o nada: con una sola fila dudosa no se importa ninguna.
+      if (problemas.length > 0) {
+        throw new Error(
+          `${problemas.length} ${problemas.length === 1 ? 'fila necesita' : 'filas necesitan'} revisión: ` +
+          problemas.slice(0, 4).map((problema) => `fila ${problema.fila} (${problema.motivo.toLowerCase()})`).join(', ') +
+          (problemas.length > 4 ? '…' : '')
+        );
+      }
       const pendientes = contarPendientes(filas);
       // Todo o nada: se clasifica en un solo lote y se guarda recien con el conjunto completo.
       const movimientos = await prepararImportacion(filas, workspace.clasificarDescripciones);
@@ -27,8 +35,8 @@ export function FilesPage({ workspace }: PageProps) {
   return <section className="page-stack">
     <PageHeader title="Archivos CSV" subtitle="Importa lotes y guárdalos directamente en tu cuenta." />
     <article className="upload-panel"><FileCsv size={58} /><h2>Importación por lotes</h2>
-      <p>Formato: descripcion,categoria,tipo,fecha,monto. La fecha debe usar AAAA-MM-DD.</p>
-      <p>FinanceAI clasifica automáticamente los gastos que no tengan categoría. Los ingresos y los ahorros no llevan categoría: deja esa columna vacía.</p>
+      <p>Formato: descripcion,tipo,fecha,monto. La fecha debe usar AAAA-MM-DD.</p>
+      <p>FinanceAI clasificará automáticamente tus gastos. Los ingresos y los ahorros no llevan categoría.</p>
       <label className="primary-button"><UploadSimple size={18} /> Seleccionar CSV<input hidden type="file" accept=".csv,text/csv" onChange={importar} /></label>
       {estado && <div className="success-note">{estado}</div>}{error && <p className="form-error">{error}</p>}
     </article>
