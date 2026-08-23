@@ -1,0 +1,33 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+
+packages:
+  - docker.io
+  - docker-compose-v2
+  - iptables-persistent
+  - netfilter-persistent
+
+write_files:
+  - path: /opt/financeai/Caddyfile
+    owner: root:root
+    permissions: '0644'
+    content: |
+      ${indent(6, caddyfile_content)}
+
+  - path: /opt/financeai/docker-compose.prod.yml
+    owner: root:root
+    permissions: '0644'
+    content: |
+      ${indent(6, docker_compose_content)}
+
+runcmd:
+  - mkdir -p /opt/financeai/web
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker ubuntu
+  # Las imagenes base de OCI dropean todo el trafico entrante salvo el 22/tcp.
+  # Sin esto, Caddy nunca recibe el challenge HTTP-01 de ACME y no hay certificado.
+  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80  -j ACCEPT
+  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+  - netfilter-persistent save
