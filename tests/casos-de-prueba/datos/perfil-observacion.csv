@@ -1,0 +1,20 @@
+descripcion,categoria,tipo,fecha,monto
+Nomina agosto,otros,ingreso,2026-08-01,5000000
+Arriendo apartamento,vivienda,gasto,2026-08-02,1800000
+Factura energia,vivienda,gasto,2026-08-03,130000
+Factura internet hogar,vivienda,gasto,2026-08-03,100000
+Factura agua,vivienda,gasto,2026-08-03,70000
+Mercado del mes,alimentacion,gasto,2026-08-04,600000
+Domicilios,alimentacion,gasto,2026-08-18,200000
+Gasolina,transporte,gasto,2026-08-16,250000
+Parqueadero,transporte,gasto,2026-08-20,90000
+Taxi,transporte,gasto,2026-08-05,60000
+Medicamentos farmacia,salud,gasto,2026-08-17,120000
+Curso Alura,educacion,gasto,2026-08-08,200000
+Cine y comida,entretenimiento,gasto,2026-08-14,180000
+Productos de cuidado personal,cuidado_personal,gasto,2026-08-19,100000
+Seguro del carro,impuestos_y_seguros,gasto,2026-08-13,150000
+Veterinaria mascota,mascotas,gasto,2026-08-21,80000
+Regalo cumpleanos,otros,gasto,2026-08-21,120000
+Pago tarjeta de credito,deudas,gasto,2026-08-11,500000
+Transferencia a cuenta de ahorro,otros,ahorro,2026-08-22,250000
