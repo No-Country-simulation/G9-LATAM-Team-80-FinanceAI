@@ -215,16 +215,28 @@ export function useFinancialWorkspace(token: string | null) {
       descripcion: data.descripcion, categoria: data.categoria, tipo: data.tipo,
       fecha: data.fecha ?? new Date().toISOString().slice(0, 10), monto: Math.abs(data.monto)
     });
-    setTransacciones((actuales) => [nueva, ...actuales]);
+    const actualizadas = [nueva, ...transacciones];
+    setTransacciones(actualizadas);
+    const supuestos = deducirSupuestos(movimientosDelMes(actualizadas, mesAnalizado));
+    if (supuestos) {
+      setIngresoMensual(supuestos.ingresoMensual);
+      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
+    }
     await recargarPresupuestos();
-  }
+}
 
-  async function actualizarTransaccion(id: string, data: Omit<Transaccion, 'id'>) {
+async function actualizarTransaccion(id: string, data: Omit<Transaccion, 'id'>) {
     if (!token) return;
     const actualizada = await actualizarTransaccionApi(token, id, data);
-    setTransacciones((actuales) => actuales.map((item) => item.id === id ? actualizada : item));
+    const actualizadas = transacciones.map((item) => item.id === id ? actualizada : item);
+    setTransacciones(actualizadas);
+    const supuestos = deducirSupuestos(movimientosDelMes(actualizadas, mesAnalizado));
+    if (supuestos) {
+      setIngresoMensual(supuestos.ingresoMensual);
+      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
+    }
     await recargarPresupuestos();
-  }
+}
 
   /**
    * Categoria sugerida por el modelo para una descripcion de GASTO.
@@ -243,19 +255,31 @@ export function useFinancialWorkspace(token: string | null) {
     return clasificarDescripcionesApi(token, items);
   }
 
-  async function eliminarTransaccion(id: string) {
+ async function eliminarTransaccion(id: string) {
     if (!token) return;
     await eliminarTransaccionApi(token, id);
-    setTransacciones((actuales) => actuales.filter((item) => item.id !== id));
+    const actualizadas = transacciones.filter((item) => item.id !== id);
+    setTransacciones(actualizadas);
+    const supuestos = deducirSupuestos(movimientosDelMes(actualizadas, mesAnalizado));
+    if (supuestos) {
+      setIngresoMensual(supuestos.ingresoMensual);
+      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
+    }
     await recargarPresupuestos();
-  }
+}
 
-  async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
+async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
     if (!token) return;
     const importadas = await importarTransaccionesApi(token, items);
-    setTransacciones((actuales) => [...importadas, ...actuales]);
+    const actualizadas = [...importadas, ...transacciones];
+    setTransacciones(actualizadas);
+    const supuestos = deducirSupuestos(movimientosDelMes(actualizadas, mesAnalizado));
+    if (supuestos) {
+      setIngresoMensual(supuestos.ingresoMensual);
+      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
+    }
     await recargarPresupuestos();
-  }
+}
 
   async function agregarPresupuesto(data: { categoria: CategoriaFinanciera; presupuesto: number }) {
     if (!token) return;
