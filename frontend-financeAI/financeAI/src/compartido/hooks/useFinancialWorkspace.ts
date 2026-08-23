@@ -87,13 +87,47 @@ export function useFinancialWorkspace(token: string | null) {
   const [revision, setRevision] = useState(0);
   const [hidratado, setHidratado] = useState(false);
 
+  const [mesSeleccionado, setMesSeleccionado] = useState<string | null>(null);
+
   // El analisis y los totales miran UN mes. La lista de transacciones sigue mostrando
   // todo el historial: es un libro de movimientos, no un resumen mensual.
-  const mesAnalizado = useMemo(() => mesMasReciente(transacciones), [transacciones]);
+  const mesesDisponibles = useMemo(() => {
+    const meses = new Set<string>();
+    transacciones.forEach((item) => {
+      const mes = item.fecha.slice(0, 7);
+      if (/^\d{4}-\d{2}$/.test(mes)) meses.add(mes);
+    });
+    return [...meses].sort().reverse();
+  }, [transacciones]);
+
+  // Si el mes elegido se queda sin movimientos (se borraron, o se cambio de usuario)
+  // se vuelve al mas reciente en vez de mostrar un tablero vacio sin explicacion.
+  const mesAnalizado = useMemo(
+    () => (mesSeleccionado !== null && mesesDisponibles.includes(mesSeleccionado)
+      ? mesSeleccionado
+      : mesesDisponibles[0] ?? null),
+    [mesSeleccionado, mesesDisponibles]
+  );
+
   const transaccionesDelMes = useMemo(
     () => movimientosDelMes(transacciones, mesAnalizado),
     [transacciones, mesAnalizado]
   );
+
+  /**
+   * Cambiar de mes re-deduce ingreso y endeudamiento de ESE mes, en la misma tanda de
+   * setState. Si no, al pasar de agosto a julio se veria el ingreso de agosto contra los
+   * gastos de julio; y si se dedujera en un efecto aparte, el analisis correria dos veces
+   * y la primera dejaria una fila equivocada en el historial.
+   */
+  const seleccionarMes = useCallback((mes: string) => {
+    setMesSeleccionado(mes);
+    const supuestos = deducirSupuestos(movimientosDelMes(transacciones, mes));
+    if (supuestos) {
+      setIngresoMensual(supuestos.ingresoMensual);
+      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
+    }
+  }, [transacciones]);
 
   const recargarHistorial = useCallback(async () => {
     if (token) setHistorial(await listarHistorial(token));
@@ -194,7 +228,7 @@ export function useFinancialWorkspace(token: string | null) {
   }
 
   return {
-    transacciones, transaccionesDelMes, mesAnalizado, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
+    transacciones, transaccionesDelMes, mesAnalizado, mesesDisponibles, seleccionarMes, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
     cargandoDatos, cargandoAnalisis, errorAnalisis, agregarTransaccion, actualizarTransaccion,
     eliminarTransaccion, importarTransacciones, agregarPresupuesto, eliminarAnalisis, generarAnalisis, obtenerCategoria
   };

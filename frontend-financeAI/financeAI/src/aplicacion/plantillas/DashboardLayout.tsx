@@ -15,6 +15,9 @@ type DashboardLayoutProps = PropsWithChildren<{
   onLogout: () => void;
   /** Mes que esta mirando el analisis, en formato YYYY-MM. */
   mesAnalizado: string | null;
+  /** Meses con movimientos, del mas reciente al mas viejo. */
+  mesesDisponibles: string[];
+  onSeleccionarMes: (mes: string) => void;
 }>;
 
 /**
@@ -36,6 +39,8 @@ export function DashboardLayout({
   usuario,
   onLogout,
   mesAnalizado,
+  mesesDisponibles,
+  onSeleccionarMes,
   children
 }: DashboardLayoutProps) {
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -109,7 +114,21 @@ export function DashboardLayout({
             </div>
           </div>
           <div className="topbar-actions">
-            <button className="date-pill">{etiquetaDeMes(mesAnalizado)}</button>
+            {mesesDisponibles.length > 1 ? (
+              <select
+                className="date-pill"
+                aria-label="Mes que se esta analizando"
+                value={mesAnalizado ?? ''}
+                onChange={(evento) => onSeleccionarMes(evento.target.value)}
+              >
+                {mesesDisponibles.map((mes) => (
+                  <option key={mes} value={mes}>{etiquetaDeMes(mes)}</option>
+                ))}
+              </select>
+            ) : (
+              // Con un solo mes cargado un desplegable no aporta nada y se ve raro.
+              <span className="date-pill">{etiquetaDeMes(mesAnalizado)}</span>
+            )}
             <button className="notification-button" aria-label="Notificaciones">
               <Bell size={21} />
               <span>3</span>
