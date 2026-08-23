@@ -1,0 +1,107 @@
+# Levanta FinanceAI completo (MySQL + ML + API Java + frontend con el widget agentico).
+#   docker compose up -d --build
+#   Aplicacion: http://localhost:8081   (demo@financeai.local / FinanceAI2026!)
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: financeai-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_local_2026}
+      MYSQL_DATABASE: financeai
+      MYSQL_USER: ${DB_USER:-financeai_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-FinanceAI_local_2026!}
+    # Los scripts de database/ se ejecutan en orden alfabetico la primera vez que se crea el volumen.
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DB_PORT:-3307}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root_local_2026}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  ml:
+    build:
+      context: ./feature-financeAI
+      dockerfile: ml-service/Dockerfile
+    container_name: financeai-ml
+    ports:
+      - "${ML_PORT:-8001}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  api:
+    build:
+      context: ./backend-financeAI/finance-ai-api
+    container_name: financeai-api
+    environment:
+      PORT: 8080
+      DB_URL: jdbc:mysql://db:3306/financeai?useUnicode=true&characterEncoding=UTF-8&serverTimezone=America/Lima&allowPublicKeyRetrieval=true&useSSL=false
+      DB_USER: ${DB_USER:-financeai_app}
+      DB_PASSWORD: ${DB_PASSWORD:-FinanceAI_local_2026!}
+      ML_SERVICE_BASE_URL: http://ml:8000
+      # Lista separada por comas. El frontend en Docker llama a /api del mismo origen (nginx
+      # hace de proxy), asi que CORS solo hace falta para el modo dev y el dominio publico.
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5174,http://localhost:8081,http://127.0.0.1:8081}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  web:
+    build:
+      context: ./frontend-financeAI/financeAI
+    container_name: financeai-web
+    environment:
+      # Destino del proxy /api/ de nginx: la app usa rutas relativas y evita CORS por completo.
+      API_UPSTREAM: http://api:8080
+
+      # --- Widget de chat agentico (Oven) ---
+      # Se inyectan en tiempo de ejecucion en /oven-config.js; cambiarlas solo requiere
+      # "docker compose up -d web", no reconstruir la imagen.
+      OVEN_HABILITADO: ${OVEN_HABILITADO:-true}
+      OVEN_WIDGET_SRC: ${OVEN_WIDGET_SRC:-https://nemxenkgdsjuucmp.public.blob.vercel-storage.com/widget/oven-chat-widget.iife.js}
+      # Pasarela same-origin de nginx. El backend de Oven no devuelve
+      # Access-Control-Allow-Origin para nuestros dominios, asi que la llamada directa desde
+      # el navegador queda bloqueada por CORS. Cuando el proveedor autorice el dominio, basta
+      # con poner aqui su URL completa para volver al modo directo.
+      OVEN_API_URL: ${OVEN_API_URL:-/oven-api}
+      OVEN_API_ORIGIN: ${OVEN_API_ORIGIN:-https://oven-dandia-nwlcfzg7s-dandia-source.vercel.app}
+      OVEN_EMBED_KEY: ${OVEN_EMBED_KEY:-ovek_8a895c59916adc7cec8182e1e5554294826b}
+      OVEN_TENANT: ${OVEN_TENANT:-clinica-dandia}
+      OVEN_AGENT: ${OVEN_AGENT:-example-tool-agent}
+      OVEN_THEME: ${OVEN_THEME:-ocean}
+      OVEN_VISUAL_STYLE: ${OVEN_VISUAL_STYLE:-ocean}
+      OVEN_POSITION: ${OVEN_POSITION:-bottom-right}
+      # Ajustes de interfaz que el embed de Oven no expone como opcion.
+      OVEN_TEXTO_ENTRADA: ${OVEN_TEXTO_ENTRADA:-Escribe un mensaje...}
+      OVEN_OCULTAR_ACCIONES: ${OVEN_OCULTAR_ACCIONES:-true}
+      OVEN_PREGUNTAS_INICIALES: ${OVEN_PREGUNTAS_INICIALES:-true}
+      OVEN_EXTRA_CSP: ${OVEN_EXTRA_CSP:-}
+    ports:
+      - "${WEB_PORT:-8081}:80"
+    depends_on:
+      # service_started (y no service_healthy) para que la interfaz y el widget sigan
+      # disponibles aunque la API tarde en arrancar o falle.
+      api:
+        condition: service_started
+
+volumes:
+  db-data:
