@@ -317,7 +317,7 @@ jobs:
           OVEN_API_HOST="$(printf '%s' "$OVEN_API_ORIGIN" | sed -e 's#^[a-z]*://##' -e 's#/.*##')"
           OVEN_API_WS_ORIGIN="$(printf '%s' "$OVEN_API_ORIGIN" | sed -e 's#^https://#wss://#' -e 's#^http://#ws://#')"
           OVEN_WIDGET_ORIGIN="$(printf '%s' "$OVEN_WIDGET_SRC" | sed -n 's#^\([a-z]*://[^/]*\).*#\1#p')"
-          OVEN_CSP="default-src 'self'; script-src 'self' 'unsafe-inline' ${OVEN_WIDGET_ORIGIN}; style-src 'self' 'unsafe-inline' ${OVEN_WIDGET_ORIGIN} https://fonts.googleapis.com; font-src 'self' data: ${OVEN_WIDGET_ORIGIN} https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' ${OVEN_API_ORIGIN}; connect-src 'self' ${APP_URL} ${OVEN_API_ORIGIN} ${OVEN_API_WS_ORIGIN} ${OVEN_WIDGET_ORIGIN}; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+          OVEN_CSP="default-src 'self'; script-src 'self' 'unsafe-inline' ${OVEN_WIDGET_ORIGIN}; style-src 'self' 'unsafe-inline' ${OVEN_WIDGET_ORIGIN} https://fonts.googleapis.com; font-src 'self' data: ${OVEN_WIDGET_ORIGIN} https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' ${OVEN_API_ORIGIN}; connect-src 'self' ${APP_HOSTNAME} ${OVEN_API_ORIGIN} ${OVEN_API_WS_ORIGIN} ${OVEN_WIDGET_ORIGIN}; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 
           SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
           TARGET="ubuntu@${APP_HOST}"
