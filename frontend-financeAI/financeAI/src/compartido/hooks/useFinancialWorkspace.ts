@@ -13,13 +13,46 @@ import {
 } from '../servicios/persistencia.service';
 import type { CategoriaFinanciera, HistorialAnalisis, TipoTransaccion, Transaccion } from '../tipos/finanzas';
 
+const INGRESO_POR_DEFECTO = 4500;
+const ENDEUDAMIENTO_POR_DEFECTO = 25;
+
+/**
+ * Deriva el ingreso mensual y el nivel de endeudamiento de los movimientos del usuario.
+ *
+ * Antes estos dos valores estaban fijos en 4500 y 25, y el analisis se disparaba solo al
+ * cargar la app. Con movimientos en otra escala (ej. pesos colombianos) eso producia un
+ * ratio gasto/ingreso absurdo y un perfil "En riesgo" con probabilidad 0.00, aunque los
+ * datos en la base fueran perfectamente coherentes.
+ *
+ * Si el usuario no tiene movimientos de tipo 'ingreso' no hay de donde deducirlo y se
+ * mantienen los valores por defecto: en ese caso el numero lo tiene que poner a mano en
+ * la pantalla de Analisis.
+ */
+function deducirSupuestos(movimientos: Transaccion[]) {
+  const ingreso = movimientos
+    .filter((item) => item.tipo === 'ingreso')
+    .reduce((suma, item) => suma + Math.abs(item.monto), 0);
+
+  if (ingreso <= 0) return null;
+
+  const deuda = movimientos
+    .filter((item) => item.tipo === 'gasto' && item.categoria === 'deudas')
+    .reduce((suma, item) => suma + Math.abs(item.monto), 0);
+
+  return {
+    ingresoMensual: ingreso,
+    // El backend valida 0..100; un mes con mas deuda que ingreso no debe romper el analisis.
+    nivelEndeudamiento: Math.min(100, Math.round((deuda / ingreso) * 1000) / 10)
+  };
+}
+
 export function useFinancialWorkspace(token: string | null) {
   const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
   const [presupuestos, setPresupuestos] = useState<Awaited<ReturnType<typeof listarPresupuestos>>>([]);
   const [historial, setHistorial] = useState<HistorialAnalisis[]>([]);
   const [analisis, setAnalisis] = useState(analisisInicial);
-  const [ingresoMensual, setIngresoMensual] = useState(4500);
-  const [nivelEndeudamiento, setNivelEndeudamiento] = useState(25);
+  const [ingresoMensual, setIngresoMensual] = useState(INGRESO_POR_DEFECTO);
+  const [nivelEndeudamiento, setNivelEndeudamiento] = useState(ENDEUDAMIENTO_POR_DEFECTO);
   const [frecuenciaAhorro, setFrecuenciaAhorro] = useState<'Alta' | 'Media' | 'Baja'>('Media');
   const [cargandoDatos, setCargandoDatos] = useState(false);
   const [cargandoAnalisis, setCargandoAnalisis] = useState(false);
@@ -43,7 +76,17 @@ export function useFinancialWorkspace(token: string | null) {
     setCargandoDatos(true);
     Promise.all([listarTransacciones(token), listarPresupuestos(token), listarHistorial(token)])
       .then(([movimientos, limites, registros]) => {
-        setTransacciones(movimientos); setPresupuestos(limites); setHistorial(registros); setHidratado(true);
+        setTransacciones(movimientos); setPresupuestos(limites); setHistorial(registros);
+        // Deducir ANTES de marcar hidratado: el efecto que dispara el analisis depende de
+        // hidratado, y React agrupa estos setState. Si se dedujera despues, el analisis
+        // correria dos veces y la primera guardaria en el historial una fila calculada con
+        // los valores por defecto.
+        const supuestos = deducirSupuestos(movimientos);
+        if (supuestos) {
+          setIngresoMensual(supuestos.ingresoMensual);
+          setNivelEndeudamiento(supuestos.nivelEndeudamiento);
+        }
+        setHidratado(true);
       })
       .catch((error: Error) => setErrorAnalisis(error.message))
       .finally(() => setCargandoDatos(false));

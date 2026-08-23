@@ -1,0 +1,775 @@
+{
+  "moneda": "COP",
+  "ingreso_base": 5000000,
+  "nota": "Todos los casos usan UNA sola unidad monetaria (COP) y un solo mes. El endpoint POST /api/analisis-financiero calcula gasto_total_mes SOLO con las transacciones tipo 'gasto' del payload; ignora las de tipo 'ingreso' (el ingreso viene del campo del formulario). Por eso cada caso lleva una unica transaccion 'gasto' con el monto exacto: asi el ratio queda sin ambiguedad.",
+  "reglas_de_referencia": {
+    "ratio_gasto_ingreso": "gasto_total_mes / ingreso_mensual",
+    "En riesgo": "nivel_endeudamiento > 43  O  ratio > 0.90",
+    "En observacion": "36 <= nivel_endeudamiento <= 43  O  0.80 <= ratio <= 0.90",
+    "Saludable": "ninguna de las anteriores",
+    "ahorro_estimado_pct": "max(0, 1 - ratio - nivel_endeudamiento/100)",
+    "frecuencia_ahorro": "Alta si > 0.20 | Media si >= 0.10 | Baja si < 0.10"
+  },
+  "casos": [
+    {
+      "id": "S-01",
+      "grupo": "Saludable",
+      "titulo": "Saludable tipico: deuda baja y gasto moderado",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 20,
+        "frecuencia_ahorro": "Alta",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 2750000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "Saludable",
+        "ratio_gasto_ingreso": 0.55,
+        "ahorro_estimado_pct": 0.25,
+        "frecuencia_ahorro": "Alta",
+        "n_razones": 1
+      },
+      "verifica": "Camino feliz. Si este falla, el problema es de infraestructura, no de reglas."
+    },
+    {
+      "id": "S-02",
+      "grupo": "Saludable",
+      "titulo": "Saludable justo bajo el limite de deuda (35.9%)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 35.9,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 3500000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "Saludable",
+        "ratio_gasto_ingreso": 0.7,
+        "ahorro_estimado_pct": 0.0,
+        "frecuencia_ahorro": "Baja"
+      },
+      "verifica": "Frontera 36%. Ojo: el perfil sale Saludable pero el ahorro estimado es 0% (gasto + deuda = 105.9% del ingreso). Es la incoherencia mas visible del modelo actual."
+    },
+    {
+      "id": "S-03",
+      "grupo": "Saludable",
+      "titulo": "Saludable justo bajo el limite de ratio (0.79)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 10,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 3950000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "Saludable",
+        "ratio_gasto_ingreso": 0.79,
+        "ahorro_estimado_pct": 0.11,
+        "frecuencia_ahorro": "Media"
+      },
+      "verifica": "Frontera 0.80 por abajo."
+    },
+    {
+      "id": "S-04",
+      "grupo": "Saludable",
+      "titulo": "Borde exacto Alta/Media del ahorro (0.20)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 10,
+        "frecuencia_ahorro": "Alta",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 3500000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "Saludable",
+        "ratio_gasto_ingreso": 0.7,
+        "ahorro_estimado_pct": 0.2,
+        "frecuencia_ahorro": "Media"
+      },
+      "diferencia_conocida": "Hoy devuelve 'Alta'. Este caso FALLA a proposito: la regla documentada es 'Alta si > 0.20', y el ahorro aqui es exactamente 0.20, asi que deberia ser Media. Pero 1 - 0.7 - 0.1 en punto flotante da 0.20000000000000004, que si es > 0.20. La comparacion se hace contra el valor sin redondear (a proposito, segun el comentario del codigo), asi que el error de representacion decide la categoria. Verificado ejecutando estimar_frecuencia_ahorro(0.7, 10).",
+      "verifica": "0.20 exacto no deberia ser Alta. Detecta que el borde Alta/Media depende del error de punto flotante."
+    },
+    {
+      "id": "S-05",
+      "grupo": "Saludable",
+      "titulo": "Ahorro apenas sobre el borde (0.21 -> Alta)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 10,
+        "frecuencia_ahorro": "Alta",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 3450000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "Saludable",
+        "ratio_gasto_ingreso": 0.69,
+        "ahorro_estimado_pct": 0.21,
+        "frecuencia_ahorro": "Alta"
+      },
+      "verifica": "Par de contraste de S-04."
+    },
+    {
+      "id": "O-01",
+      "grupo": "En observacion",
+      "titulo": "Observacion solo por endeudamiento (38%)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 38,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 3000000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En observación",
+        "ratio_gasto_ingreso": 0.6,
+        "ahorro_estimado_pct": 0.02,
+        "frecuencia_ahorro": "Baja",
+        "n_razones": 1,
+        "probabilidad_max": 0.99
+      },
+      "verifica": "Una sola razon, y debe hablar de endeudamiento. Ademas acota la probabilidad: si vuelve a dar exactamente 1.0 es el fallback disfrazado de certeza (bug de la tilde entre 'En observación' y la clase 'En observacion' del modelo)."
+    },
+    {
+      "id": "O-02",
+      "grupo": "En observacion",
+      "titulo": "Observacion solo por ratio de gasto (0.85)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 10,
+        "frecuencia_ahorro": "Baja",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 4250000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En observación",
+        "ratio_gasto_ingreso": 0.85,
+        "ahorro_estimado_pct": 0.05,
+        "frecuencia_ahorro": "Baja",
+        "n_razones": 1,
+        "probabilidad_max": 0.99
+      },
+      "verifica": "Una sola razon, y debe hablar de gasto. Ademas acota la probabilidad: si vuelve a dar exactamente 1.0 es el fallback disfrazado de certeza (bug de la tilde entre 'En observación' y la clase 'En observacion' del modelo)."
+    },
+    {
+      "id": "O-03",
+      "grupo": "En observacion",
+      "titulo": "Borde exacto 36.0% de deuda",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 36,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 3000000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En observación",
+        "ratio_gasto_ingreso": 0.6,
+        "ahorro_estimado_pct": 0.04,
+        "frecuencia_ahorro": "Baja"
+      },
+      "verifica": "36.0 es inclusivo. Par de contraste con S-02 (35.9)."
+    },
+    {
+      "id": "O-04",
+      "grupo": "En observacion",
+      "titulo": "Borde exacto 43.0% de deuda",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 43,
+        "frecuencia_ahorro": "Baja",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 3000000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En observación",
+        "ratio_gasto_ingreso": 0.6,
+        "ahorro_estimado_pct": 0.0,
+        "frecuencia_ahorro": "Baja"
+      },
+      "verifica": "43.0 todavia es observacion. Par de contraste con R-01 (43.1)."
+    },
+    {
+      "id": "O-05",
+      "grupo": "En observacion",
+      "titulo": "Borde exacto ratio 0.80",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 5,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 4000000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En observación",
+        "ratio_gasto_ingreso": 0.8,
+        "ahorro_estimado_pct": 0.15,
+        "frecuencia_ahorro": "Media"
+      },
+      "verifica": "0.80 inclusivo. Par de contraste con S-03 (0.79)."
+    },
+    {
+      "id": "O-06",
+      "grupo": "En observacion",
+      "titulo": "Borde exacto ratio 0.90",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 5,
+        "frecuencia_ahorro": "Baja",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 4500000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En observación",
+        "ratio_gasto_ingreso": 0.9,
+        "ahorro_estimado_pct": 0.05,
+        "frecuencia_ahorro": "Baja"
+      },
+      "verifica": "0.90 exacto NO es riesgo. Par de contraste con R-02 (0.91)."
+    },
+    {
+      "id": "O-07",
+      "grupo": "En observacion",
+      "titulo": "Observacion por los dos motivos a la vez",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 38,
+        "frecuencia_ahorro": "Baja",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 4250000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En observación",
+        "ratio_gasto_ingreso": 0.85,
+        "ahorro_estimado_pct": 0.0,
+        "frecuencia_ahorro": "Baja",
+        "n_razones": 2
+      },
+      "verifica": "Debe devolver DOS razones, no una."
+    },
+    {
+      "id": "R-01",
+      "grupo": "En riesgo",
+      "titulo": "Riesgo solo por endeudamiento (43.1%)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 43.1,
+        "frecuencia_ahorro": "Baja",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 3000000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En riesgo",
+        "ratio_gasto_ingreso": 0.6,
+        "ahorro_estimado_pct": 0.0,
+        "frecuencia_ahorro": "Baja",
+        "n_razones": 1
+      },
+      "verifica": "Primer valor que cruza a riesgo por deuda."
+    },
+    {
+      "id": "R-02",
+      "grupo": "En riesgo",
+      "titulo": "Riesgo solo por gasto excesivo (ratio 0.91)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 10,
+        "frecuencia_ahorro": "Baja",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 4550000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En riesgo",
+        "ratio_gasto_ingreso": 0.91,
+        "ahorro_estimado_pct": 0.0,
+        "frecuencia_ahorro": "Baja",
+        "n_razones": 1
+      },
+      "verifica": "Primer valor que cruza a riesgo por gasto."
+    },
+    {
+      "id": "R-03",
+      "grupo": "En riesgo",
+      "titulo": "Riesgo por deuda Y gasto (55% / 0.95)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 55,
+        "frecuencia_ahorro": "Baja",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 4750000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En riesgo",
+        "ratio_gasto_ingreso": 0.95,
+        "ahorro_estimado_pct": 0.0,
+        "frecuencia_ahorro": "Baja",
+        "n_razones": 2
+      },
+      "verifica": "Debe devolver DOS razones."
+    },
+    {
+      "id": "R-04",
+      "grupo": "En riesgo",
+      "titulo": "Gasta mas de lo que ingresa (ratio 1.10)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 15,
+        "frecuencia_ahorro": "Baja",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 5500000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En riesgo",
+        "ratio_gasto_ingreso": 1.1,
+        "ahorro_estimado_pct": 0.0,
+        "frecuencia_ahorro": "Baja"
+      },
+      "verifica": "El ahorro debe quedar en 0.0, nunca negativo. Revisar tambien que 'probabilidad' no colapse a 0.0 (ratio fuera del rango de entrenamiento del modelo)."
+    },
+    {
+      "id": "R-05",
+      "grupo": "En riesgo",
+      "titulo": "Endeudamiento en el maximo permitido (100%)",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 100,
+        "frecuencia_ahorro": "Baja",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 500000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En riesgo",
+        "ratio_gasto_ingreso": 0.1,
+        "ahorro_estimado_pct": 0.0,
+        "frecuencia_ahorro": "Baja"
+      },
+      "verifica": "Limite superior de validacion del backend (@DecimalMax 100)."
+    },
+    {
+      "id": "U-01",
+      "grupo": "Incongruencia de unidades",
+      "titulo": "Escala mixta: ingreso en escala chica, gastos en COP",
+      "payload": {
+        "ingreso_mensual": 4500,
+        "nivel_endeudamiento": 25,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Arriendo apartamento",
+            "valor": 1800000,
+            "tipo": "gasto"
+          },
+          {
+            "descripcion": "Mercado",
+            "valor": 320000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En riesgo",
+        "ratio_gasto_ingreso": 471.11,
+        "ahorro_estimado_pct": 0.0,
+        "frecuencia_ahorro": "Baja"
+      },
+      "verifica": "REPRODUCE EL BUG REPORTADO. Nadie valida que ingreso y gastos esten en la misma escala. El sistema responde 200 OK con un ratio de 47111%. Comportamiento deseable a definir: rechazar con 400, o advertir en la respuesta."
+    },
+    {
+      "id": "U-02",
+      "grupo": "Incongruencia de unidades",
+      "titulo": "El ingreso declarado contradice las transacciones tipo 'ingreso'",
+      "payload": {
+        "ingreso_mensual": 3000000,
+        "nivel_endeudamiento": 20,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Nomina agosto",
+            "valor": 5500000,
+            "tipo": "ingreso"
+          },
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 2400000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En observación",
+        "ratio_gasto_ingreso": 0.8,
+        "frecuencia_ahorro": "Baja"
+      },
+      "verifica": "El ML ignora por completo las transacciones tipo 'ingreso'. Con la nomina real (5.500.000) el ratio seria 0.44 -> Saludable; con el campo del formulario da 0.80 -> En observacion. Dos numeros distintos para el mismo mes."
+    },
+    {
+      "id": "U-03",
+      "grupo": "Incongruencia de unidades",
+      "titulo": "Doble conteo: la deuda se cuenta como gasto Y como endeudamiento",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 20,
+        "frecuencia_ahorro": "Alta",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 2750000,
+            "tipo": "gasto"
+          },
+          {
+            "descripcion": "Pago tarjeta de credito",
+            "valor": 1000000,
+            "tipo": "gasto"
+          },
+          {
+            "descripcion": "Transferencia a cuenta de ahorro",
+            "valor": 1250000,
+            "tipo": "ahorro"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "Saludable",
+        "ratio_gasto_ingreso": 0.55,
+        "ahorro_estimado_pct": 0.25,
+        "frecuencia_ahorro": "Alta",
+        "ahorro_total": 1250000
+      },
+      "verifica": "RESUELTO en origin/main por el commit 462b889 (Gisell, 'Corrige doble conteo de deudas'). Presupuesto cuadrado al peso: 2.750.000 gasto + 1.000.000 deuda + 1.250.000 ahorro = 5.000.000. Ahora gasto_total_mes excluye la categoria 'deudas', el ratio da 0.55 y el ahorro estimado (0.25) coincide con el ahorro real. Verificado contra el servicio corriendo el 2026-08-22. Antes del fix daba ratio 0.75 y ahorro 0.05.",
+      "riesgo_residual": "La exclusion se hace por la categoria que asigna el CLASIFICADOR, no por la declarada en el CSV. Si una descripcion de deuda no se clasifica como 'deudas', el doble conteo vuelve. Probado con 8 descripciones: 7 se clasifican bien; 'Refinanciacion deuda' cae en 'otros' y se contaria doble. Ver caso U-06."
+    },
+    {
+      "id": "U-04",
+      "grupo": "Incongruencia de unidades",
+      "titulo": "frecuencia_ahorro del formulario se ignora en silencio",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 10,
+        "frecuencia_ahorro": "Alta",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 4750000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "En riesgo",
+        "frecuencia_ahorro": "Baja",
+        "_inconsistencia_ahorro": null
+      },
+      "verifica": "El usuario declara ahorro 'Alta' y la respuesta dice 'Baja'. perfil_financiero.py tiene el campo _inconsistencia_ahorro para avisarlo, pero app.py no le pasa frecuencia_ahorro, asi que siempre llega null. El backend igual guarda 'Alta' en analisis_financieros.frecuencia_ahorro mientras el JSON de resultado dice 'Baja': la misma fila de la BD se contradice a si misma."
+    },
+    {
+      "id": "U-05",
+      "grupo": "Incongruencia de unidades",
+      "titulo": "Transacciones de varios meses sumadas como un solo mes",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 10,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Arriendo julio",
+            "valor": 1800000,
+            "tipo": "gasto"
+          },
+          {
+            "descripcion": "Arriendo agosto",
+            "valor": 1800000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "Saludable",
+        "ratio_gasto_ingreso": 0.72
+      },
+      "verifica": "El campo se llama gasto_total_mes pero no hay ningun filtro por fecha: el frontend envia TODAS las transacciones del usuario. Con 3 meses de historial el ratio se triplica."
+    },
+    {
+      "id": "U-06",
+      "grupo": "Incongruencia de unidades",
+      "titulo": "Deuda mal clasificada: el doble conteo vuelve por la puerta de atras",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 20,
+        "frecuencia_ahorro": "Alta",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 2750000,
+            "tipo": "gasto"
+          },
+          {
+            "descripcion": "Refinanciacion deuda",
+            "valor": 1000000,
+            "tipo": "gasto"
+          },
+          {
+            "descripcion": "Transferencia a cuenta de ahorro",
+            "valor": 1250000,
+            "tipo": "ahorro"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 200,
+        "perfil_financiero": "Saludable",
+        "ratio_gasto_ingreso": 0.55,
+        "ahorro_estimado_pct": 0.25,
+        "frecuencia_ahorro": "Alta"
+      },
+      "verifica": "Identico a U-03 pero cambiando la descripcion del pago de deuda. El clasificador manda 'Refinanciacion deuda' a la categoria 'otros', asi que el fix de 462b889 no la excluye y el monto se cuenta como gasto Y como endeudamiento. Se espera que falle hoy: ratio 0.75, ahorro 0.05. Muestra que el fix depende de la precision del clasificador, no de la categoria declarada por el usuario."
+    },
+    {
+      "id": "V-01",
+      "grupo": "Validacion",
+      "titulo": "Ingreso mensual en cero",
+      "payload": {
+        "ingreso_mensual": 0,
+        "nivel_endeudamiento": 20,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 1000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 400
+      },
+      "verifica": "Debe cortar en el backend (@DecimalMin 0.01) y nunca llegar al ML (division por cero)."
+    },
+    {
+      "id": "V-02",
+      "grupo": "Validacion",
+      "titulo": "Endeudamiento sobre 100",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 100.1,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 1000000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 400
+      },
+      "verifica": "@DecimalMax 100 en el backend."
+    },
+    {
+      "id": "V-03",
+      "grupo": "Validacion",
+      "titulo": "Lista de transacciones vacia",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 20,
+        "frecuencia_ahorro": "Media",
+        "transacciones": []
+      },
+      "esperado": {
+        "http": 400
+      },
+      "verifica": "@NotEmpty en el backend y min_length=1 en el ML."
+    },
+    {
+      "id": "V-04",
+      "grupo": "Validacion",
+      "titulo": "Valor negativo",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 20,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Devolucion",
+            "valor": -100000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 400
+      },
+      "verifica": "El frontend manda Math.abs(monto) y el backend guarda .abs(): un reembolso se convierte en gasto. Caso a discutir con negocio."
+    },
+    {
+      "id": "V-05",
+      "grupo": "Validacion",
+      "titulo": "Tipo de transaccion invalido",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 20,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 1000000,
+            "tipo": "inversion"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 400
+      },
+      "verifica": "Solo ingreso|gasto|ahorro."
+    },
+    {
+      "id": "V-06",
+      "grupo": "Validacion",
+      "titulo": "frecuencia_ahorro en minusculas",
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 20,
+        "frecuencia_ahorro": "alta",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 1000000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 400
+      },
+      "verifica": "El patron es sensible a mayusculas en backend y en ML."
+    },
+    {
+      "id": "V-07",
+      "grupo": "Validacion",
+      "titulo": "Sin cabecera Authorization",
+      "sin_token": true,
+      "payload": {
+        "ingreso_mensual": 5000000,
+        "nivel_endeudamiento": 20,
+        "frecuencia_ahorro": "Media",
+        "transacciones": [
+          {
+            "descripcion": "Gastos del mes",
+            "valor": 1000000,
+            "tipo": "gasto"
+          }
+        ]
+      },
+      "esperado": {
+        "http": 401
+      },
+      "verifica": "Debe devolver 401 con cuerpo JSON (fix del commit 84dde87)."
+    }
+  ]
+}

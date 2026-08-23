@@ -12,12 +12,42 @@ Contiene:
   correctamente").
 """
 
+import logging
 import os
+import unicodedata
+
 import joblib
 import pandas as pd
 
+logger = logging.getLogger(__name__)
+
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "modelo_perfil_financiero.pkl")
 _modelo = None  # cache: se carga una sola vez, no en cada request
+
+
+def _normalizar(texto: str) -> str:
+    """Quita tildes y mayusculas, para comparar etiquetas sin depender de como se escribieron."""
+    descompuesto = unicodedata.normalize("NFD", str(texto))
+    return "".join(c for c in descompuesto if unicodedata.category(c) != "Mn").lower()
+
+
+def indice_de_clase(clases, perfil):
+    """
+    Ubica el perfil dentro de las clases del modelo comparando SIN tildes.
+
+    El modelo se entreno con las etiquetas sin tilde ('En observacion') mientras que
+    calcular_perfil_reglas() devuelve 'En observación' con tilde. Con una comparacion
+    exacta, clases.index() lanzaba ValueError para ese perfil, el except de mas abajo
+    lo tragaba y devolvia probabilidad 1.0: el modelo nunca se consultaba justo en el
+    tramo del medio, y el fallo se veia igual que una confianza total.
+
+    Devuelve None si el perfil realmente no esta entre las clases del modelo.
+    """
+    objetivo = _normalizar(perfil)
+    for indice, clase in enumerate(clases):
+        if _normalizar(clase) == objetivo:
+            return indice
+    return None
 
 
 def estimar_frecuencia_ahorro(ratio_gasto_ingreso: float, nivel_endeudamiento: float):
@@ -138,17 +168,37 @@ def analizar_perfil(ingreso_mensual: float, nivel_endeudamiento: float,
         }])
         proba = modelo.predict_proba(X)[0]
         clases = list(modelo.classes_)
-        probabilidad = round(float(proba[clases.index(perfil)]), 2)
+        indice = indice_de_clase(clases, perfil)
+        if indice is None:
+            raise LookupError(
+                f"el perfil '{perfil}' no coincide con ninguna clase del modelo {clases}"
+            )
+        probabilidad = round(float(proba[indice]), 2)
+        modelo_consultado = True
         fuente = "reglas (veredicto) + modelo (confianza)"
     except Exception as e:
         # Fallback de seguridad: si el modelo falla, el veredicto sigue siendo
         # igual de confiable (reglas), solo se pierde el matiz de confianza.
+        #
+        # Se mantiene 1.0 porque analisis_financieros.probabilidad es NOT NULL y el
+        # veredicto por reglas si es deterministico, pero ese 1.0 NO es confianza del
+        # modelo: sin modelo_consultado, un fallo silencioso se veia identico a una
+        # certeza total. Ademas se deja rastro en el log, que antes no existia.
+        logger.warning(
+            "No se pudo obtener la confianza del modelo para el perfil '%s' (%s: %s). "
+            "Se responde solo con reglas y probabilidad=1.0.",
+            perfil, type(e).__name__, e
+        )
         probabilidad = 1.0
+        modelo_consultado = False
         fuente = f"reglas (fallback total, motivo: {type(e).__name__})"
 
     return {
         "perfil_financiero": perfil,
         "probabilidad": probabilidad,
+        # Publico a proposito: distingue "el modelo confia 1.0" de "no hubo modelo".
+        # Sin este campo los dos casos son indistinguibles para quien consume la API.
+        "modelo_consultado": modelo_consultado,
         "razones": razones_reglas,
         "metricas": {
             "ratio_gasto_ingreso": round(ratio, 2),

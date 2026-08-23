@@ -1,10 +1,13 @@
 import { ArrowRight, PiggyBank, TrendDown, TrendUp, Wallet } from '@phosphor-icons/react';
 import { etiquetasCategoria } from '../../../compartido/constantes/categorias';
+import { gastosSinDeudas } from '../../../compartido/servicios/analisisFinanciero.service';
 import { formatCurrency, formatPercent } from '../../../compartido/utilidades/formato';
 import type { PageProps } from '../../../compartido/tipos/workspace';
 
 export function DashboardPage({ workspace, navegar }: PageProps) {
-  const gastoTotal = Object.values(workspace.analisis.resumenGastos).reduce((total, valor) => total + valor, 0);
+  // Sin deudas, para que esta cifra coincida con el gasto_total_mes que sostiene el perfil.
+  // El pago de deuda se ve en la tarjeta de nivel de endeudamiento.
+  const { resumen: resumenGastos, total: gastoTotal } = gastosSinDeudas(workspace.analisis.resumenGastos);
 
   return (
     <section className="page-stack">
@@ -18,7 +21,7 @@ export function DashboardPage({ workspace, navegar }: PageProps) {
 
       <div className="dashboard-grid">
         <Card title="Distribucion de gastos por categoria" className="span-2">
-          <CategoryDonut resumen={workspace.analisis.resumenGastos} total={gastoTotal} />
+          <CategoryDonut resumen={resumenGastos} total={gastoTotal} />
           <button className="link-button" onClick={() => navegar('analisis')}>Ver detalle de categorias <ArrowRight size={18} /></button>
         </Card>
         <Card title="Tu perfil financiero">
