@@ -1,0 +1,398 @@
+name: CD - FinanceAI (OCI)
+
+on:
+  push:
+    branches: [feature/cd-oci-terraform]
+  workflow_dispatch: {}
+
+concurrency:
+  group: cd-prod
+  cancel-in-progress: false
+
+env:
+  TF_DIR: terraform/envs/prod
+
+jobs:
+  # ---------------------------------------------------------------------
+  # 1. Terraform: crea/actualiza toda la infra en OCI. Debe correr ANTES
+  #    de los build-*: en el primer run, OCIR autocrea los repositorios
+  #    de imagenes en el primer `docker push`, y si Terraform intenta
+  #    crearlos despues, falla con 409.
+  # ---------------------------------------------------------------------
+  terraform:
+    name: terraform (plan + apply)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # Backend "s3" contra Object Storage compatible con S3 de OCI.
+      AWS_ACCESS_KEY_ID: ${{ secrets.OCI_S3_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OCI_S3_SECRET_KEY }}
+      # Variables de entrada del modulo raiz (envs/prod), via TF_VAR_*.
+      TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+      TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+      TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+      TF_VAR_private_key: ${{ secrets.OCI_PRIVATE_KEY }}
+      TF_VAR_compartment_ocid: ${{ secrets.OCI_COMPARTMENT_OCID }}
+      TF_VAR_region: ${{ vars.OCI_REGION }}
+      TF_VAR_availability_domain: ${{ vars.OCI_AVAILABILITY_DOMAIN }}
+      TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+      TF_VAR_ssh_ingress_cidr: "0.0.0.0/0"
+      TF_VAR_db_admin_username: ${{ vars.DB_ADMIN_USERNAME }}
+      TF_VAR_db_admin_password: ${{ secrets.DB_ADMIN_PASSWORD }}
+      TF_VAR_bucket_name: ${{ vars.FRONTEND_BUCKET }}
+      TF_VAR_ocir_region_key: ${{ vars.OCI_REGION_KEY }}
+      TF_VAR_name_prefix: financeai
+    outputs:
+      app_public_ip: ${{ steps.tf_outputs.outputs.app_public_ip }}
+      app_hostname: ${{ steps.tf_outputs.outputs.app_hostname }}
+      app_url: ${{ steps.tf_outputs.outputs.app_url }}
+      db_hostname: ${{ steps.tf_outputs.outputs.db_hostname }}
+      db_port: ${{ steps.tf_outputs.outputs.db_port }}
+      jdbc_url: ${{ steps.tf_outputs.outputs.jdbc_url }}
+      namespace: ${{ steps.tf_outputs.outputs.namespace }}
+      bucket_name: ${{ steps.tf_outputs.outputs.bucket_name }}
+      backend_image_repo: ${{ steps.tf_outputs.outputs.backend_image_repo }}
+      ml_image_repo: ${{ steps.tf_outputs.outputs.ml_image_repo }}
+      ocir_endpoint: ${{ steps.tf_outputs.outputs.ocir_endpoint }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: terraform fmt -check
+        run: terraform -chdir=${{ env.TF_DIR }} fmt -check -recursive
+
+      - name: terraform init
+        run: terraform -chdir=${{ env.TF_DIR }} init -input=false
+
+      - name: terraform validate
+        run: terraform -chdir=${{ env.TF_DIR }} validate
+
+      - name: terraform plan
+        run: terraform -chdir=${{ env.TF_DIR }} plan -input=false -out=tfplan
+
+      - name: terraform apply
+        run: terraform -chdir=${{ env.TF_DIR }} apply -input=false -auto-approve tfplan
+
+      - name: Publicar outputs
+        id: tf_outputs
+        run: |
+          set -euo pipefail
+          cd "${{ env.TF_DIR }}"
+          {
+            echo "app_public_ip=$(terraform output -raw app_public_ip)"
+            echo "app_hostname=$(terraform output -raw app_hostname)"
+            echo "app_url=$(terraform output -raw app_url)"
+            echo "db_hostname=$(terraform output -raw db_hostname)"
+            echo "db_port=$(terraform output -raw db_port)"
+            echo "jdbc_url=$(terraform output -raw jdbc_url)"
+            echo "namespace=$(terraform output -raw namespace)"
+            echo "bucket_name=$(terraform output -raw bucket_name)"
+            echo "backend_image_repo=$(terraform output -raw backend_image_repo)"
+            echo "ml_image_repo=$(terraform output -raw ml_image_repo)"
+            echo "ocir_endpoint=$(terraform output -raw ocir_endpoint)"
+          } >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------
+  # 2 y 3. Build de imagenes ARM64 nativo (sin QEMU). La VM destino es
+  #    aarch64: una imagen amd64 muere con "exec format error".
+  # ---------------------------------------------------------------------
+  build-backend:
+    name: build-backend (arm64)
+    needs: terraform
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: bog.ocir.io
+          username: ${{ secrets.OCIR_USERNAME }}
+          password: ${{ secrets.OCIR_AUTH_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend-financeAI/finance-ai-api
+          push: true
+          tags: |
+            ${{ needs.terraform.outputs.backend_image_repo }}:${{ github.sha }}
+            ${{ needs.terraform.outputs.backend_image_repo }}:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+  build-ml:
+    name: build-ml (arm64)
+    needs: terraform
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: bog.ocir.io
+          username: ${{ secrets.OCIR_USERNAME }}
+          password: ${{ secrets.OCIR_AUTH_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: feature-financeAI/ml-service/Dockerfile
+          push: true
+          tags: |
+            ${{ needs.terraform.outputs.ml_image_repo }}:${{ github.sha }}
+            ${{ needs.terraform.outputs.ml_image_repo }}:latest
+          cache-from: type=gha,scope=ml
+          cache-to: type=gha,mode=max,scope=ml
+
+  # ---------------------------------------------------------------------
+  # 4. Migracion de BD. La base esta en subred privada: el runner no la
+  #    alcanza, hay que entrar por SSH a la VM y correr mysql desde ahi.
+  #    Debe terminar antes de `deploy`: el backend usa ddl-auto=validate.
+  # ---------------------------------------------------------------------
+  db-migrate:
+    name: db-migrate (via SSH)
+    needs: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Aplicar 000_admin.sql, 001_schema.sql y 002_seed.sql
+        env:
+          APP_HOST: ${{ needs.terraform.outputs.app_public_ip }}
+          DB_HOST: ${{ needs.terraform.outputs.db_hostname }}
+          DB_PORT: ${{ needs.terraform.outputs.db_port }}
+          DB_ADMIN_USER: ${{ vars.DB_ADMIN_USERNAME }}
+          DB_ADMIN_PASSWORD: ${{ secrets.DB_ADMIN_PASSWORD }}
+          # No existe un secret dedicado para la password del usuario de
+          # aplicacion (ver terraform/CONTRACT.md seccion 7): se reutiliza
+          # DB_ADMIN_PASSWORD tambien como password de financeai_app.
+          APP_DB_PASSWORD: ${{ secrets.DB_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+          run_mysql() {
+            ssh $SSH_OPTS "ubuntu@${APP_HOST}" \
+              "MYSQL_PWD='${DB_ADMIN_PASSWORD}' mysql -h '${DB_HOST}' -P '${DB_PORT}' -u '${DB_ADMIN_USER}'"
+          }
+
+          echo "Aplicando database/000_admin.sql..."
+          APP_DB_PASSWORD="${APP_DB_PASSWORD}" envsubst '${APP_DB_PASSWORD}' < database/000_admin.sql | run_mysql
+
+          echo "Aplicando database/001_schema.sql..."
+          run_mysql < database/001_schema.sql
+
+          echo "Aplicando database/002_seed.sql..."
+          run_mysql < database/002_seed.sql
+
+  # ---------------------------------------------------------------------
+  # 5. Frontend: build estatico y subida al bucket. Independiente de los
+  #    jobs de build de imagenes; solo necesita los outputs de terraform.
+  # ---------------------------------------------------------------------
+  frontend:
+    name: frontend (build + upload)
+    needs: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend-financeAI/financeAI/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: frontend-financeAI/financeAI
+        run: npm ci
+
+      - name: Compilar frontend
+        working-directory: frontend-financeAI/financeAI
+        env:
+          VITE_API_URL: /api
+        run: npm run build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar OCI CLI
+        run: pip install --disable-pip-version-check oci-cli
+
+      - name: Configurar OCI CLI
+        env:
+          OCI_TENANCY_OCID: ${{ secrets.OCI_TENANCY_OCID }}
+          OCI_USER_OCID: ${{ secrets.OCI_USER_OCID }}
+          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+          OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
+          OCI_REGION: ${{ vars.OCI_REGION }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.oci
+          printf '%s\n' "$OCI_PRIVATE_KEY" > ~/.oci/oci_api_key.pem
+          chmod 600 ~/.oci/oci_api_key.pem
+          cat > ~/.oci/config <<EOF
+          [DEFAULT]
+          user=${OCI_USER_OCID}
+          fingerprint=${OCI_FINGERPRINT}
+          tenancy=${OCI_TENANCY_OCID}
+          region=${OCI_REGION}
+          key_file=${HOME}/.oci/oci_api_key.pem
+          EOF
+          chmod 600 ~/.oci/config
+
+      - name: Subir dist/ al bucket
+        env:
+          OCI_NAMESPACE: ${{ needs.terraform.outputs.namespace }}
+          FRONTEND_BUCKET: ${{ needs.terraform.outputs.bucket_name }}
+        run: |
+          oci os object bulk-upload \
+            --namespace "${OCI_NAMESPACE}" \
+            --bucket-name "${FRONTEND_BUCKET}" \
+            --src-dir frontend-financeAI/financeAI/dist \
+            --overwrite \
+            --content-type auto
+
+  # ---------------------------------------------------------------------
+  # 6. Deploy: escribe .env y oven-config.js en la VM por SSH, y levanta
+  #    los contenedores con docker compose. needs los tres jobs previos
+  #    que producen lo que este consume (infra, imagenes y esquema).
+  # ---------------------------------------------------------------------
+  deploy:
+    name: deploy (via SSH)
+    needs: [terraform, build-backend, build-ml, db-migrate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Escribir .env, oven-config.js y levantar contenedores
+        env:
+          APP_HOST: ${{ needs.terraform.outputs.app_public_ip }}
+          APP_HOSTNAME: ${{ needs.terraform.outputs.app_hostname }}
+          APP_URL: ${{ needs.terraform.outputs.app_url }}
+          OS_NAMESPACE: ${{ needs.terraform.outputs.namespace }}
+          OS_BUCKET: ${{ needs.terraform.outputs.bucket_name }}
+          OCI_REGION: ${{ vars.OCI_REGION }}
+          BACKEND_IMAGE: ${{ needs.terraform.outputs.backend_image_repo }}:${{ github.sha }}
+          ML_IMAGE: ${{ needs.terraform.outputs.ml_image_repo }}:${{ github.sha }}
+          DB_URL: ${{ needs.terraform.outputs.jdbc_url }}
+          DB_USER: financeai_app
+          # Ver nota en el job db-migrate: se reutiliza DB_ADMIN_PASSWORD
+          # como password del usuario de aplicacion financeai_app.
+          DB_PASSWORD: ${{ secrets.DB_ADMIN_PASSWORD }}
+          OCIR_ENDPOINT: ${{ needs.terraform.outputs.ocir_endpoint }}
+          OCIR_USERNAME: ${{ secrets.OCIR_USERNAME }}
+          OCIR_AUTH_TOKEN: ${{ secrets.OCIR_AUTH_TOKEN }}
+          OVEN_HABILITADO: ${{ vars.OVEN_HABILITADO }}
+          OVEN_WIDGET_SRC: ${{ vars.OVEN_WIDGET_SRC }}
+          OVEN_API_URL: ${{ vars.OVEN_API_URL }}
+          OVEN_API_ORIGIN: ${{ vars.OVEN_API_ORIGIN }}
+          OVEN_EMBED_KEY: ${{ secrets.OVEN_EMBED_KEY }}
+          OVEN_TENANT: ${{ vars.OVEN_TENANT }}
+          OVEN_AGENT: ${{ vars.OVEN_AGENT }}
+          OVEN_THEME: ${{ vars.OVEN_THEME }}
+          OVEN_VISUAL_STYLE: ${{ vars.OVEN_VISUAL_STYLE }}
+          OVEN_POSITION: ${{ vars.OVEN_POSITION }}
+          OVEN_TEXTO_ENTRADA: ${{ vars.OVEN_TEXTO_ENTRADA }}
+          OVEN_OCULTAR_ACCIONES: ${{ vars.OVEN_OCULTAR_ACCIONES }}
+          OVEN_PREGUNTAS_INICIALES: ${{ vars.OVEN_PREGUNTAS_INICIALES }}
+        run: |
+          set -euo pipefail
+
+          # Derivados, igual que docker/15-oven-defaults.envsh.
+          OVEN_API_HOST="$(printf '%s' "$OVEN_API_ORIGIN" | sed -e 's#^[a-z]*://##' -e 's#/.*##')"
+          OVEN_API_WS_ORIGIN="$(printf '%s' "$OVEN_API_ORIGIN" | sed -e 's#^https://#wss://#' -e 's#^http://#ws://#')"
+          OVEN_WIDGET_ORIGIN="$(printf '%s' "$OVEN_WIDGET_SRC" | sed -n 's#^\([a-z]*://[^/]*\).*#\1#p')"
+          OVEN_CSP="default-src 'self'; script-src 'self' 'unsafe-inline' ${OVEN_WIDGET_ORIGIN}; style-src 'self' 'unsafe-inline' ${OVEN_WIDGET_ORIGIN} https://fonts.googleapis.com; font-src 'self' data: ${OVEN_WIDGET_ORIGIN} https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' ${OVEN_API_ORIGIN}; connect-src 'self' ${APP_URL} ${OVEN_API_ORIGIN} ${OVEN_API_WS_ORIGIN} ${OVEN_WIDGET_ORIGIN}; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          TARGET="ubuntu@${APP_HOST}"
+
+          echo "Esperando cloud-init..."
+          ssh $SSH_OPTS "$TARGET" "sudo cloud-init status --wait"
+
+          ssh $SSH_OPTS "$TARGET" "sudo mkdir -p /opt/financeai/web"
+
+          ssh $SSH_OPTS "$TARGET" "sudo tee /opt/financeai/.env > /dev/null" <<EOF
+          SITE_ADDRESS=${APP_HOSTNAME}
+          OS_NAMESPACE=${OS_NAMESPACE}
+          OS_BUCKET=${OS_BUCKET}
+          OCI_REGION=${OCI_REGION}
+          BACKEND_IMAGE=${BACKEND_IMAGE}
+          ML_IMAGE=${ML_IMAGE}
+          DB_URL=${DB_URL}
+          DB_USER=${DB_USER}
+          DB_PASSWORD=${DB_PASSWORD}
+          FRONTEND_ORIGIN=${APP_URL}
+          ML_SERVICE_BASE_URL=http://ml-service:8000
+          OVEN_HABILITADO=${OVEN_HABILITADO}
+          OVEN_WIDGET_SRC=${OVEN_WIDGET_SRC}
+          OVEN_API_URL=${OVEN_API_URL}
+          OVEN_API_ORIGIN=${OVEN_API_ORIGIN}
+          OVEN_API_HOST=${OVEN_API_HOST}
+          OVEN_API_WS_ORIGIN=${OVEN_API_WS_ORIGIN}
+          OVEN_WIDGET_ORIGIN=${OVEN_WIDGET_ORIGIN}
+          OVEN_EMBED_KEY=${OVEN_EMBED_KEY}
+          OVEN_TENANT=${OVEN_TENANT}
+          OVEN_AGENT=${OVEN_AGENT}
+          OVEN_THEME=${OVEN_THEME}
+          OVEN_VISUAL_STYLE=${OVEN_VISUAL_STYLE}
+          OVEN_POSITION=${OVEN_POSITION}
+          OVEN_TEXTO_ENTRADA=${OVEN_TEXTO_ENTRADA}
+          OVEN_OCULTAR_ACCIONES=${OVEN_OCULTAR_ACCIONES}
+          OVEN_PREGUNTAS_INICIALES=${OVEN_PREGUNTAS_INICIALES}
+          OVEN_CSP=${OVEN_CSP}
+          EOF
+
+          ssh $SSH_OPTS "$TARGET" "sudo tee /opt/financeai/web/oven-config.js > /dev/null" <<EOF
+          // Generado automaticamente por el job deploy de .github/workflows/cd.yml.
+          window.__OVEN_CONFIG__ = {
+            habilitado: "${OVEN_HABILITADO}",
+            src: "${OVEN_WIDGET_SRC}",
+            apiUrl: "${OVEN_API_URL}",
+            embedKey: "${OVEN_EMBED_KEY}",
+            tenant: "${OVEN_TENANT}",
+            agent: "${OVEN_AGENT}",
+            theme: "${OVEN_THEME}",
+            visualStyle: "${OVEN_VISUAL_STYLE}",
+            position: "${OVEN_POSITION}",
+            textoEntrada: "${OVEN_TEXTO_ENTRADA}",
+            ocultarAccionesRapidas: "${OVEN_OCULTAR_ACCIONES}",
+            preguntasIniciales: "${OVEN_PREGUNTAS_INICIALES}"
+          };
+          EOF
+
+          ssh $SSH_OPTS "$TARGET" "echo '${OCIR_AUTH_TOKEN}' | sudo docker login ${OCIR_ENDPOINT} -u '${OCIR_USERNAME}' --password-stdin"
+
+          ssh $SSH_OPTS "$TARGET" "cd /opt/financeai && sudo docker compose pull && sudo docker compose up -d --remove-orphans && sudo docker image prune -f"
+
+  # ---------------------------------------------------------------------
+  # 7. Smoke test post-deploy. Reintentos generosos ya viven en el
+  #    propio script (la primera emision del certificado Let's Encrypt
+  #    tarda 10-30s).
+  # ---------------------------------------------------------------------
+  smoke:
+    name: smoke test
+    needs: [terraform, deploy, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ejecutar smoke test
+        run: |
+          chmod +x scripts/cd/smoke.sh
+          scripts/cd/smoke.sh "${{ needs.terraform.outputs.app_url }}"
