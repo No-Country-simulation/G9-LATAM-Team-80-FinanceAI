@@ -9,18 +9,11 @@ packages:
   - netfilter-persistent
   - mysql-client
 
-write_files:
-  - path: /opt/financeai/Caddyfile
-    owner: root:root
-    permissions: '0644'
-    content: |
-      ${indent(6, caddyfile_content)}
 
-  - path: /opt/financeai/docker-compose.prod.yml
-    owner: root:root
-    permissions: '0644'
-    content: |
-      ${indent(6, docker_compose_content)}
+# NOTA: el Caddyfile y docker-compose.prod.yml NO se escriben aqui a proposito.
+# Van dentro de user_data, y cualquier cambio en user_data fuerza a Terraform a
+# DESTRUIR Y RECREAR la instancia. En una region con capacidad ajustada eso puede
+# dejarte sin VM. Ahora los sincroniza el job `deploy` del pipeline en cada corrida.
 
 runcmd:
   - mkdir -p /opt/financeai/web

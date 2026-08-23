@@ -1,7 +1,5 @@
 locals {
   cloud_init_rendered = templatefile("${path.module}/cloud-init/cloud-init.yaml.tftpl", {
-    caddyfile_content      = file("${path.module}/cloud-init/Caddyfile")
-    docker_compose_content = file("${path.module}/cloud-init/docker-compose.prod.yml")
   })
 }
 

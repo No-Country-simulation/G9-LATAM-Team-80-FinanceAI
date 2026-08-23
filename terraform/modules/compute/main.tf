@@ -17,6 +17,15 @@ data "oci_core_images" "ubuntu" {
 }
 
 resource "oci_core_instance" "this" {
+  # Red de seguridad: un cambio en metadata (user_data) fuerza a Terraform a
+  # destruir y recrear la instancia. En sa-bogota-1 la capacidad es ajustada, asi
+  # que una recreacion automatica puede dejar el despliegue sin VM. Los cambios de
+  # configuracion viajan por el job de deploy, no por cloud-init; si de verdad hace
+  # falta re-ejecutar cloud-init, hazlo explicito con `terraform taint`.
+  lifecycle {
+    ignore_changes = [metadata]
+  }
+
   compartment_id      = var.compartment_ocid
   availability_domain = var.availability_domain
   display_name        = "${var.name_prefix}-app"
