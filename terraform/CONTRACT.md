@@ -341,7 +341,11 @@ Se escribe en `/opt/financeai/web/oven-config.js` y Caddy lo monta como volumen 
 
 ### 9.5 Build del frontend
 
-`VITE_API_URL=/api` (relativo, mismo origen). NO pasar variables `VITE_OVEN_*` al build:
+`VITE_API_URL` debe ir **VACIO** (cadena vacia), no `/api`. Los servicios del frontend ya
+incluyen `/api` en la ruta (`apiRequest("/api/auth/login")` en auth.service.ts) y
+`api.service.ts` antepone `VITE_API_URL`. Poner `/api` genera `/api/api/auth/login` -> 404.
+Como Caddy sirve todo desde el mismo origen, vacio es lo correcto (lo dice el .env.example).
+NO pasar variables `VITE_OVEN_*` al build:
 la config va por runtime y hornearlas solo crea dos fuentes de verdad.
 
 `public/oven-config.js` viaja en `dist/` como marcador de posicion. El bucket lo tendra, pero

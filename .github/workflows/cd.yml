@@ -235,7 +235,11 @@ jobs:
       - name: Compilar frontend
         working-directory: frontend-financeAI/financeAI
         env:
-          VITE_API_URL: /api
+          # VACIO a proposito. Los servicios del frontend ya llevan /api en la ruta
+          # (ver src/compartido/servicios/auth.service.ts: apiRequest("/api/auth/login")),
+          # y api.service.ts antepone VITE_API_URL. Poner "/api" aqui produce
+          # /api/api/auth/login -> 404. Mismo origen => cadena vacia.
+          VITE_API_URL: ""
         run: npm run build
 
       - uses: actions/setup-python@v5
@@ -419,3 +423,83 @@ jobs:
         run: |
           chmod +x scripts/cd/smoke.sh
           scripts/cd/smoke.sh "${{ needs.terraform.outputs.app_url }}"
+
+      - name: Generar informe del despliegue
+        if: always()
+        env:
+          APP_URL:      ${{ needs.terraform.outputs.app_url }}
+          APP_HOSTNAME: ${{ needs.terraform.outputs.app_hostname }}
+          APP_IP:       ${{ needs.terraform.outputs.app_public_ip }}
+          DB_HOSTNAME:  ${{ needs.terraform.outputs.db_hostname }}
+          BUCKET:       ${{ needs.terraform.outputs.bucket_name }}
+          NAMESPACE:    ${{ needs.terraform.outputs.namespace }}
+          BACKEND_REPO: ${{ needs.terraform.outputs.backend_image_repo }}
+          ML_REPO:      ${{ needs.terraform.outputs.ml_image_repo }}
+          INSTANCE_ID:  ${{ needs.terraform.outputs.instance_id }}
+        run: |
+          set -uo pipefail
+          estado() { curl -sS --max-time 20 -o /dev/null -w '%{http_code}' "$1" 2>/dev/null || echo "sin-respuesta"; }
+          S_RAIZ=$(estado "$APP_URL/")
+          S_API=$(estado "$APP_URL/api/health")
+          S_ML=$(estado "$APP_URL/ml/health")
+          S_OVEN=$(estado "$APP_URL/oven-config.js")
+
+          cat > deployment-info.json <<JSON
+          {
+            "entorno": "prod",
+            "region": "${{ vars.OCI_REGION }}",
+            "commit": "${{ github.sha }}",
+            "ejecucion": "${{ github.run_id }}",
+            "desplegado_en": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "urls": {
+              "aplicacion":   "$APP_URL",
+              "api_health":   "$APP_URL/api/health",
+              "ml_health":    "$APP_URL/ml/health",
+              "oven_config":  "$APP_URL/oven-config.js",
+              "bucket_frontend": "https://objectstorage.${{ vars.OCI_REGION }}.oraclecloud.com/n/$NAMESPACE/b/$BUCKET/o/index.html"
+            },
+            "infraestructura": {
+              "hostname": "$APP_HOSTNAME",
+              "ip_publica_reservada": "$APP_IP",
+              "instancia": "$INSTANCE_ID",
+              "mysql_hostname": "$DB_HOSTNAME",
+              "bucket": "$BUCKET",
+              "imagen_backend": "$BACKEND_REPO:${{ github.sha }}",
+              "imagen_ml": "$ML_REPO:${{ github.sha }}"
+            },
+            "estado": {
+              "raiz": "$S_RAIZ", "api_health": "$S_API",
+              "ml_health": "$S_ML", "oven_config": "$S_OVEN"
+            }
+          }
+          JSON
+
+          {
+            echo "## FinanceAI desplegado en OCI"
+            echo ""
+            echo "**[$APP_URL]($APP_URL)**"
+            echo ""
+            echo "| Endpoint | Estado |"
+            echo "|---|---|"
+            echo "| \`/\` (SPA) | $S_RAIZ |"
+            echo "| \`/api/health\` | $S_API |"
+            echo "| \`/ml/health\` | $S_ML |"
+            echo "| \`/oven-config.js\` | $S_OVEN |"
+            echo ""
+            echo "| Recurso | Valor |"
+            echo "|---|---|"
+            echo "| IP publica reservada | \`$APP_IP\` |"
+            echo "| MySQL HeatWave | \`$DB_HOSTNAME\` |"
+            echo "| Bucket frontend | \`$BUCKET\` |"
+            echo "| Imagenes | \`:${{ github.sha }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          cat deployment-info.json
+
+      - name: Publicar informe como artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-info-${{ github.run_id }}
+          path: deployment-info.json
+          retention-days: 90
