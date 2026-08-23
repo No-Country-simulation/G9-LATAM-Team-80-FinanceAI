@@ -378,7 +378,7 @@ jobs:
 
           ssh $SSH_OPTS "$TARGET" "echo '${OCIR_AUTH_TOKEN}' | sudo docker login ${OCIR_ENDPOINT} -u '${OCIR_USERNAME}' --password-stdin"
 
-          ssh $SSH_OPTS "$TARGET" "cd /opt/financeai && sudo docker compose pull && sudo docker compose up -d --remove-orphans && sudo docker image prune -f"
+          ssh $SSH_OPTS "$TARGET" "cd /opt/financeai && sudo docker compose -f docker-compose.prod.yml pull && sudo docker compose -f docker-compose.prod.yml up -d --remove-orphans && sudo docker image prune -f"
 
   # ---------------------------------------------------------------------
   # 7. Smoke test post-deploy. Reintentos generosos ya viven en el
