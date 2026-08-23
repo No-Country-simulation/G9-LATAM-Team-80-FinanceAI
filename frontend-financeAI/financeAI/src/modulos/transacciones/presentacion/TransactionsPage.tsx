@@ -1,6 +1,5 @@
 import {
   ArrowClockwise,
-  DotsThree,
   MagnifyingGlass,
   PencilSimple,
   Plus,
@@ -16,7 +15,7 @@ import { formatCurrency } from '../../../compartido/utilidades/formato';
 import type { CategoriaFinanciera, TipoTransaccion, Transaccion } from '../../../compartido/tipos/finanzas';
 import type { PageProps } from '../../../compartido/tipos/workspace';
 import { PanelImportar } from './PanelImportar';
-import { PanelTransaccion, type DatosTransaccion } from './PanelTransaccion';
+import { ModalTransaccion, type DatosTransaccion } from './ModalTransaccion';
 import './transacciones.css';
 
 const ETIQUETAS_TIPO: Record<TipoTransaccion, string> = {
@@ -52,7 +51,6 @@ export function TransactionsPage({ workspace }: PageProps) {
   const [filtroCategoria, setFiltroCategoria] = useState<CategoriaFinanciera | 'todas'>('todas');
   const [filtroTipo, setFiltroTipo] = useState<TipoTransaccion | 'todos'>('todos');
   const [panel, setPanel] = useState<Panel>({ modo: 'cerrado' });
-  const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [errorGuardado, setErrorGuardado] = useState('');
@@ -79,14 +77,19 @@ export function TransactionsPage({ workspace }: PageProps) {
       .sort((uno, otro) => otro.fecha.localeCompare(uno.fecha));
   }, [transaccionesDelMes, filtroCategoria, filtroTipo, busqueda]);
 
+  /*
+   * Cada tipo se suma por separado. Meter el ahorro dentro de los gastos inflaba la
+   * cifra y sugeria que transferir a una cuenta de ahorro es dinero perdido.
+   */
   const totales = useMemo(() => {
-    let ingresos = 0;
-    let gastos = 0;
+    const suma = { ingresos: 0, gastos: 0, ahorro: 0 };
     for (const item of visibles) {
-      if (item.tipo === 'ingreso') ingresos += Math.abs(item.monto);
-      else gastos += Math.abs(item.monto);
+      const monto = Math.abs(item.monto);
+      if (item.tipo === 'ingreso') suma.ingresos += monto;
+      else if (item.tipo === 'ahorro') suma.ahorro += monto;
+      else suma.gastos += monto;
     }
-    return { ingresos, gastos };
+    return suma;
   }, [visibles]);
 
   /*
@@ -180,12 +183,15 @@ export function TransactionsPage({ workspace }: PageProps) {
             : <>{visibles.length} {visibles.length === 1 ? 'movimiento' : 'movimientos'} </>}
           <span>en {periodo}</span>
         </span>
-        {(totales.ingresos > 0 || totales.gastos > 0) && <span className="tx-separador" />}
+        {(totales.ingresos > 0 || totales.gastos > 0 || totales.ahorro > 0) && <span className="tx-separador" />}
         {totales.ingresos > 0 && (
           <span className="tx-cifra"><small>Ingresos</small><strong>{formatCurrency(totales.ingresos)}</strong></span>
         )}
         {totales.gastos > 0 && (
           <span className="tx-cifra"><small>Gastos</small><strong>{formatCurrency(totales.gastos)}</strong></span>
+        )}
+        {totales.ahorro > 0 && (
+          <span className="tx-cifra"><small>Ahorro</small><strong>{formatCurrency(totales.ahorro)}</strong></span>
         )}
       </div>
 
@@ -256,23 +262,30 @@ export function TransactionsPage({ workspace }: PageProps) {
       {cargandoDatos && !hidratado ? (
         <Esqueleto />
       ) : visibles.length > 0 ? (
-        <ul className="tx-lista">
+        <div className="tx-tabla">
+          <div className="tx-encabezado" role="row">
+            <span role="columnheader">Fecha</span>
+            <span role="columnheader">Movimiento</span>
+            <span role="columnheader">Tipo</span>
+            <span role="columnheader">Clasificación</span>
+            <span role="columnheader" className="tx-col-monto">Monto</span>
+            <span role="columnheader" className="tx-col-acciones">Acciones</span>
+          </div>
+          <ul className="tx-lista">
           {visibles.map((item) => (
             <Fila
               key={item.id}
               transaccion={item}
-              menuAbierto={menuAbierto === item.id}
               confirmando={confirmando === item.id}
               resaltada={panel.modo === 'editar' && panel.transaccion.id === item.id}
-              onAbrirMenu={() => setMenuAbierto(menuAbierto === item.id ? null : item.id)}
-              onCerrarMenu={() => setMenuAbierto(null)}
-              onEditar={() => { setMenuAbierto(null); setPanel({ modo: 'editar', transaccion: item }); }}
-              onPedirEliminar={() => { setMenuAbierto(null); setConfirmando(item.id); }}
+              onEditar={() => setPanel({ modo: 'editar', transaccion: item })}
+              onPedirEliminar={() => setConfirmando(item.id)}
               onCancelarEliminar={() => setConfirmando(null)}
               onConfirmarEliminar={() => eliminar(item.id)}
             />
           ))}
-        </ul>
+          </ul>
+        </div>
       ) : hayFiltros ? (
         <SinResultados
           coincidenciasFuera={coincidenciasFuera}
@@ -290,90 +303,76 @@ export function TransactionsPage({ workspace }: PageProps) {
       )}
 
       {panel.modo === 'nueva' && (
-        <PanelTransaccion
+        <ModalTransaccion
           transaccion={null}
           guardando={guardando}
           errorGuardado={errorGuardado}
+          onClasificar={workspace.clasificarDescripcion}
           onGuardar={guardar}
           onCerrar={cerrarPanel}
         />
       )}
       {panel.modo === 'editar' && (
-        <PanelTransaccion
+        <ModalTransaccion
           key={panel.transaccion.id}
           transaccion={panel.transaccion}
           guardando={guardando}
           errorGuardado={errorGuardado}
+          onClasificar={workspace.clasificarDescripcion}
           onGuardar={guardar}
           onCerrar={cerrarPanel}
         />
       )}
-      {panel.modo === 'importar' && <PanelImportar onImportar={importar} onCerrar={cerrarPanel} />}
+      {panel.modo === 'importar' && (
+        <PanelImportar
+          onClasificarLote={workspace.clasificarDescripciones}
+          onImportar={importar}
+          onCerrar={cerrarPanel}
+        />
+      )}
     </section>
   );
 }
 
 function Fila({
   transaccion,
-  menuAbierto,
   confirmando,
   resaltada,
-  onAbrirMenu,
-  onCerrarMenu,
   onEditar,
   onPedirEliminar,
   onCancelarEliminar,
   onConfirmarEliminar
 }: {
   transaccion: Transaccion;
-  menuAbierto: boolean;
   confirmando: boolean;
   resaltada: boolean;
-  onAbrirMenu: () => void;
-  onCerrarMenu: () => void;
   onEditar: () => void;
   onPedirEliminar: () => void;
   onCancelarEliminar: () => void;
   onConfirmarEliminar: () => void;
 }) {
-  const acciones = useRef<HTMLDivElement>(null);
   const { dia, mes, anio } = partesDeFecha(transaccion.fecha);
-  const esIngreso = transaccion.tipo === 'ingreso';
-
-  useEffect(() => {
-    if (!menuAbierto) return;
-    function alClicFuera(evento: MouseEvent) {
-      if (!acciones.current?.contains(evento.target as Node)) onCerrarMenu();
-    }
-    function alPulsarTecla(evento: KeyboardEvent) {
-      if (evento.key === 'Escape') onCerrarMenu();
-    }
-    document.addEventListener('mousedown', alClicFuera);
-    document.addEventListener('keydown', alPulsarTecla);
-    return () => {
-      document.removeEventListener('mousedown', alClicFuera);
-      document.removeEventListener('keydown', alPulsarTecla);
-    };
-  }, [menuAbierto, onCerrarMenu]);
+  const tipo = transaccion.tipo;
 
   return (
     <li className={`tx-fila ${confirmando ? 'confirmando' : ''} ${resaltada ? 'resaltada' : ''}`}>
-      <div className="tx-fecha">
-        <strong>{dia}</strong>{mes} {anio}
+      <div className="tx-fecha">{dia} {mes} {anio}</div>
+
+      {/* title solo se ve si el texto se recorta: el navegador lo ignora cuando cabe. */}
+      <div className="tx-desc" title={transaccion.descripcion}>{transaccion.descripcion}</div>
+
+      <div className="tx-celda">
+        <span className={`tx-pill-tipo ${tipo}`}>{ETIQUETAS_TIPO[tipo]}</span>
       </div>
 
-      <div className="tx-desc">
-        <strong>{transaccion.descripcion}</strong>
-        <div className="tx-meta">
-          {/*
-            Categoria GUARDADA, no la inferida por el modelo. Antes la lista mostraba la
-            clasificacion del ML emparejada por texto de descripcion, asi que editar la
-            categoria parecia no surtir efecto y dos movimientos con la misma descripcion
-            se veian siempre igual.
-          */}
-          <span className="tx-pill">{etiquetasCategoria[transaccion.categoria]}</span>
-          <span className="tx-tipo">{ETIQUETAS_TIPO[transaccion.tipo]}</span>
-        </div>
+      <div className="tx-celda">
+        {/*
+          La clasificacion pertenece a los gastos. En un ingreso o un ahorro no hay nada
+          que mostrar: una raya lo dice sin fingir una categoria que nadie asigno.
+        */}
+        {transaccion.categoria
+          ? <span className="tx-pill">{etiquetasCategoria[transaccion.categoria]}</span>
+          : <span className="tx-vacio" role="img" aria-label="Sin clasificación">—</span>}
       </div>
 
       {confirmando ? (
@@ -384,32 +383,29 @@ function Fila({
         </div>
       ) : (
         <>
-          <div className={`tx-monto ${esIngreso ? 'ingreso' : ''}`}>
-            {esIngreso ? '+ ' : ''}{formatCurrency(Math.abs(transaccion.monto))}
+          <div className={`tx-monto ${tipo}`}>
+            {tipo === 'ingreso' ? '+ ' : ''}{formatCurrency(Math.abs(transaccion.monto))}
           </div>
 
-          <div className="tx-acciones" ref={acciones}>
+          <div className="tx-acciones">
             <button
               type="button"
               className="tx-icono"
-              aria-label={`Acciones para ${transaccion.descripcion}`}
-              aria-expanded={menuAbierto}
-              aria-haspopup="menu"
-              onClick={onAbrirMenu}
+              aria-label={`Editar ${transaccion.descripcion}`}
+              title="Editar"
+              onClick={onEditar}
             >
-              <DotsThree size={20} weight="bold" />
+              <PencilSimple size={17} />
             </button>
-
-            {menuAbierto && (
-              <div className="tx-menu" role="menu">
-                <button type="button" role="menuitem" onClick={onEditar}>
-                  <PencilSimple size={16} /> Editar
-                </button>
-                <button type="button" role="menuitem" className="peligro" onClick={onPedirEliminar}>
-                  <Trash size={16} /> Eliminar
-                </button>
-              </div>
-            )}
+            <button
+              type="button"
+              className="tx-icono peligro"
+              aria-label={`Eliminar ${transaccion.descripcion}`}
+              title="Eliminar"
+              onClick={onPedirEliminar}
+            >
+              <Trash size={17} />
+            </button>
           </div>
         </>
       )}

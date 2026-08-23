@@ -78,6 +78,22 @@
 .fa-agente-lanzador:hover .fa-agente-tooltip,
 .fa-agente-lanzador:focus-visible .fa-agente-tooltip { opacity: 1; }
 
+/*
+ * El lanzador se aparta mientras hay una hoja lateral abierta.
+ *
+ * Vive en la misma esquina que el pie del panel de transacciones y no solo lo tapaba:
+ * document.elementFromPoint sobre "Cancelar" devolvia el lanzador, o sea que se comia
+ * el click. Se oculta en vez de reubicarlo porque cualquier otra posicion sigue
+ * compitiendo con el contenido, y el chat se recupera al cerrar el panel.
+ *
+ * Es CSS puro: no toca el estado del agente ni la logica de Oven.
+ */
+body:has(.tx-panel) .fa-agente-lanzador {
+  opacity: 0;
+  transform: scale(0.92);
+  pointer-events: none;
+}
+
 /* --- Burbuja -------------------------------------------------------- */
 
 /*
