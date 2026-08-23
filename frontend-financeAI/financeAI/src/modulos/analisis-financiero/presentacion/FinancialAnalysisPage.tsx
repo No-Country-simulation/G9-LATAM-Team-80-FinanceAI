@@ -1,6 +1,7 @@
 import { ArrowLeft, CheckCircle, DownloadSimple, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { etiquetasCategoria } from '../../../compartido/constantes/categorias';
+import { gastosSinDeudas } from '../../../compartido/servicios/analisisFinanciero.service';
 import { formatCurrency, formatPercent } from '../../../compartido/utilidades/formato';
 import type { PageProps } from '../../../compartido/tipos/workspace';
 import { Card, PageHeader, ProfileBanner } from '../../tablero/presentacion/DashboardPage';
@@ -10,8 +11,9 @@ type AnalysisTab = 'resumen' | 'categorias' | 'indicadores' | 'detalles';
 export function FinancialAnalysisPage({ workspace }: PageProps) {
   const [vista, setVista] = useState<'resumen' | 'nuevo'>('resumen');
   const [tabActiva, setTabActiva] = useState<AnalysisTab>('resumen');
-  const total = Object.values(workspace.analisis.resumenGastos).reduce((sum, value) => sum + value, 0);
-  const rows = Object.entries(workspace.analisis.resumenGastos)
+  // Misma definicion de gasto que usa el perfil: sin la categoria 'deudas'.
+  const { resumen: resumenGastos, total } = gastosSinDeudas(workspace.analisis.resumenGastos);
+  const rows = Object.entries(resumenGastos)
     .filter(([, value]) => value > 0)
     .sort((a, b) => b[1] - a[1]);
 

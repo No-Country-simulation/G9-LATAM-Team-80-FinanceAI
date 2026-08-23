@@ -33,6 +33,25 @@ export const categoriasFinancieras: CategoriaFinanciera[] = [
   'cuidado_personal', 'vivienda', 'otros'
 ];
 
+/**
+ * El perfil financiero trata la deuda como una dimension aparte del gasto: el ML excluye
+ * la categoria 'deudas' de gasto_total_mes para no contarla dos veces con
+ * nivel_endeudamiento. Las vistas que muestran "gasto total" tienen que usar la misma
+ * definicion; si suman resumenGastos completo, la misma pantalla termina mostrando dos
+ * cifras de gasto distintas (la tarjeta y la que sostiene el perfil).
+ *
+ * Devuelve el resumen sin deudas y su total, para que tarjeta, donut y tabla coincidan.
+ */
+export function gastosSinDeudas(resumen: Record<CategoriaFinanciera, number>) {
+  const entradas = (Object.entries(resumen) as [CategoriaFinanciera, number][])
+    .filter(([categoria]) => categoria !== 'deudas');
+
+  return {
+    resumen: Object.fromEntries(entradas) as Record<CategoriaFinanciera, number>,
+    total: entradas.reduce((suma, [, valor]) => suma + valor, 0)
+  };
+}
+
 export const analisisInicial: ResultadoAnalisis = {
   ingresoMensual: 0,
   gastoTotalMes: 0,
