@@ -1,0 +1,30 @@
+# Aplica al build del ml-service (contexto = raiz del repo).
+.git
+node_modules
+target
+dist
+build
+.venv
+venv
+__pycache__
+*.pyc
+*.ipynb
+*.ipynb_checkpoints
+*.csv
+*.log
+.idea
+.vscode
+.DS_Store
+
+# Servicios/apps que no necesita el runtime del ml-service.
+frontend-financeAI
+backend-financeAI
+feature-financeAI/G9-LATAM-Team-80-FinanceAI-tests-pruebas-de-contrato
+
+# Datasets/notebooks pesados dentro de los modulos ML que si se copian
+# (se listan explicitamente porque .dockerignore no puede excluir
+# dentro de un directorio ya incluido via COPY selectivo, pero deja
+# claro que no deben terminar en la imagen).
+**/*.ipynb
+**/dataset_gastos.csv
+**/casos_prueba_perfil.csv

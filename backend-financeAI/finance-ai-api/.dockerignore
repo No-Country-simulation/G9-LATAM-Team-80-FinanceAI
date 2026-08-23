@@ -1,0 +1,11 @@
+target
+.git
+.mvn
+.idea
+*.iml
+.vscode
+.settings
+.classpath
+.project
+*.log
+README.md
