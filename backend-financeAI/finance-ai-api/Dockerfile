@@ -1,16 +1,33 @@
-FROM maven:3.9-eclipse-temurin-21 AS build
+# syntax=docker/dockerfile:1
 
-WORKDIR /app
+# ---- Etapa build ----
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /build
+
+# Cache de capas: descarga dependencias antes de copiar el codigo fuente.
 COPY pom.xml .
-RUN mvn -B dependency:go-offline
+RUN mvn -B -q dependency:go-offline
 
 COPY src ./src
-RUN mvn -B clean package -DskipTests
+RUN mvn -B -q clean package -DskipTests -Dspring-boot.excludeDevtools=true \
+    && cp target/finance-ai-api-*.jar app.jar
 
-FROM eclipse-temurin:21-jre-alpine
-
+# ---- Etapa runtime ----
+FROM eclipse-temurin:17-jre-jammy AS runtime
 WORKDIR /app
-COPY --from=build /app/target/finance-ai-api-0.0.1-SNAPSHOT.jar app.jar
 
+# curl es necesario para el HEALTHCHECK y para el healthcheck de docker compose.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r spring && useradd -r -g spring spring
+
+COPY --from=build /build/app.jar app.jar
+
+USER spring
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/api/health || exit 1
+
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=60", "-jar", "app.jar"]

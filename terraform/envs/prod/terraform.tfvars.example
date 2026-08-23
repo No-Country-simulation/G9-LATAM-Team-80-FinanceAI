@@ -1,0 +1,38 @@
+# Copia este archivo a terraform.tfvars y completa los valores marcados como <SECRETO>.
+# NUNCA commitees terraform.tfvars (contiene secretos). Solo este .example va al repo.
+
+# --- Autenticacion OCI (secretos, normalmente inyectados por CI via TF_VAR_*) ---
+tenancy_ocid = "<SECRETO: OCID de la tenancy hackaton80>"
+user_ocid    = "<SECRETO: OCID del usuario API>"
+fingerprint  = "<SECRETO: fingerprint de la clave API>"
+private_key  = "<SECRETO: contenido PEM completo de la clave privada API, NO un path>"
+
+region = "sa-bogota-1"
+
+# --- Compartment / naming ---
+compartment_ocid = "<SECRETO: OCID del compartment financeai>"
+name_prefix       = "financeai"
+freeform_tags = {
+  project     = "financeai"
+  environment = "prod"
+}
+
+# --- Red ---
+vcn_cidr             = "10.0.0.0/16"
+public_subnet_cidr   = "10.0.1.0/24"
+private_subnet_cidr  = "10.0.2.0/24"
+ssh_ingress_cidr     = "<SECRETO o CIDR publico: ej. 0.0.0.0/0 o la IP fija de tu runner/oficina>"
+
+# --- Compute ---
+ssh_public_key      = "<SECRETO: clave publica SSH en formato OpenSSH, ssh-ed25519 AAAA...>"
+instance_ocpus      = 2
+instance_memory_gb  = 12
+boot_volume_gb      = 50
+
+# --- Database ---
+db_admin_username = "admin"
+db_admin_password = "<SECRETO: password del admin de MySQL HeatWave>"
+
+# --- Storage / OCIR ---
+bucket_name     = "financeai-frontend"
+ocir_region_key = "bog"

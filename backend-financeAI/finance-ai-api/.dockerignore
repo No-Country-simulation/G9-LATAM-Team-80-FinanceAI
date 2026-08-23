@@ -1,4 +1,13 @@
 target
+.git
 .mvn
 mvnw
 mvnw.cmd
+.idea
+*.iml
+.vscode
+.settings
+.classpath
+.project
+*.log
+README.md
