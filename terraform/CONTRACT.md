@@ -217,3 +217,120 @@ VARIABLES: OCI_REGION, OCI_REGION_KEY, OCI_NAMESPACE, OCI_AVAILABILITY_DOMAIN,
    `tests/contract/test_categorias_consistentes.py` hace grep sobre rutas relativas y se rompe.
 6. Volumenes nombrados `caddy_data` y `caddy_config` para no re-emitir certificados en cada deploy.
 7. `mem_limit` y `cpus` explicitos en compose: solo hay 2 OCPU / 12 GB para todo.
+
+---
+
+## 9. Widget Oven + Caddy (AMPLIACION, main lo mergeo el 2026-08-23)
+
+main integro un widget de chat agentico (Oven) que trae una capa nginx en
+`frontend-financeAI/financeAI/docker/`. Como el frontend va en un bucket, **esa capa no se
+ejecuta**: hay que portarla a Caddy. Lee estos archivos de referencia antes de escribir el Caddyfile:
+
+- `frontend-financeAI/financeAI/docker/default.conf.template`  (proxies, CSP, cabeceras)
+- `frontend-financeAI/financeAI/docker/15-oven-defaults.envsh` (construccion del CSP y derivados)
+- `frontend-financeAI/financeAI/docker/30-oven-config.sh`      (formato de oven-config.js)
+- `frontend-financeAI/financeAI/src/compartido/configuracion/ovenWidget.ts` (como se lee)
+
+### 9.1 Prioridad de configuracion (verificado en ovenWidget.ts)
+
+`window.__OVEN_CONFIG__` (runtime) **gana** sobre `import.meta.env.VITE_OVEN_*` (build time).
+Por eso NO hace falta hornear nada de Oven en el bundle: basta servir `/oven-config.js`
+generado en el deploy. Cambiar tenant, agente o API no requiere rebuild ni re-subir el bundle.
+
+### 9.2 Ruteo de Caddy — EXACTO
+
+```
+{$SITE_ADDRESS} {
+    encode zstd gzip
+
+    header {
+        Content-Security-Policy "{$OVEN_CSP}"
+        X-Content-Type-Options   "nosniff"
+        Referrer-Policy          "strict-origin-when-cross-origin"
+    }
+
+    # API Java. NO hacer strip_prefix: los controladores Spring estan mapeados en /api/**
+    # (GET /api/health, POST /api/auth/login, ...). nginx hacia proxy_pass sin path, que
+    # reenvia el URI completo. Strippear /api aqui daria 404 en TODOS los endpoints.
+    handle /api/* {
+        reverse_proxy backend:8080
+    }
+
+    # ml-service: SI se strippea, porque expone /health y /analisis-financiero en la raiz.
+    handle /ml/* {
+        uri strip_prefix /ml
+        reverse_proxy ml-service:8000
+    }
+
+    # Pasarela hacia el backend de Oven. Obligatoria: su API responde 200 pero SIN
+    # Access-Control-Allow-Origin, asi que la llamada directa del navegador muere por CORS.
+    # El salto cruzado lo hace Caddy (servidor a servidor), donde CORS no aplica.
+    handle /oven-api/* {
+        uri strip_prefix /oven-api
+        reverse_proxy {$OVEN_API_ORIGIN} {
+            header_up Host   {$OVEN_API_HOST}
+            header_up Origin {$OVEN_API_ORIGIN}
+            flush_interval -1          # CRITICO: el flujo agentico responde por SSE
+            transport http { read_timeout 300s }
+        }
+    }
+
+    # Config del widget: archivo local escrito por el job de deploy, nunca cacheado.
+    handle /oven-config.js {
+        root * /opt/financeai/web
+        file_server
+        header Cache-Control "no-store"
+    }
+
+    # Todo lo demas: el bucket del frontend.
+    handle {
+        @root path /
+        rewrite @root /index.html
+        rewrite * /n/{$OS_NAMESPACE}/b/{$OS_BUCKET}/o{uri}
+        reverse_proxy https://objectstorage.{$OCI_REGION}.oraclecloud.com {
+            header_up Host objectstorage.{$OCI_REGION}.oraclecloud.com
+        }
+    }
+}
+```
+
+`flush_interval -1` es el equivalente de `proxy_buffering off` de nginx. Sin el, el chat
+parece colgado y las respuestas llegan de golpe al final.
+
+### 9.3 Variables derivadas (las calcula el job de deploy, como hacia 15-oven-defaults.envsh)
+
+```
+OVEN_API_HOST       = host de OVEN_API_ORIGIN sin esquema ni path
+OVEN_API_WS_ORIGIN  = OVEN_API_ORIGIN con https:// -> wss://
+OVEN_WIDGET_ORIGIN  = esquema+host de OVEN_WIDGET_SRC
+OVEN_CSP            = la politica de 15-oven-defaults.envsh, portada literal.
+                      Debe incluir SITE_ADDRESS en connect-src ademas de 'self'.
+```
+
+### 9.4 /oven-config.js — lo genera el job de deploy
+
+Mismo formato exacto que `30-oven-config.sh` (claves en camelCase, valores como strings):
+`habilitado, src, apiUrl, embedKey, tenant, agent, theme, visualStyle, position,
+textoEntrada, ocultarAccionesRapidas, preguntasIniciales`.
+Se escribe en `/opt/financeai/web/oven-config.js` y Caddy lo monta como volumen de solo lectura.
+
+### 9.5 Build del frontend
+
+`VITE_API_URL=/api` (relativo, mismo origen). NO pasar variables `VITE_OVEN_*` al build:
+la config va por runtime y hornearlas solo crea dos fuentes de verdad.
+
+`public/oven-config.js` viaja en `dist/` como marcador de posicion. El bucket lo tendra, pero
+Caddy sirve el local ANTES de llegar al bucket porque `handle /oven-config.js` se evalua primero.
+
+### 9.6 Secrets y variables nuevas de GitHub
+
+```
+SECRET   : OVEN_EMBED_KEY
+VARIABLES: OVEN_HABILITADO, OVEN_WIDGET_SRC, OVEN_API_URL, OVEN_API_ORIGIN, OVEN_TENANT,
+           OVEN_AGENT, OVEN_THEME, OVEN_VISUAL_STYLE, OVEN_POSITION, OVEN_TEXTO_ENTRADA,
+           OVEN_OCULTAR_ACCIONES, OVEN_PREGUNTAS_INICIALES
+```
+
+El repo es publico: el embed key sale de un secret, no del compose. `OVEN_API_URL` vale
+`/oven-api` (la pasarela). Si algun dia Oven autoriza el dominio, se cambia a su URL directa
+y la pasarela deja de usarse sin tocar codigo.
