@@ -1,5 +1,7 @@
 package com.financeai.dto;
 
+import com.financeai.dominio.CategoriasFinancieras;
+
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,6 +29,19 @@ public final class PersistenciaDtos {
         public boolean isCategoriaCoherenteConElTipo() {
             boolean tieneCategoria = categoria != null && !categoria.isBlank();
             return "gasto".equals(tipo) == tieneCategoria;
+        }
+
+        /**
+         * Y ademas tiene que ser una de las doce.
+         *
+         * La regla de arriba solo miraba si habia algo escrito, asi que un gasto con
+         * categoria "banana" se guardaba tal cual y llegaba al tablero como una
+         * categoria mas. La comprobacion no vive en el frontend: cualquiera que hable
+         * con la API directamente se la salta.
+         */
+        @AssertTrue(message = "La categoria debe pertenecer al catalogo oficial")
+        public boolean isCategoriaDelCatalogo() {
+            return CategoriasFinancieras.esValidaOAusente(categoria);
         }
 
         /** Cadena vacia y null son lo mismo aqui: en la columna se guarda null. */

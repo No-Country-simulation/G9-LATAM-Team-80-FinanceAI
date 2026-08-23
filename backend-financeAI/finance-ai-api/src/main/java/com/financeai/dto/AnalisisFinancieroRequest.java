@@ -1,7 +1,10 @@
 package com.financeai.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.financeai.dominio.CategoriasFinancieras;
+
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -42,8 +45,25 @@ public record AnalisisFinancieroRequest(
 
             @NotBlank(message = "El tipo es obligatorio")
             @Pattern(regexp = "ingreso|gasto|ahorro", message = "El tipo debe ser ingreso, gasto o ahorro")
-            String tipo
+            String tipo,
+
+            /**
+             * Categoria ya confirmada y guardada, cuando el movimiento viene de la base.
+             *
+             * Va aqui para que llegue hasta el servicio de analisis: sin este campo el
+             * record la descartaba al deserializar y el clasificador volvia a decidir,
+             * pisando la correccion que la persona ya habia hecho.
+             *
+             * Opcional a proposito: hay llamadas que no la mandan y para esas el modelo
+             * sigue clasificando.
+             */
+            String categoria
     ) {
+        /** Una categoria inventada contaminaria el resumen por categorias del analisis. */
+        @AssertTrue(message = "La categoria debe pertenecer al catalogo oficial")
+        public boolean isCategoriaDelCatalogo() {
+            return CategoriasFinancieras.esValidaOAusente(categoria);
+        }
     }
 }
 

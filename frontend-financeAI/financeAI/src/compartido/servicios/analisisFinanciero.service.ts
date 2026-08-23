@@ -144,10 +144,19 @@ export async function solicitarAnalisisFinanciero(
       ingreso_mensual: ingresoMensual,
       nivel_endeudamiento: nivelEndeudamiento,
       frecuencia_ahorro: frecuenciaAhorro,
+      /*
+       * La categoria viaja con cada movimiento. Sin ella el servicio volvia a clasificar
+       * por la descripcion y construia resumen_gastos con esas predicciones, de modo que
+       * una correccion guardada -- "Peluqueria" en cuidado_personal -- desaparecia al
+       * pedir el analisis y el tablero mostraba un reparto que no estaba en la base.
+       *
+       * En un ingreso o un ahorro es null y no se manda: no tienen categoria.
+       */
       transacciones: transacciones.map((transaccion) => ({
         descripcion: transaccion.descripcion,
         valor: Math.abs(transaccion.monto),
-        tipo: transaccion.tipo
+        tipo: transaccion.tipo,
+        ...(transaccion.categoria ? { categoria: transaccion.categoria } : {})
       }))
     })
   });
