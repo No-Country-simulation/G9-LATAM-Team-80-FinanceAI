@@ -337,6 +337,13 @@ jobs:
 
           ssh $SSH_OPTS "$TARGET" "sudo mkdir -p /opt/financeai/web"
 
+          # Caddyfile y compose se re-sincronizan desde el repo en CADA deploy.
+          # cloud-init solo los escribe al crear la instancia y nunca vuelve a
+          # ejecutarse, asi que sin esto un cambio en cualquiera de los dos
+          # obligaria a recrear la VM para que surtiera efecto.
+          ssh $SSH_OPTS "$TARGET" "sudo tee /opt/financeai/Caddyfile > /dev/null"             < terraform/envs/prod/cloud-init/Caddyfile
+          ssh $SSH_OPTS "$TARGET" "sudo tee /opt/financeai/docker-compose.prod.yml > /dev/null"             < terraform/envs/prod/cloud-init/docker-compose.prod.yml
+
           ssh $SSH_OPTS "$TARGET" "sudo tee /opt/financeai/.env > /dev/null" <<EOF
           SITE_ADDRESS=${APP_HOSTNAME}
           ACME_CA=${ACME_CA}
@@ -389,7 +396,7 @@ jobs:
 
           ssh $SSH_OPTS "$TARGET" "echo '${OCIR_AUTH_TOKEN}' | sudo docker login ${OCIR_ENDPOINT} -u '${OCIR_USERNAME}' --password-stdin"
 
-          ssh $SSH_OPTS "$TARGET" "cd /opt/financeai && sudo docker compose -f docker-compose.prod.yml pull && sudo docker compose -f docker-compose.prod.yml up -d --remove-orphans && sudo docker image prune -f"
+          ssh $SSH_OPTS "$TARGET" "cd /opt/financeai && sudo docker compose -f docker-compose.prod.yml pull && sudo docker compose -f docker-compose.prod.yml up -d --remove-orphans && sudo docker compose -f docker-compose.prod.yml exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile && sudo docker image prune -f"
 
   # ---------------------------------------------------------------------
   # 7. Smoke test post-deploy. Reintentos generosos ya viven en el
