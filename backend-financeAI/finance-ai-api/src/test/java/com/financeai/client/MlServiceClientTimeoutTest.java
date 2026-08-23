@@ -134,8 +134,9 @@ class MlServiceClientTimeoutTest {
                 new BigDecimal("5000000"),
                 new BigDecimal("20"),
                 "Media",
+                // La categoria no interviene en lo que prueba esta clase (el timeout).
                 List.of(new AnalisisFinancieroRequest.TransaccionAnalisisRequest(
-                        "Gastos del mes", new BigDecimal("2750000"), "gasto"))
+                        "Gastos del mes", new BigDecimal("2750000"), "gasto", "otros"))
         );
     }
 }
