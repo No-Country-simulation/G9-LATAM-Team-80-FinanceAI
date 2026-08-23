@@ -16,11 +16,18 @@ RUN mvn -B -q clean package -DskipTests -Dspring-boot.excludeDevtools=true \
 FROM eclipse-temurin:17-jre-jammy AS runtime
 WORKDIR /app
 
-RUN groupadd -r spring && useradd -r -g spring spring
+# curl es necesario para el HEALTHCHECK y para el healthcheck de docker compose.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r spring && useradd -r -g spring spring
 
 COPY --from=build /build/app.jar app.jar
 
 USER spring
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/api/health || exit 1
 
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=60", "-jar", "app.jar"]

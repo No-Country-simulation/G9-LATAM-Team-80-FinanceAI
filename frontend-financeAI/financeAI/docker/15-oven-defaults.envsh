@@ -1,0 +1,48 @@
+#!/bin/sh
+# Valores por defecto y derivados del widget de chat agentico (Oven).
+# El entrypoint oficial de nginx hace "source" de los archivos *.envsh antes de
+# procesar las plantillas, asi que todo lo exportado aqui queda disponible tanto
+# para envsubst (default.conf.template) como para 30-oven-config.sh.
+
+export API_UPSTREAM="${API_UPSTREAM:-http://api:8080}"
+
+export OVEN_HABILITADO="${OVEN_HABILITADO:-true}"
+export OVEN_WIDGET_SRC="${OVEN_WIDGET_SRC:-https://nemxenkgdsjuucmp.public.blob.vercel-storage.com/widget/oven-chat-widget.iife.js}"
+export OVEN_API_URL="${OVEN_API_URL:-https://oven-dandia-nwlcfzg7s-dandia-source.vercel.app}"
+export OVEN_EMBED_KEY="${OVEN_EMBED_KEY:-ovek_8a895c59916adc7cec8182e1e5554294826b}"
+export OVEN_TENANT="${OVEN_TENANT:-clinica-dandia}"
+export OVEN_AGENT="${OVEN_AGENT:-example-tool-agent}"
+export OVEN_THEME="${OVEN_THEME:-ocean}"
+export OVEN_VISUAL_STYLE="${OVEN_VISUAL_STYLE:-ocean}"
+export OVEN_POSITION="${OVEN_POSITION:-bottom-right}"
+
+# Ajustes de interfaz que el embed de Oven no expone como opcion (ver personalizacionOven.ts).
+export OVEN_TEXTO_ENTRADA="${OVEN_TEXTO_ENTRADA:-Escribe un mensaje...}"
+export OVEN_OCULTAR_ACCIONES="${OVEN_OCULTAR_ACCIONES:-true}"
+export OVEN_PREGUNTAS_INICIALES="${OVEN_PREGUNTAS_INICIALES:-true}"
+
+# Origen real del backend del agente. Se mantiene aparte de OVEN_API_URL porque esta
+# ultima puede apuntar a la pasarela local (/oven-api) cuando el proveedor no habilita
+# CORS para nuestro dominio; el proxy sigue necesitando saber a donde reenviar.
+export OVEN_API_ORIGIN="${OVEN_API_ORIGIN:-https://oven-dandia-nwlcfzg7s-dandia-source.vercel.app}"
+export OVEN_API_HOST="$(printf '%s' "$OVEN_API_ORIGIN" | sed -e 's#^[a-z]*://##' -e 's#/.*##')"
+export OVEN_API_WS_ORIGIN="$(printf '%s' "$OVEN_API_ORIGIN" | sed -e 's#^https://#wss://#' -e 's#^http://#ws://#')"
+export OVEN_WIDGET_ORIGIN="$(printf '%s' "$OVEN_WIDGET_SRC" | sed -n 's#^\([a-z]*://[^/]*\).*#\1#p')"
+
+# Origenes adicionales que el equipo quiera permitir sin tocar la imagen (CDN, analitica, etc.).
+export OVEN_EXTRA_CSP="${OVEN_EXTRA_CSP:-}"
+
+# Politica de seguridad de contenido: sin esto el navegador puede bloquear el script del
+# widget o sus llamadas al backend del agente una vez desplegado detras de un dominio propio.
+export OVEN_CSP="default-src 'self'; \
+script-src 'self' 'unsafe-inline' ${OVEN_WIDGET_ORIGIN}; \
+style-src 'self' 'unsafe-inline' ${OVEN_WIDGET_ORIGIN} https://fonts.googleapis.com; \
+font-src 'self' data: ${OVEN_WIDGET_ORIGIN} https://fonts.gstatic.com; \
+img-src 'self' data: blob: https:; \
+media-src 'self' data: blob:; \
+worker-src 'self' blob:; \
+frame-src 'self' ${OVEN_API_ORIGIN}; \
+connect-src 'self' ${OVEN_API_ORIGIN} ${OVEN_API_WS_ORIGIN} ${OVEN_WIDGET_ORIGIN} ${OVEN_EXTRA_CSP}; \
+base-uri 'self'; \
+form-action 'self'; \
+frame-ancestors 'self'"
