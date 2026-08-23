@@ -3,10 +3,22 @@ import { useState } from 'react';
 import type { Recomendacion } from '../../../compartido/tipos/finanzas';
 import type { PageProps } from '../../../compartido/tipos/workspace';
 import { Badge, Card, PageHeader } from '../../tablero/presentacion/DashboardPage';
+import { OvenChatWidget } from '../../../compartido/componentes/OvenChatWidget';
 
 type RecommendationTab = 'todas' | 'gastos' | 'ahorro' | 'deudas' | 'ingresos';
 
-export function RecommendationsPage({ workspace }: PageProps) {
+export function RecommendationsPage(props: PageProps) {
+  // El widget se monta junto a las tres vistas del modulo para que el asistente
+  // agentico siga disponible al abrir el detalle o la proyeccion.
+  return (
+    <>
+      <RecommendationsContent {...props} />
+      <OvenChatWidget />
+    </>
+  );
+}
+
+function RecommendationsContent({ workspace }: PageProps) {
   const [vista, setVista] = useState<'listado' | 'detalle' | 'proyeccion'>('listado');
   const [tabActiva, setTabActiva] = useState<RecommendationTab>('todas');
   const [recomendacionActiva, setRecomendacionActiva] = useState<Recomendacion | null>(null);

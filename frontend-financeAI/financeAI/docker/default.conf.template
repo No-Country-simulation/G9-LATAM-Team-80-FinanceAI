@@ -1,0 +1,63 @@
+# Plantilla procesada por el entrypoint de nginx (envsubst) al arrancar el contenedor.
+# Solo se sustituyen las variables que empiezan por OVEN_ o API_ (NGINX_ENVSUBST_FILTER),
+# por lo que las variables propias de nginx ($host, $uri, ...) quedan intactas.
+
+server {
+    listen       80;
+    server_name  _;
+
+    root   /usr/share/nginx/html;
+    index  index.html;
+
+    # Permite que el navegador cargue el script del widget y hable con la API del agente.
+    add_header Content-Security-Policy "${OVEN_CSP}" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    # La configuracion del widget se resuelve en cada arranque: nunca debe quedar cacheada.
+    location = /oven-config.js {
+        add_header Content-Security-Policy "${OVEN_CSP}" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Cache-Control "no-store" always;
+    }
+
+    # API Java servida bajo el mismo origen: el navegador no dispara CORS contra ella.
+    location /api/ {
+        proxy_pass ${API_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+
+    # Pasarela opcional hacia el backend del agente Oven.
+    # Si al desplegar el proveedor no permite nuestro dominio en su Access-Control-Allow-Origin,
+    # basta con arrancar el contenedor con OVEN_API_URL=/oven-api: el widget pasara a llamar al
+    # mismo origen y CORS deja de aplicar, porque el salto cruzado lo hace nginx (servidor a
+    # servidor), no el navegador.
+    location /oven-api/ {
+        proxy_pass ${OVEN_API_ORIGIN}/;
+        proxy_http_version 1.1;
+        proxy_set_header Host ${OVEN_API_HOST};
+        proxy_set_header Origin ${OVEN_API_ORIGIN};
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_ssl_server_name on;
+
+        # El flujo agentico responde por streaming (SSE): sin esto las respuestas llegan de golpe.
+        proxy_set_header Connection "";
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+    }
+
+    # SPA: cualquier ruta desconocida devuelve el index para que React resuelva la navegacion.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
