@@ -27,6 +27,7 @@ module "compute" {
   app_nsg_id          = module.network.app_nsg_id
   ssh_public_key      = var.ssh_public_key
   cloud_init          = local.cloud_init_rendered
+  instance_shape      = var.instance_shape
   instance_ocpus      = var.instance_ocpus
   instance_memory_gb  = var.instance_memory_gb
   boot_volume_gb      = var.boot_volume_gb

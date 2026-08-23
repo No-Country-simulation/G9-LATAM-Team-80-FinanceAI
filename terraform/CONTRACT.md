@@ -13,7 +13,8 @@ Los nombres de `variable` y `output` estan CONGELADOS: son la interfaz entre mod
 | Namespace Object Storage | `axqvu1tysl6x` |
 | Compartment | `financeai` |
 | Availability Domain (unico) | `BOJl:SA-BOGOTA-1-AD-1` |
-| Shapes ARM disponibles | `VM.Standard.A1.Flex`, `BM.Standard.A1.160` |
+| Shape de la VM | `VM.Standard.E5.Flex` (AMD, **x86_64**, consume creditos del trial) |
+| ~~`VM.Standard.A1.Flex`~~ | Always Free pero **OUT_OF_HOST_CAPACITY** en sa-bogota-1 (verificado 2026-08-23 via API de capacidad, incluso a 1 OCPU) |
 | Shape MySQL Always Free | `MySQL.Free` (1 OCPU / 8 GB / 50 GiB fijos) |
 | Bucket de estado TF | `financeai_tfstate` (GUION BAJO, versionado ON) |
 | Bucket frontend | `financeai-frontend` (lo crea Terraform) |
@@ -221,8 +222,11 @@ sustituido en el job `db-migrate`) y se pasa al backend como `DB_PASSWORD` en
 
 ## 8. Reglas duras
 
-1. Runners de build: `runs-on: ubuntu-24.04-arm`. La VM es aarch64; una imagen amd64 muere
-   con `exec format error`. El repo es publico => runners ARM gratis. NO usar QEMU.
+1. Runners de build: `runs-on: ubuntu-latest` (amd64). La arquitectura de las imagenes DEBE
+   coincidir con la de la VM o el contenedor muere con `exec format error`. Hoy la VM es
+   `VM.Standard.E5.Flex` (x86_64). Si se vuelve a `VM.Standard.A1.Flex` (arm64) hay que
+   cambiar los runners a `ubuntu-24.04-arm` (gratis en repos publicos) y reconstruir. El
+   shape es la variable `instance_shape` del modulo compute.
 2. Idempotencia obligatoria: `IF NOT EXISTS` en todo el SQL, seed con
    `ON DUPLICATE KEY UPDATE`, `docker compose up -d`, `bulk-upload --overwrite`,
    tag por SHA fijado en `.env`.

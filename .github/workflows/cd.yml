@@ -109,7 +109,9 @@ jobs:
   build-backend:
     name: build-backend (arm64)
     needs: terraform
-    runs-on: ubuntu-24.04-arm
+    # La VM es VM.Standard.E5.Flex (x86_64), asi que las imagenes van en amd64.
+    # Si algun dia se vuelve a VM.Standard.A1.Flex (arm64), cambiar a ubuntu-24.04-arm.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -134,7 +136,9 @@ jobs:
   build-ml:
     name: build-ml (arm64)
     needs: terraform
-    runs-on: ubuntu-24.04-arm
+    # La VM es VM.Standard.E5.Flex (x86_64), asi que las imagenes van en amd64.
+    # Si algun dia se vuelve a VM.Standard.A1.Flex (arm64), cambiar a ubuntu-24.04-arm.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 

@@ -50,3 +50,21 @@ variable "name_prefix" {
   description = "Prefijo usado para nombrar los recursos de compute."
   type        = string
 }
+
+variable "instance_shape" {
+  description = <<-EOT
+    Shape de la instancia. Por defecto VM.Standard.E5.Flex (AMD, x86_64), que
+    NO esta en Always Free y consume creditos del trial.
+
+    El objetivo original era VM.Standard.A1.Flex (Ampere, arm64, Always Free),
+    pero el API de capacidad de OCI reporta OUT_OF_HOST_CAPACITY en
+    sa-bogota-1 incluso a 1 OCPU, y la region tiene un unico AD al que
+    reintentar.
+
+    Para volver a A1 cuando haya capacidad basta cambiar este valor, pero hay
+    que reconstruir las imagenes para linux/arm64 (ver .github/workflows/cd.yml,
+    jobs build-backend y build-ml).
+  EOT
+  type        = string
+  default     = "VM.Standard.E5.Flex"
+}
