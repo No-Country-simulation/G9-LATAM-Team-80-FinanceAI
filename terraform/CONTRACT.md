@@ -195,10 +195,16 @@ SESSION_HOURS=24
 ```
 SECRETS  : OCI_TENANCY_OCID, OCI_USER_OCID, OCI_COMPARTMENT_OCID, OCI_FINGERPRINT,
            OCI_PRIVATE_KEY, OCIR_USERNAME, OCIR_AUTH_TOKEN, OCI_S3_ACCESS_KEY,
-           OCI_S3_SECRET_KEY, DB_ADMIN_PASSWORD, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY
+           OCI_S3_SECRET_KEY, DB_ADMIN_PASSWORD, APP_DB_PASSWORD,
+           SSH_PRIVATE_KEY, SSH_PUBLIC_KEY
 VARIABLES: OCI_REGION, OCI_REGION_KEY, OCI_NAMESPACE, OCI_AVAILABILITY_DOMAIN,
            TFSTATE_BUCKET, FRONTEND_BUCKET, DB_ADMIN_USERNAME
 ```
+
+`APP_DB_PASSWORD` es la password del usuario de aplicacion `financeai_app`, distinta de la
+del admin de HeatWave. La consume `database/000_admin.sql` (placeholder `${APP_DB_PASSWORD}`,
+sustituido en el job `db-migrate`) y se pasa al backend como `DB_PASSWORD` en
+`/opt/financeai/.env`. `DB_USER` vale `financeai_app`.
 
 `OCI_S3_*` se exportan como `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` para el backend de estado.
 
