@@ -1,6 +1,10 @@
 import {
   ArrowClockwise,
+  ArrowDown,
+  ArrowUp,
+  ListBullets,
   MagnifyingGlass,
+  PiggyBank,
   PencilSimple,
   Plus,
   Receipt,
@@ -14,7 +18,7 @@ import { etiquetasCategoria } from '../../../compartido/constantes/categorias';
 import { formatCurrency } from '../../../compartido/utilidades/formato';
 import type { CategoriaFinanciera, TipoTransaccion, Transaccion } from '../../../compartido/tipos/finanzas';
 import type { PageProps } from '../../../compartido/tipos/workspace';
-import { PanelImportar } from './PanelImportar';
+import { ModalImportar } from './ModalImportar';
 import { ModalTransaccion, type DatosTransaccion } from './ModalTransaccion';
 import './transacciones.css';
 
@@ -177,21 +181,36 @@ export function TransactionsPage({ workspace }: PageProps) {
       </header>
 
       <div className="tx-contexto">
-        <span className="tx-conteo">
-          {hayFiltros && visibles.length !== transaccionesDelMes.length
-            ? <>{visibles.length} de {transaccionesDelMes.length} movimientos </>
-            : <>{visibles.length} {visibles.length === 1 ? 'movimiento' : 'movimientos'} </>}
-          <span>en {periodo}</span>
+        <span className="tx-cifra">
+          {/* aria-hidden: el icono repite lo que ya dice la etiqueta de al lado. */}
+          <span className="tx-cifra-icono movimientos" aria-hidden="true"><ListBullets size={17} /></span>
+          <span className="tx-cifra-texto">
+            <strong>
+              {hayFiltros && visibles.length !== transaccionesDelMes.length
+                ? <>{visibles.length} de {transaccionesDelMes.length} movimientos</>
+                : <>{visibles.length} {visibles.length === 1 ? 'movimiento' : 'movimientos'}</>}
+            </strong>
+            <small className="tx-cifra-periodo">en {periodo}</small>
+          </span>
         </span>
         {(totales.ingresos > 0 || totales.gastos > 0 || totales.ahorro > 0) && <span className="tx-separador" />}
         {totales.ingresos > 0 && (
-          <span className="tx-cifra"><small>Ingresos</small><strong>{formatCurrency(totales.ingresos)}</strong></span>
+          <span className="tx-cifra">
+            <span className="tx-cifra-icono ingreso" aria-hidden="true"><ArrowUp size={17} /></span>
+            <span className="tx-cifra-texto"><small>Ingresos</small><strong>{formatCurrency(totales.ingresos)}</strong></span>
+          </span>
         )}
         {totales.gastos > 0 && (
-          <span className="tx-cifra"><small>Gastos</small><strong>{formatCurrency(totales.gastos)}</strong></span>
+          <span className="tx-cifra">
+            <span className="tx-cifra-icono gasto" aria-hidden="true"><ArrowDown size={17} /></span>
+            <span className="tx-cifra-texto"><small>Gastos</small><strong>{formatCurrency(totales.gastos)}</strong></span>
+          </span>
         )}
         {totales.ahorro > 0 && (
-          <span className="tx-cifra"><small>Ahorro</small><strong>{formatCurrency(totales.ahorro)}</strong></span>
+          <span className="tx-cifra">
+            <span className="tx-cifra-icono ahorro" aria-hidden="true"><PiggyBank size={17} /></span>
+            <span className="tx-cifra-texto"><small>Ahorro</small><strong>{formatCurrency(totales.ahorro)}</strong></span>
+          </span>
         )}
       </div>
 
@@ -324,7 +343,7 @@ export function TransactionsPage({ workspace }: PageProps) {
         />
       )}
       {panel.modo === 'importar' && (
-        <PanelImportar
+        <ModalImportar
           onClasificarLote={workspace.clasificarDescripciones}
           onImportar={importar}
           onCerrar={cerrarPanel}
