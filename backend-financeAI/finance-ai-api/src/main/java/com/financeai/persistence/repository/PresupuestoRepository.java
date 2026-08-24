@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PresupuestoRepository extends JpaRepository<PresupuestoEntity, Long> {
-    List<PresupuestoEntity> findByUsuarioIdOrderByCategoria(Long usuarioId);
-    Optional<PresupuestoEntity> findByUsuarioIdAndCategoria(Long usuarioId, String categoria);
+    List<PresupuestoEntity> findByUsuarioIdAndPeriodoOrderByCategoria(Long usuarioId, String periodo);
+    Optional<PresupuestoEntity> findByUsuarioIdAndCategoriaAndPeriodo(Long usuarioId, String categoria, String periodo);
 }
 
