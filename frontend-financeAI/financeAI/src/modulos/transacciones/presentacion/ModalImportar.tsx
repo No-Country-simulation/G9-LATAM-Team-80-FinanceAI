@@ -1,10 +1,39 @@
 import { ArrowClockwise, DownloadSimple, FileCsv, Sparkle, UploadSimple, WarningCircle, X } from '@phosphor-icons/react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { etiquetasCategoria } from '../../../compartido/constantes/categorias';
+import { ApiError } from '../../../compartido/servicios/api.service';
 import { parsearCsv, type FilaImportada, type ProblemaFila } from '../../../compartido/utilidades/csv';
 import { prepararImportacion, type ClasificarLote } from '../../../compartido/utilidades/importarMovimientos';
 import { descargarPlantilla } from '../../../compartido/utilidades/plantillaCsv';
 import type { CategoriaFinanciera, TipoTransaccion, Transaccion } from '../../../compartido/tipos/finanzas';
+
+/** Una fila que el backend rechazo, con el motivo tal cual lo dio la validacion. */
+type ErrorFila = { fila: number; descripcion: string; mensajes: string[] };
+
+/**
+ * El backend valida cada transaccion del lote y devuelve el detalle por campo (ver
+ * GlobalExceptionHandler), con claves como "transacciones[12].fecha". El parser del CSV
+ * ya descarto antes las filas obviamente rotas, asi que si algo llega hasta aca es una
+ * regla que el frontend no revisa -- hoy, sobre todo, una fecha futura. Sin esto la
+ * persona solo veia "los datos enviados no son validos" y ninguna forma de saber cual de
+ * treinta y tantas filas era la culpable.
+ */
+function erroresDeLote(errores: Record<string, string>, movimientos: Omit<Transaccion, 'id'>[]): ErrorFila[] {
+  const porFila = new Map<number, string[]>();
+  for (const [campo, mensaje] of Object.entries(errores)) {
+    const coincide = campo.match(/^transacciones\[(\d+)\]/);
+    if (!coincide) continue;
+    const indice = Number(coincide[1]);
+    porFila.set(indice, [...(porFila.get(indice) ?? []), mensaje]);
+  }
+  return [...porFila.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([indice, mensajes]) => ({
+      fila: indice + 1,
+      descripcion: movimientos[indice]?.descripcion ?? `fila ${indice + 1}`,
+      mensajes
+    }));
+}
 
 const ETIQUETAS_TIPO: Record<TipoTransaccion, string> = {
   gasto: 'Gasto',
@@ -49,6 +78,7 @@ export function ModalImportar({
   const [estado, setEstado] = useState<Estado>({ paso: 'archivo' });
   const [error, setError] = useState('');
   const [problemas, setProblemas] = useState<ProblemaFila[]>([]);
+  const [erroresLote, setErroresLote] = useState<ErrorFila[]>([]);
   /* Lo ya leido se guarda para poder reintentar sin volver a elegir el archivo. */
   const [leido, setLeido] = useState<{ nombre: string; filas: FilaImportada[] } | null>(null);
   const [arrastrando, setArrastrando] = useState(false);
@@ -95,6 +125,7 @@ export function ModalImportar({
   async function leerArchivo(archivo: File) {
     setError('');
     setProblemas([]);
+    setErroresLote([]);
     setLeido(null);
     setEstado({ paso: 'procesando' });
     try {
@@ -139,6 +170,7 @@ export function ModalImportar({
     const { nombre, movimientos } = estado;
     setEstado({ paso: 'guardando', nombre, movimientos });
     setError('');
+    setErroresLote([]);
     try {
       /*
        * Se guarda lo que hay en pantalla. No se vuelve a clasificar: seria una segunda
@@ -148,7 +180,10 @@ export function ModalImportar({
       onCerrar();
     } catch (fallo) {
       setEstado({ paso: 'revision', nombre, movimientos, clasificados: 0, descartadas: 0 });
-      setError(fallo instanceof Error ? fallo.message : 'No fue posible importar los movimientos.');
+      const detalle = fallo instanceof ApiError ? erroresDeLote(fallo.errores, movimientos) : [];
+      setErroresLote(detalle);
+      // Con detalle por fila el mensaje generico sobra: ya se muestra algo mas util.
+      setError(detalle.length > 0 ? '' : fallo instanceof Error ? fallo.message : 'No fue posible importar los movimientos.');
     }
   }
 
@@ -244,6 +279,7 @@ export function ModalImportar({
               estado={estado}
               onCorregir={corregir}
               error={error}
+              erroresLote={erroresLote}
             />
           )}
         </div>
@@ -266,11 +302,13 @@ export function ModalImportar({
 function Revision({
   estado,
   onCorregir,
-  error
+  error,
+  erroresLote
 }: {
   estado: Extract<Estado, { paso: 'revision' } | { paso: 'guardando' }>;
   onCorregir: (indice: number, categoria: CategoriaFinanciera) => void;
   error: string;
+  erroresLote: ErrorFila[];
 }) {
   const total = estado.movimientos.length;
   const visibles = estado.movimientos.slice(0, FILAS_VISIBLES);
@@ -326,6 +364,21 @@ function Revision({
           Se ignoró la categoría de {descartadas} {descartadas === 1 ? 'fila' : 'filas'} de ingreso o ahorro:
           las categorías describen gastos.
         </p>
+      )}
+
+      {erroresLote.length > 0 && (
+        <div className="tx-problemas" role="alert">
+          <p>
+            El servidor rechazó {erroresLote.length} {erroresLote.length === 1 ? 'fila' : 'filas'}.
+            No se importó ningún movimiento.
+          </p>
+          <ul>
+            {erroresLote.slice(0, 8).map((item) => (
+              <li key={item.fila}>Fila {item.fila} · {item.descripcion} · {item.mensajes.join(' · ')}</li>
+            ))}
+          </ul>
+          {erroresLote.length > 8 && <small>y {erroresLote.length - 8} más</small>}
+        </div>
       )}
 
       {error && (

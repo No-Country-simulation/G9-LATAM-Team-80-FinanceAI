@@ -12,11 +12,11 @@ import java.util.Map;
 public final class PersistenciaDtos {
     private PersistenciaDtos() {}
     public record TransaccionGuardarRequest(
-            @NotBlank @Size(max = 200) String descripcion,
+            @NotBlank(message = "La descripcion es obligatoria") @Size(max = 200, message = "La descripcion no puede superar los 200 caracteres") String descripcion,
             @Size(max = 50) String categoria,
-            @NotBlank @Pattern(regexp = "ingreso|gasto|ahorro") String tipo,
-            @NotNull @PastOrPresent LocalDate fecha,
-            @NotNull @DecimalMin("0.01") BigDecimal monto
+            @NotBlank(message = "El tipo es obligatorio") @Pattern(regexp = "ingreso|gasto|ahorro", message = "El tipo debe ser ingreso, gasto o ahorro") String tipo,
+            @NotNull(message = "La fecha es obligatoria") @PastOrPresent(message = "La fecha no puede ser futura") LocalDate fecha,
+            @NotNull(message = "El monto es obligatorio") @DecimalMin(value = "0.01", message = "El monto debe ser mayor que cero") BigDecimal monto
     ) {
         /**
          * La categoria dejo de ser obligatoria a secas: depende del tipo.
