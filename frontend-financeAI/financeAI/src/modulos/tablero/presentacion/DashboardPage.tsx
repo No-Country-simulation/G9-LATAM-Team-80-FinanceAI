@@ -148,7 +148,7 @@ export function DashboardPage({ workspace, navegar }: PageProps) {
   const evolucion = useMemo(() => calcularEvolucion(workspace.transacciones), [workspace.transacciones]);
 
   if (!workspace.hidratado && workspace.cargandoDatos) return <EsqueletoTablero />;
-  if (workspace.transacciones.length === 0) return <SinTransacciones onImportar={() => navegar('archivos')} />;
+  if (workspace.transacciones.length === 0) return <SinTransacciones onImportar={() => navegar('transacciones')} />;
 
   return (
     <section className="page-stack dashboard">

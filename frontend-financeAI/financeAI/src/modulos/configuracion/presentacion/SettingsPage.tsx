@@ -23,7 +23,7 @@ export function SettingsPage({ workspace, navegar }: PageProps) {
       </Card>
       <Card title="Importación">
         <div className="settings-list"><p><CloudArrowUp size={24} /> Archivos CSV <strong>Disponible</strong></p></div>
-        <button className="primary-button wide" onClick={() => navegar('archivos')}>Ir a importar CSV</button>
+        <button className="primary-button wide" onClick={() => navegar('transacciones')}>Ir a importar CSV</button>
       </Card>
       <Card title="Integraciones externas">
         <div className="settings-list">

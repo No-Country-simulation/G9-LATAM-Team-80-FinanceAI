@@ -129,7 +129,4 @@ export function eliminarPresupuesto(token: string, categoria: CategoriaFinancier
 export function listarHistorial(token: string) {
   return apiRequest<HistorialAnalisis[]>('/api/historial', token);
 }
-export function eliminarAnalisis(token: string, id: number) {
-  return apiRequest<void>(`/api/historial/${id}`, token, { method: 'DELETE' });
-}
 
