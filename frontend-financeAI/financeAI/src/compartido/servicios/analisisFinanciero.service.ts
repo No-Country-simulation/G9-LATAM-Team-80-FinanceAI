@@ -134,9 +134,16 @@ export async function solicitarAnalisisFinanciero(
   ingresoMensual: number,
   nivelEndeudamiento: number,
   frecuenciaAhorro: 'Alta' | 'Media' | 'Baja',
+  /**
+   * SOLO true para el recalculo explicito ("Actualizar analisis"): es lo que decide si
+   * el backend escribe una fila en Historial. Los recalculos automaticos (montar la app,
+   * cambiar de periodo, editar una transaccion) mandan false para no dejar un rastro de
+   * snapshots que nadie pidio.
+   */
+  guardarHistorial: boolean,
   signal?: AbortSignal
 ): Promise<ResultadoAnalisis> {
-  const response = await fetch(`${API_URL}/api/analisis-financiero`, {
+  const response = await fetch(`${API_URL}/api/analisis-financiero?guardarHistorial=${guardarHistorial}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     signal,

@@ -1,0 +1,424 @@
+/*
+ * Analisis financiero.
+ *
+ * Todo cuelga de .analisis, igual que en Tablero y Presupuesto: el sistema nuevo convive
+ * con la hoja global mientras quedan pantallas sin rediseñar. Antes esta pantalla usaba
+ * .app-card/.tabs de la hoja vieja (Geist, azul #0b5cff); esta hoja la migra al mismo
+ * lenguaje visual que Dashboard y Presupuesto (Manrope, #2458E8, radio 16-18px, sin
+ * sombra de elevacion).
+ *
+ * La pantalla interpreta, no repite el Dashboard: una sola superficie de diagnostico,
+ * una fila 50/50 de causas e indicadores, y un ranking de patrones -- no un resumen de
+ * gastos por categoria completo, que ya vive en el Dashboard.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+.analisis {
+  --fa-primary: #2458E8;
+  --fa-deep: #153B9A;
+  --fa-violet: #6548EF;
+  --fa-green: #15AD77;
+  --fa-amber: #F3A23A;
+  --fa-red: #E9566C;
+  --fa-bg: #F7F9FD;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-border: #E4E9F3;
+  --fa-card: #FFFFFF;
+  --fa-radio-card: 16px;
+
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+  color: var(--fa-text);
+}
+
+.analisis .tono-sano { color: var(--fa-green); }
+.analisis .tono-atencion { color: var(--fa-amber); }
+.analisis .tono-riesgo { color: var(--fa-red); }
+
+/* --- Encabezado ------------------------------------------------------ */
+
+.analisis .page-header {
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--fa-border);
+}
+
+.analisis .page-header h1 { margin: 0 0 4px; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+.analisis .page-header p { margin: 0; color: var(--fa-muted); font-size: 0.92rem; }
+
+/* --- Controles --------------------------------------------------------- */
+
+.analisis .an-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--fa-border);
+  border-radius: 11px;
+  background: var(--fa-card);
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.analisis .an-boton.primario { border-color: transparent; background: var(--fa-primary); color: #fff; }
+.analisis .an-boton.primario:hover { background: var(--fa-deep); }
+.analisis .an-boton:not(.primario):hover { border-color: var(--fa-primary); color: var(--fa-primary); }
+.analisis .an-boton:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+.analisis .an-boton:disabled { opacity: 0.75; cursor: default; }
+
+/* Feedback de "Actualizar analisis": el icono gira mientras recalcula. */
+.analisis .an-girando { animation: anGirar 900ms linear infinite; }
+@keyframes anGirar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .analisis .an-girando { animation: none; } }
+
+/* "Analisis actualizado": confirmacion temporal, no intrusiva -- texto junto al boton, sin modal. */
+.analisis .an-confirmacion {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 10px;
+  color: var(--fa-green);
+  font-size: 0.82rem;
+  font-weight: 600;
+  animation: anConfirmacionEntra 200ms ease both;
+}
+@keyframes anConfirmacionEntra { from { opacity: 0; } to { opacity: 1; } }
+
+/* Accion de texto, sin caja: para las franjas ligeras del pie (Sobre este analisis, CTA),
+   donde un boton con borde competiria en peso visual con las cards de arriba. */
+.analisis .an-enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--fa-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.analisis .an-enlace.primario { font-size: 0.93rem; font-weight: 700; }
+.analisis .an-enlace:hover { color: var(--fa-deep); }
+.analisis .an-enlace:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 3px; border-radius: 4px; }
+
+/* --- Tabs --------------------------------------------------------------- */
+
+.analisis .an-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--fa-border); }
+
+.analisis .an-tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0 2px 12px;
+  background: transparent;
+  color: var(--fa-muted);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.analisis .an-tabs button.active { color: var(--fa-primary); border-color: var(--fa-primary); }
+.analisis .an-tabs button:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; border-radius: 4px; }
+
+/* --- Tarjeta base -------------------------------------------------------- */
+
+.analisis .an-card {
+  padding: 22px 24px;
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-card);
+  background: var(--fa-card);
+}
+
+.analisis .an-card h2 { margin: 0 0 16px; font-size: 1.02rem; font-weight: 700; letter-spacing: -0.01em; }
+
+.analisis .an-eyebrow {
+  margin: 0 0 16px;
+  color: var(--fa-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* --- Diagnostico del periodo -------------------------------------------- */
+
+/*
+ * Una sola superficie, dos zonas separadas por un filete vertical: el estado a la
+ * izquierda, el indicador que lo explica a la derecha. Sin fondo tenido por veredicto --
+ * el color solo vive en la pill y en el aro del indicador -- para que "En riesgo" no se
+ * lea como un error del sistema.
+ */
+.analisis .an-diagnostico-cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 32px;
+}
+
+.analisis .an-diagnostico-texto { display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+
+.analisis .an-diagnostico-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.analisis .an-diagnostico.tono-sano .an-diagnostico-pill { background: #E8F7F1; color: var(--fa-green); }
+.analisis .an-diagnostico.tono-atencion .an-diagnostico-pill { background: #FEF3E3; color: var(--fa-amber); }
+.analisis .an-diagnostico.tono-riesgo .an-diagnostico-pill { background: #FDECEF; color: var(--fa-red); }
+
+.analisis .an-diagnostico-frase { margin: 0; max-width: 46ch; color: var(--fa-text); font-size: 1.24rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.35; }
+
+.analisis .an-diagnostico-indicador {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-left: 32px;
+  border-left: 1px solid var(--fa-border);
+}
+
+.analisis .an-diagnostico-indicador-texto { display: grid; gap: 4px; min-width: 0; }
+.analisis .an-diagnostico-indicador-texto strong { font-size: 0.92rem; font-weight: 700; }
+.analisis .an-diagnostico-indicador-texto p { margin: 0; color: var(--fa-muted); font-size: 0.87rem; line-height: 1.45; }
+.analisis .an-diagnostico-indicador-texto small { color: var(--fa-muted); font-size: 0.78rem; line-height: 1.4; }
+
+/* --- Indicador circular --------------------------------------------------- */
+
+/*
+ * Aro de progreso compacto, sin aguja ni relieve 3D: solo sirve para leer el porcentaje.
+ * No sustituye al semaforo del Dashboard -- ese responde "como estoy", este responde
+ * "cuanto pesa la causa principal".
+ */
+.analisis .an-gauge { position: relative; flex: 0 0 auto; width: 92px; height: 92px; }
+.analisis .an-gauge svg { width: 100%; height: 100%; display: block; }
+.analisis .an-gauge-pista { fill: none; stroke: var(--fa-border); stroke-width: 10; }
+.analisis .an-gauge-valor { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dasharray 420ms ease; }
+.analisis .an-gauge.tono-sano .an-gauge-valor { stroke: var(--fa-green); }
+.analisis .an-gauge.tono-atencion .an-gauge-valor { stroke: var(--fa-amber); }
+.analisis .an-gauge.tono-riesgo .an-gauge-valor { stroke: var(--fa-red); }
+
+.analisis .an-gauge-centro {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.analisis .an-gauge-centro strong { font-size: 1.02rem; font-weight: 800; letter-spacing: -0.01em; }
+
+/* --- Fila 50/50: influencias + indicadores -------------------------------- */
+
+.analisis .an-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+.analisis .an-influencias-lista { display: grid; gap: 16px; }
+.analisis .an-influencia-titulo { margin: 0; font-size: 0.94rem; font-weight: 700; }
+.analisis .an-influencia-cuerpo { margin: 4px 0 0; color: var(--fa-muted); font-size: 0.87rem; line-height: 1.5; }
+.analisis .an-influencia-umbral { display: block; margin-top: 6px; color: var(--fa-muted); font-size: 0.78rem; }
+
+.analisis .an-indicadores dl { margin: 0; display: grid; gap: 14px; }
+.analisis .an-indicadores dl > div { padding-bottom: 14px; border-bottom: 1px solid var(--fa-border); }
+.analisis .an-indicadores dl > div:last-child { padding-bottom: 0; border-bottom: 0; }
+
+.analisis .an-indicadores dt {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--fa-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.analisis .an-indicadores dt strong { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.analisis .an-indicadores dd { margin: 4px 0 0; color: var(--fa-muted); font-size: 0.82rem; line-height: 1.45; }
+
+/* --- Patrones de gasto ------------------------------------------------- */
+
+/*
+ * Ranking editorial, no una tabla de progreso: como mucho tres filas, y la barra es un
+ * apoyo corto y secundario -- monto y porcentaje se leen solos sin depender de ella. La
+ * fila usa grid-template-areas (no flex anidado) para que las tres filas alineen exacto:
+ * el nombre y las cifras comparten la primera linea, la barra queda debajo del nombre.
+ */
+.analisis .an-patrones-subtitulo { margin: -10px 0 20px; color: var(--fa-muted); font-size: 0.85rem; }
+
+.analisis .an-patrones-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+
+.analisis .an-patrones-lista li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  grid-template-areas: "rango categoria cifras" "rango barra .";
+  column-gap: 16px;
+  row-gap: 8px;
+  align-items: start;
+}
+
+.analisis .an-patrones-rango {
+  grid-area: rango;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--fa-bg);
+  color: var(--fa-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.analisis .an-patrones-categoria { grid-area: categoria; display: grid; gap: 3px; min-width: 0; }
+.analisis .an-patrones-categoria strong { font-size: 0.93rem; font-weight: 700; }
+.analisis .an-patrones-categoria small { color: var(--fa-muted); font-size: 0.78rem; }
+
+/* Apoyo, no protagonista: ancho fijo y corto, nunca un porcentaje del contenedor. */
+.analisis .an-patrones-barra { grid-area: barra; width: 150px; max-width: 100%; height: 6px; border-radius: 999px; background: var(--fa-bg); overflow: hidden; }
+.analisis .an-patrones-barra span { display: block; height: 100%; border-radius: inherit; background: var(--fa-primary); }
+
+.analisis .an-patrones-cifras { grid-area: cifras; display: flex; align-items: baseline; justify-content: flex-end; gap: 12px; }
+.analisis .an-patrones-cifras strong { min-width: 96px; color: var(--fa-text); font-size: 0.92rem; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.analisis .an-patrones-porcentaje { min-width: 50px; color: var(--fa-muted); font-size: 0.87rem; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* La sintesis reemplaza al "el resto se distribuye...": una lectura factual del patron
+   (top1 + top2), no una recomendacion -- esa vive en la pantalla de Recomendaciones. */
+.analisis .an-patrones-sintesis { margin: 20px 0 0; padding-top: 16px; border-top: 1px solid var(--fa-border); color: var(--fa-text); font-size: 0.88rem; font-weight: 600; line-height: 1.5; }
+.analisis .an-vacio { margin: 0; color: var(--fa-muted); font-size: 0.9rem; }
+
+/* --- Sobre este analisis (franja, no card) ------------------------------ */
+
+/*
+ * Informacion secundaria: un filete arriba y abajo, no una caja con borde y radio que
+ * compita en peso con la card de Patrones. Sin fondo propio -- el filete ya la separa.
+ */
+.analisis .an-sobre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 2px;
+  border-top: 1px solid var(--fa-border);
+  border-bottom: 1px solid var(--fa-border);
+}
+
+.analisis .an-sobre-texto { display: grid; gap: 2px; min-width: 0; }
+.analisis .an-sobre-titulo { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--fa-text); font-size: 0.83rem; font-weight: 700; }
+.analisis .an-sobre-titulo svg { flex: 0 0 auto; color: var(--fa-muted); }
+.analisis .an-sobre-cuerpo { margin: 0; color: var(--fa-muted); font-size: 0.85rem; }
+.analisis .an-sobre-acciones { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+
+/* --- Salida a Recomendaciones (franja, no card) -------------------------- */
+
+/*
+ * El cierre de la pagina, con menor jerarquia que Patrones y que Sobre este analisis.
+ * padding-right y margin-bottom extra a proposito: zona segura para el lanzador flotante
+ * de Oven (fijo abajo-derecha, ~56px + 24px de margen) para que "Ver recomendaciones" no
+ * quede debajo ni pegado a el. No se toca Oven -- se le hace sitio desde aca.
+ */
+.analisis .an-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 18px 56px 18px 2px;
+  border-top: 1px solid var(--fa-border);
+  margin-bottom: 64px;
+}
+
+.analisis .an-cta-texto { display: grid; gap: 2px; min-width: 0; }
+.analisis .an-cta-texto strong { font-size: 0.94rem; font-weight: 700; }
+.analisis .an-cta-texto p { margin: 0; color: var(--fa-muted); font-size: 0.85rem; }
+
+/* --- Estados: vacio, carga, formulario ------------------------------------ */
+
+.analisis .an-estado {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 52px 30px;
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-card);
+  background: var(--fa-card);
+  text-align: center;
+}
+
+.analisis .an-estado h2 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+.analisis .an-estado p { margin: 0; max-width: 48ch; color: var(--fa-muted); }
+.analisis .an-estado .an-boton { margin-top: 8px; }
+
+.analisis .an-info-strip { padding: 16px 22px; border-radius: var(--fa-radio-card); background: var(--fa-bg); color: var(--fa-muted); }
+.analisis .an-info-strip p { margin: 0; }
+
+.analisis .an-lista-datos { margin: 0; display: grid; gap: 12px; }
+.analisis .an-lista-datos > div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--fa-border); }
+.analisis .an-lista-datos > div:last-child { padding-bottom: 0; border-bottom: 0; }
+.analisis .an-lista-datos dt { color: var(--fa-muted); font-size: 0.88rem; }
+.analisis .an-lista-datos dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.analisis .an-metodologia-lista { display: grid; gap: 12px; }
+.analisis .an-metodologia-lista p { margin: 0; color: var(--fa-muted); font-size: 0.88rem; line-height: 1.55; }
+
+/*
+ * Dialogo "Completar analisis" (CompletarIngresoModal): reutiliza integramente las
+ * clases fa-modal-* / fa-campo* del modal ya aprobado (compartido/estilos/modal.css).
+ * Solo hace falta el texto de explicacion, que no tiene equivalente en ese archivo.
+ *
+ * Va sin el prefijo .analisis: el modal se porta a document.body (fuera de la seccion
+ * .analisis), igual que ModalPresupuesto -- por eso su velo lleva la clase propia
+ * an-dialogo en vez de depender de un ancestro que ya no existe en ese punto del DOM.
+ */
+.an-dialogo .an-modal-explicacion { margin: 0; color: var(--fa-muted); font-size: 0.9rem; line-height: 1.5; }
+
+/* --- Responsive ------------------------------------------------------- */
+
+@media (max-width: 1100px) {
+  .analisis .an-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 820px) {
+  .analisis .an-diagnostico-cuerpo { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .analisis .an-diagnostico-indicador { padding-left: 0; padding-top: 20px; border-left: 0; border-top: 1px solid var(--fa-border); }
+}
+
+@media (max-width: 720px) {
+  .analisis .page-header { flex-direction: column; align-items: stretch; }
+  .analisis .an-card { padding: 18px 20px; }
+  .analisis .an-diagnostico-frase { font-size: 1.1rem; }
+  .analisis .an-gauge { width: 80px; height: 80px; }
+
+  /*
+   * Sin espacio para cuatro columnas: rango + nombre en la primera fila, cifras debajo
+   * (monto y porcentaje separados por un punto) y la barra al final. Mismo orden de
+   * lectura que en desktop, solo apilado.
+   */
+  .analisis .an-patrones-lista li {
+    grid-template-columns: 22px minmax(0, 1fr);
+    grid-template-areas: "rango categoria" "rango cifras" "rango barra";
+    row-gap: 5px;
+  }
+  .analisis .an-patrones-cifras { justify-content: flex-start; gap: 6px; }
+  .analisis .an-patrones-cifras strong { min-width: 0; text-align: left; }
+  .analisis .an-patrones-porcentaje { min-width: 0; text-align: left; }
+  .analisis .an-patrones-porcentaje::before { content: '· '; }
+  .analisis .an-patrones-barra { width: 110px; margin-top: 2px; }
+
+  .analisis .an-sobre { flex-direction: column; align-items: flex-start; padding: 16px 0; }
+  .analisis .an-cta { flex-direction: column; align-items: flex-start; padding: 18px 0; margin-bottom: 48px; }
+  .analisis .an-cta .an-enlace.primario { align-self: flex-start; }
+}
