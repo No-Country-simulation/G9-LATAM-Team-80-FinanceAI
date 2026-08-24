@@ -154,14 +154,13 @@ export function DashboardPage({ workspace, navegar }: PageProps) {
     <section className="page-stack dashboard">
       <PageHeader title="Resumen financiero" subtitle="Lo más importante de tus finanzas este mes." />
 
+      {/*
+        * generarAnalisis() sin argumento: reintenta con lo que el workspace ya sabe del
+        * periodo actual (deducido de sus transacciones), igual que antes. La firma cambio
+        * para corregir la fuga de ingreso/endeudamiento entre periodos en useFinancialWorkspace.
+        */}
       {workspace.errorAnalisis && (
-        <ErrorAnalisis
-          onReintentar={() => workspace.generarAnalisis({
-            ingresoMensual: workspace.ingresoMensual,
-            nivelEndeudamiento: workspace.nivelEndeudamiento,
-            frecuenciaAhorro: workspace.frecuenciaAhorro
-          })}
-        />
+        <ErrorAnalisis onReintentar={() => workspace.generarAnalisis()} />
       )}
 
       {workspace.cargandoAnalisis && !workspace.analisisListo

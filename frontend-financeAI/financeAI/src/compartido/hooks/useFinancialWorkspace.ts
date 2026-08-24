@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { analisisInicial, solicitarAnalisisFinanciero } from '../servicios/analisisFinanciero.service';
 import {
   actualizarTransaccion as actualizarTransaccionApi,
@@ -14,9 +14,6 @@ import {
   listarTransacciones
 } from '../servicios/persistencia.service';
 import type { CategoriaFinanciera, HistorialAnalisis, TipoTransaccion, Transaccion } from '../tipos/finanzas';
-
-const INGRESO_POR_DEFECTO = 4500;
-const ENDEUDAMIENTO_POR_DEFECTO = 25;
 
 /*
  * Cuanto se puede navegar hacia atras y hacia delante desde el anio del sistema.
@@ -41,16 +38,28 @@ function movimientosDelMes(movimientos: Transaccion[], mes: string | null): Tran
 }
 
 /**
- * Deriva el ingreso mensual y el nivel de endeudamiento de los movimientos del usuario.
+ * Nivel de endeudamiento: pagos de categoria 'deudas' del periodo, sobre el ingreso.
  *
- * Antes estos dos valores estaban fijos en 4500 y 25, y el analisis se disparaba solo al
- * cargar la app. Con movimientos en otra escala (ej. pesos colombianos) eso producia un
- * ratio gasto/ingreso absurdo y un perfil "En riesgo" con probabilidad 0.00, aunque los
- * datos en la base fueran perfectamente coherentes.
+ * Nunca es un dato que pueda "faltar": sin ninguna transaccion de esa categoria da 0%,
+ * que es una lectura real (sin deuda), no una ausencia de dato. Por eso no se le pide
+ * nunca a la persona -- a diferencia del ingreso, que si puede ser desconocido.
+ */
+function calcularNivelEndeudamiento(movimientos: Transaccion[], ingresoMensual: number): number {
+  const deuda = movimientos
+    .filter((item) => item.tipo === 'gasto' && item.categoria === 'deudas')
+    .reduce((suma, item) => suma + Math.abs(item.monto), 0);
+  // El backend valida 0..100; un mes con mas deuda que ingreso no debe romper el analisis.
+  return Math.min(100, Math.round((deuda / ingresoMensual) * 1000) / 10);
+}
+
+/**
+ * Deriva el ingreso mensual y el nivel de endeudamiento de los movimientos de UN periodo.
  *
- * Si el usuario no tiene movimientos de tipo 'ingreso' no hay de donde deducirlo y se
- * mantienen los valores por defecto: en ese caso el numero lo tiene que poner a mano en
- * la pantalla de Analisis.
+ * Si el periodo no tiene movimientos de tipo 'ingreso' no hay de donde deducir ninguno de
+ * los dos y se devuelve null: "sin dato", no un valor heredado de otro periodo ni un
+ * default inventado (4500/25 no significaban nada real y escondian el problema en vez de
+ * mostrarlo). Quien llama decide que hacer con el null -- pedirlo a la persona, en la
+ * pantalla de Analisis.
  */
 function deducirSupuestos(movimientos: Transaccion[]) {
   const ingreso = movimientos
@@ -59,15 +68,7 @@ function deducirSupuestos(movimientos: Transaccion[]) {
 
   if (ingreso <= 0) return null;
 
-  const deuda = movimientos
-    .filter((item) => item.tipo === 'gasto' && item.categoria === 'deudas')
-    .reduce((suma, item) => suma + Math.abs(item.monto), 0);
-
-  return {
-    ingresoMensual: ingreso,
-    // El backend valida 0..100; un mes con mas deuda que ingreso no debe romper el analisis.
-    nivelEndeudamiento: Math.min(100, Math.round((deuda / ingreso) * 1000) / 10)
-  };
+  return { ingresoMensual: ingreso, nivelEndeudamiento: calcularNivelEndeudamiento(movimientos, ingreso) };
 }
 
 export function useFinancialWorkspace(token: string | null) {
@@ -75,9 +76,12 @@ export function useFinancialWorkspace(token: string | null) {
   const [presupuestos, setPresupuestos] = useState<Awaited<ReturnType<typeof listarPresupuestos>>>([]);
   const [historial, setHistorial] = useState<HistorialAnalisis[]>([]);
   const [analisis, setAnalisis] = useState(analisisInicial);
-  const [ingresoMensual, setIngresoMensual] = useState(INGRESO_POR_DEFECTO);
-  const [nivelEndeudamiento, setNivelEndeudamiento] = useState(ENDEUDAMIENTO_POR_DEFECTO);
-  const [frecuenciaAhorro, setFrecuenciaAhorro] = useState<'Alta' | 'Media' | 'Baja'>('Media');
+  // null = "sin dato": ni un default inventado ni el valor del periodo anterior.
+  const [ingresoMensual, setIngresoMensual] = useState<number | null>(null);
+  const [nivelEndeudamiento, setNivelEndeudamiento] = useState<number | null>(null);
+  // Ya no se pide en ninguna pantalla: el ML nunca la usa (ver auditoria en Analisis).
+  // Se mantiene en 'Media' fija solo porque el request al backend la sigue exigiendo.
+  const [frecuenciaAhorro] = useState<'Alta' | 'Media' | 'Baja'>('Media');
   const [cargandoDatos, setCargandoDatos] = useState(false);
   const [cargandoAnalisis, setCargandoAnalisis] = useState(false);
   const [errorAnalisis, setErrorAnalisis] = useState('');
@@ -141,14 +145,17 @@ export function useFinancialWorkspace(token: string | null) {
    * setState. Si no, al pasar de agosto a julio se veria el ingreso de agosto contra los
    * gastos de julio; y si se dedujera en un efecto aparte, el analisis correria dos veces
    * y la primera dejaria una fila equivocada en el historial.
+   *
+   * SIEMPRE se asigna, incluso cuando deducirSupuestos() da null: si julio no tiene
+   * transaccion de tipo 'ingreso', ingresoMensual pasa a null ("sin dato"), nunca se deja
+   * el valor que traia agosto. Contaminar julio con un numero de otro periodo era el bug
+   * -- silencioso porque nunca fallaba, solo mentia.
    */
   const seleccionarMes = useCallback((mes: string) => {
     setMesAnalizado(mes);
     const supuestos = deducirSupuestos(movimientosDelMes(transacciones, mes));
-    if (supuestos) {
-      setIngresoMensual(supuestos.ingresoMensual);
-      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
-    }
+    setIngresoMensual(supuestos?.ingresoMensual ?? null);
+    setNivelEndeudamiento(supuestos?.nivelEndeudamiento ?? null);
   }, [transacciones]);
 
   /**
@@ -201,13 +208,10 @@ export function useFinancialWorkspace(token: string | null) {
         setTransacciones(movimientos); setHistorial(registros);
         // Deducir ANTES de marcar hidratado: el efecto que dispara el analisis depende de
         // hidratado, y React agrupa estos setState. Si se dedujera despues, el analisis
-        // correria dos veces y la primera guardaria en el historial una fila calculada con
-        // los valores por defecto.
+        // correria dos veces.
         const supuestos = deducirSupuestos(movimientosDelMes(movimientos, mesAnalizado));
-        if (supuestos) {
-          setIngresoMensual(supuestos.ingresoMensual);
-          setNivelEndeudamiento(supuestos.nivelEndeudamiento);
-        }
+        setIngresoMensual(supuestos?.ingresoMensual ?? null);
+        setNivelEndeudamiento(supuestos?.nivelEndeudamiento ?? null);
         setHidratado(true);
       })
       .catch((error: Error) => setErrorAnalisis(error.message))
@@ -217,27 +221,41 @@ export function useFinancialWorkspace(token: string | null) {
   }, [token]);
 
   /*
+   * Distingue un recalculo automatico (montar la app, cambiar de periodo, editar una
+   * transaccion) de uno explicito (pulsar "Actualizar analisis", que es lo unico que
+   * incrementa `revision`). Solo el segundo escribe en Historial: navegar por FinanceAI
+   * no debe dejar un rastro de snapshots que nadie pidio.
+   */
+  const revisionGuardada = useRef(revision);
+
+  /*
    * El analisis es del periodo seleccionado, y de ninguno mas.
    *
-   * Cuando el periodo no tiene movimientos hay que BORRAR el resultado anterior, no
-   * limitarse a no pedir uno nuevo: antes esta rama hacia return y en pantalla se quedaba
-   * el diagnostico de agosto bajo el titulo de julio, con su perfil y sus cifras, como si
-   * fueran de julio. Vaciarlo deja a cada pantalla en su estado de "todavia no hay datos",
-   * que es la verdad.
+   * Cuando el periodo no tiene movimientos, o tiene movimientos pero no hay forma de
+   * deducir un ingreso (ingresoMensual quedo en null), hay que BORRAR el resultado
+   * anterior, no limitarse a no pedir uno nuevo: antes esta rama hacia return y en
+   * pantalla se quedaba el diagnostico de agosto bajo el titulo de julio, con su perfil y
+   * sus cifras, como si fueran de julio. Vaciarlo deja a cada pantalla en su estado de
+   * "todavia no hay datos", que es la verdad.
    */
   useEffect(() => {
     if (!token || !hidratado) return;
-    if (transaccionesDelMes.length === 0) {
+    if (transaccionesDelMes.length === 0 || ingresoMensual === null || nivelEndeudamiento === null) {
       setAnalisis(analisisInicial);
       setAnalisisListo(false);
       setCargandoAnalisis(false);
       setErrorAnalisis('');
       return;
     }
+    const esActualizacionExplicita = revision !== revisionGuardada.current;
+    revisionGuardada.current = revision;
     const controller = new AbortController();
     setCargandoAnalisis(true); setErrorAnalisis('');
-    solicitarAnalisisFinanciero(token, transaccionesDelMes, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, controller.signal)
-      .then(async (resultado) => { setAnalisis(resultado); setAnalisisListo(true); await recargarHistorial(); })
+    solicitarAnalisisFinanciero(token, transaccionesDelMes, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, esActualizacionExplicita, controller.signal)
+      .then(async (resultado) => {
+        setAnalisis(resultado); setAnalisisListo(true);
+        if (esActualizacionExplicita) await recargarHistorial();
+      })
       .catch((error: Error) => { if (error.name !== 'AbortError') setErrorAnalisis(error.message); })
       .finally(() => { if (!controller.signal.aborted) setCargandoAnalisis(false); });
     return () => controller.abort();
@@ -257,10 +275,8 @@ export function useFinancialWorkspace(token: string | null) {
     const actualizadas = [nueva, ...transacciones];
     setTransacciones(actualizadas);
     const supuestos = deducirSupuestos(movimientosDelMes(actualizadas, mesAnalizado));
-    if (supuestos) {
-      setIngresoMensual(supuestos.ingresoMensual);
-      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
-    }
+    setIngresoMensual(supuestos?.ingresoMensual ?? null);
+    setNivelEndeudamiento(supuestos?.nivelEndeudamiento ?? null);
     recargarPresupuestos();
 }
 
@@ -270,10 +286,8 @@ async function actualizarTransaccion(id: string, data: Omit<Transaccion, 'id'>) 
     const actualizadas = transacciones.map((item) => item.id === id ? actualizada : item);
     setTransacciones(actualizadas);
     const supuestos = deducirSupuestos(movimientosDelMes(actualizadas, mesAnalizado));
-    if (supuestos) {
-      setIngresoMensual(supuestos.ingresoMensual);
-      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
-    }
+    setIngresoMensual(supuestos?.ingresoMensual ?? null);
+    setNivelEndeudamiento(supuestos?.nivelEndeudamiento ?? null);
     recargarPresupuestos();
 }
 
@@ -300,10 +314,8 @@ async function actualizarTransaccion(id: string, data: Omit<Transaccion, 'id'>) 
     const actualizadas = transacciones.filter((item) => item.id !== id);
     setTransacciones(actualizadas);
     const supuestos = deducirSupuestos(movimientosDelMes(actualizadas, mesAnalizado));
-    if (supuestos) {
-      setIngresoMensual(supuestos.ingresoMensual);
-      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
-    }
+    setIngresoMensual(supuestos?.ingresoMensual ?? null);
+    setNivelEndeudamiento(supuestos?.nivelEndeudamiento ?? null);
     recargarPresupuestos();
 }
 
@@ -313,10 +325,8 @@ async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
     const actualizadas = [...importadas, ...transacciones];
     setTransacciones(actualizadas);
     const supuestos = deducirSupuestos(movimientosDelMes(actualizadas, mesAnalizado));
-    if (supuestos) {
-      setIngresoMensual(supuestos.ingresoMensual);
-      setNivelEndeudamiento(supuestos.nivelEndeudamiento);
-    }
+    setIngresoMensual(supuestos?.ingresoMensual ?? null);
+    setNivelEndeudamiento(supuestos?.nivelEndeudamiento ?? null);
     recargarPresupuestos();
 }
 
@@ -351,10 +361,28 @@ async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
     setHistorial((actual) => actual.filter((item) => item.id !== id));
   }
 
-  const generarAnalisis = useCallback((datos: { ingresoMensual: number; nivelEndeudamiento: number; frecuenciaAhorro: 'Alta' | 'Media' | 'Baja' }) => {
-    setIngresoMensual(datos.ingresoMensual); setNivelEndeudamiento(datos.nivelEndeudamiento);
-    setFrecuenciaAhorro(datos.frecuenciaAhorro); setRevision((actual) => actual + 1);
-  }, []);
+  /**
+   * Recalcula el analisis del periodo seleccionado -- es lo unico que "Actualizar
+   * analisis" dispara, y lo unico que marca un recalculo como explicito (ver el efecto
+   * de arriba).
+   *
+   * Sin argumento: usa lo que ya se sabe del periodo (el ingreso deducido de sus
+   * transacciones). Con argumento: el ingreso lo declara la persona, porque el periodo no
+   * tenia transaccion de tipo 'ingreso' de donde deducirlo -- caso que la pantalla ya
+   * detecto antes de pedirlo.
+   *
+   * nivelEndeudamiento NUNCA se recibe como argumento: siempre se recalcula aqui mismo a
+   * partir de los gastos categoria 'deudas' del periodo (calcularNivelEndeudamiento da 0%
+   * si no hay ninguno). No es un dato que pueda faltar, asi que no se le pide a nadie.
+   */
+  const generarAnalisis = useCallback((ingresoDeclarado?: number) => {
+    const movimientos = movimientosDelMes(transacciones, mesAnalizado);
+    const ingreso = ingresoDeclarado ?? deducirSupuestos(movimientos)?.ingresoMensual ?? null;
+    if (ingreso === null) return;
+    setIngresoMensual(ingreso);
+    setNivelEndeudamiento(calcularNivelEndeudamiento(movimientos, ingreso));
+    setRevision((actual) => actual + 1);
+  }, [transacciones, mesAnalizado]);
 
   function obtenerCategoria(transaccion: Transaccion): CategoriaFinanciera | null {
     // Ingresos y ahorros no tienen categoria: no hay nada que inferir.
