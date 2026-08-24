@@ -1,0 +1,247 @@
+/*
+ * Login.
+ *
+ * Hoja propia, scoped bajo .fa-login -- no toca .login-page/.login-card de global.css,
+ * que sigue usando la pantalla de "Comprobando sesion..." en App.tsx mientras se valida
+ * el token al abrir la app.
+ *
+ * Segunda iteracion: la primera dejaba el hero y la card como dos piezas flotando por
+ * separado sobre el fondo de la pagina, con una franja de aire muerto entre ambas. Ahora
+ * las dos viven DENTRO de un mismo panel (un solo borde, una sola sombra, un solo radio):
+ * una franja de marca compartida arriba, y abajo dos zonas contiguas -- el hero con un
+ * fondo apenas teñido, la card en blanco, separadas por un divisor de 1px, no por un gap
+ * de pagina. El fondo teñido y el blanco comparten el mismo borde exterior, asi que se
+ * leen como dos mitades de una sola superficie, no como dos elementos distintos puestos
+ * uno al lado del otro.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+.fa-login {
+  --fa-primary: #2458E8;
+  --fa-deep: #153B9A;
+  --fa-green: #15AD77;
+  --fa-red: #E9566C;
+  --fa-bg: #F7F9FD;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-border: #E4E9F3;
+  --fa-card: #FFFFFF;
+
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: clamp(20px, 4vw, 48px);
+  background:
+    radial-gradient(circle at 20% 15%, rgba(36, 88, 232, 0.05), transparent 42%),
+    linear-gradient(135deg, #F6F9FF, #FFFFFF);
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+  color: var(--fa-text);
+}
+
+/* --- El panel: una sola superficie, dos zonas ------------------------------ */
+
+.fa-login-panel {
+  width: 100%;
+  max-width: 1040px;
+  overflow: hidden;
+  border: 1px solid var(--fa-border);
+  border-radius: 24px;
+  background: var(--fa-card);
+  box-shadow: 0 24px 60px rgba(13, 24, 56, 0.07);
+  animation: fa-login-entra 560ms cubic-bezier(.32,.72,0,1) both;
+}
+
+.fa-login-panel-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 40px;
+  border-bottom: 1px solid var(--fa-border);
+  color: var(--fa-primary);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.fa-login-panel-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+
+/* --- Zona izquierda: mensaje de valor -------------------------------------- */
+
+/* Fondo apenas teñido -- el vinculo visual con la card no es un espacio vacio, es la
+   misma superficie continuando con otro tono. Nunca un color plano fuerte. */
+.fa-login-hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 32px;
+  padding: 48px 44px;
+  background: linear-gradient(165deg, #F3F6FE, #FBFCFF);
+}
+
+.fa-login-mensaje h1 {
+  margin: 0;
+  max-width: 20ch;
+  font-size: clamp(1.7rem, 2.1vw, 2.15rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.fa-login-mensaje p {
+  margin: 12px 0 0;
+  max-width: 38ch;
+  color: var(--fa-muted);
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.fa-login-ventajas { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
+
+.fa-login-ventajas li {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.fa-login-ventaja-icono {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: #fff;
+  color: var(--fa-primary);
+  box-shadow: 0 1px 2px rgba(13, 24, 56, 0.06);
+}
+
+.fa-login-ventajas strong { display: block; font-size: 0.88rem; font-weight: 700; letter-spacing: -0.01em; }
+.fa-login-ventajas small { display: block; margin-top: 2px; color: var(--fa-muted); font-size: 0.81rem; line-height: 1.4; }
+
+/* --- Zona derecha: login ----------------------------------------------------- */
+
+/* Ya no es una card aparte (sin su propio borde/radio/sombra): es la otra mitad del
+   mismo panel. El divisor de 1px es lo unico que separa las dos zonas -- ni gap de
+   pagina, ni una segunda superficie flotando. */
+.fa-login-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 44px;
+  border-left: 1px solid var(--fa-border);
+  background: var(--fa-card);
+}
+
+.fa-login-card-cabecera { margin-bottom: 22px; }
+.fa-login-card-cabecera h2 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.01em; }
+
+.fa-login-demo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 0 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #EEF2FE;
+  color: var(--fa-deep);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.fa-login-demo svg { flex: 0 0 auto; color: var(--fa-primary); }
+
+.fa-login-campo { display: grid; gap: 8px; margin-top: 16px; color: var(--fa-text); font-size: 0.86rem; font-weight: 700; }
+.fa-login-campo:first-of-type { margin-top: 0; }
+
+.fa-login-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--fa-border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--fa-muted);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.fa-login-input:focus-within { border-color: var(--fa-primary); box-shadow: 0 0 0 3px rgba(36, 88, 232, 0.12); }
+.fa-login-input > svg:first-child { flex: 0 0 auto; }
+
+.fa-login-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.fa-login-toggle {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  padding: 2px;
+  background: none;
+  color: var(--fa-muted);
+  cursor: pointer;
+}
+.fa-login-toggle:hover { color: var(--fa-primary); }
+.fa-login-toggle:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; border-radius: 4px; }
+
+.fa-login-error { margin: 14px 0 0; color: var(--fa-red); font-size: 0.86rem; font-weight: 700; }
+
+.fa-login-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 50px;
+  margin-top: 22px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--fa-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 0.96rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 14px 28px rgba(36, 88, 232, 0.2);
+  transition: background 160ms ease, transform 120ms ease, box-shadow 160ms ease;
+}
+.fa-login-cta:hover:not(:disabled) { background: var(--fa-deep); }
+.fa-login-cta:active:not(:disabled) { transform: translateY(1px); }
+.fa-login-cta:focus-visible { outline: 2px solid var(--fa-deep); outline-offset: 3px; }
+.fa-login-cta:disabled { opacity: 0.7; cursor: default; box-shadow: none; }
+
+@keyframes fa-login-entra {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsive ------------------------------------------------------- */
+
+@media (max-width: 980px) {
+  .fa-login-hero,
+  .fa-login-card { padding: 40px 36px; }
+  .fa-login-mensaje h1 { max-width: none; }
+}
+
+/* Mobile: el panel pasa a una columna; la marca compartida ya cubre el logo, asi que
+   ninguna zona necesita repetirlo. El login sigue primero -- es la accion principal. */
+@media (max-width: 720px) {
+  .fa-login { padding: 0; }
+  .fa-login-panel { max-width: none; min-height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+  .fa-login-panel-marca { padding: 18px 20px; }
+  .fa-login-panel-grid { grid-template-columns: minmax(0, 1fr); }
+
+  .fa-login-card { order: 1; padding: 28px 22px; border-left: 0; border-bottom: 1px solid var(--fa-border); }
+  .fa-login-hero { order: 2; padding: 28px 22px; gap: 24px; }
+  .fa-login-mensaje h1 { font-size: 1.4rem; }
+  .fa-login-mensaje p { font-size: 0.88rem; }
+}
