@@ -140,16 +140,21 @@ export function BudgetsPage({ workspace }: PageProps) {
     setModalAbierto(true);
   }
 
-  /* Una sola peticion para todo el mes; el propio hook vuelve a leer el periodo. */
+  /*
+   * Una sola peticion para todo el mes; el propio hook vuelve a leer el periodo. No cierra
+   * el modal aca: "Guardar presupuesto" puede disparar esto Y eliminaciones pendientes a
+   * la vez (ver ModalPresupuesto.enviar), asi que quien cierra es el modal, recien cuando
+   * TODO termino bien -- cerrar aca dejaria una eliminacion en curso con el dialogo ya
+   * fuera de pantalla.
+   */
   async function guardar(limites: LimiteAGuardar[]) {
     await workspace.guardarLimites(limites, periodoDelModal);
-    setModalAbierto(false);
   }
 
   /*
-   * Distinto de guardar(): es un DELETE inmediato de UNA categoria, no algo que espere al
-   * "Guardar presupuesto" del lote. El modal se queda abierto -- puede haber mas cambios
-   * pendientes en otras filas.
+   * Un DELETE por categoria. Ya no es inmediato al pulsar "Quitar" -- el modal lo deja
+   * pendiente y solo llega aca si el formulario termina en "Guardar presupuesto", para que
+   * "Cancelar" pueda deshacer un "Quitar" sin haber tocado la base de datos.
    */
   function eliminar(categoria: CategoriaFinanciera) {
     return workspace.eliminarLimite(categoria, periodoDelModal);

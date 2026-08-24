@@ -17,9 +17,10 @@ export type LimiteAGuardar = { categoria: CategoriaFinanciera; presupuesto: numb
 /**
  * Una linea del editor.
  *
- * "nueva" distingue lo que todavia no existe en la base de datos de lo que si. Las dos se
- * pueden quitar, pero de forma distinta: una nueva es no crearla (solo estado local), una
- * persistida es un DELETE real contra la base de datos (ver quitarFila).
+ * "nueva" distingue lo que todavia no existe en la base de datos de lo que si. Quitar
+ * cualquiera de las dos es local nada mas apretar el boton (ver quitarFila); solo si el
+ * formulario termina en "Guardar presupuesto" una fila persistida quitada se convierte en
+ * un DELETE real. Asi "Cancelar" puede deshacer un "Quitar" sin haber tocado la base.
  */
 type Fila = {
   categoria: CategoriaFinanciera;
@@ -52,7 +53,7 @@ export function ModalPresupuesto({
   categoriaInicial?: CategoriaFinanciera;
   presupuestos: PresupuestoCategoria[];
   onGuardar: (limites: LimiteAGuardar[]) => Promise<void>;
-  /** Quitar una fila YA guardada es un DELETE real, no una edicion pendiente de "Guardar". */
+  /** El DELETE real de una categoria. Se llama solo al confirmar "Guardar presupuesto", nunca antes. */
   onEliminar: (categoria: CategoriaFinanciera) => Promise<void>;
   onCerrar: () => void;
 }) {
@@ -80,8 +81,15 @@ export function ModalPresupuesto({
   const [errores, setErrores] = useState<Partial<Record<CategoriaFinanciera, string>>>({});
   const [errorGeneral, setErrorGeneral] = useState('');
   const [guardando, setGuardando] = useState(false);
-  /** Categorias con un DELETE en curso -- deshabilita su fila mientras responde. */
-  const [eliminando, setEliminando] = useState<Set<CategoriaFinanciera>>(new Set());
+  /**
+   * Categorias persistidas que "Quitar" saco de la lista, pendientes de un DELETE real.
+   *
+   * No se borran al pulsar el boton: eso hacia que "Cancelar" no pudiera deshacer nada,
+   * porque el DELETE ya habia pasado. Como el resto del formulario, quitar una fila es un
+   * cambio pendiente -- se confirma recien en "Guardar presupuesto", igual que un monto
+   * editado o una fila nueva.
+   */
+  const [aEliminar, setAEliminar] = useState<Set<CategoriaFinanciera>>(new Set());
 
   const modal = useRef<HTMLDivElement>(null);
   const campoInicial = useRef<HTMLInputElement>(null);
@@ -151,6 +159,9 @@ export function ModalPresupuesto({
   /** Cambiar la categoria de una fila nueva conserva el monto que ya se hubiera escrito. */
   function cambiarCategoria(anterior: CategoriaFinanciera, nueva: CategoriaFinanciera) {
     setFilas((actuales) => actuales.map((f) => (f.categoria === anterior ? { ...f, categoria: nueva } : f)));
+    // Misma reconciliacion que agregarFila: si la categoria elegida estaba marcada para
+    // borrar, elegirla de nuevo aqui significa "conservarla", no "borrarla".
+    setAEliminar((actual) => { if (!actual.has(nueva)) return actual; const copia = new Set(actual); copia.delete(nueva); return copia; });
     limpiarError(anterior);
   }
 
@@ -158,34 +169,25 @@ export function ModalPresupuesto({
     const libre = disponibles[0];
     if (!libre) return;
     setFilas((actuales) => [...actuales, { categoria: libre, monto: '', nueva: true }]);
+    // Si se habia quitado antes en esta misma sesion del formulario y se vuelve a
+    // agregar, ya no hay nada que borrar: la intencion cambio a "conservarla".
+    setAEliminar((actual) => { if (!actual.has(libre)) return actual; const copia = new Set(actual); copia.delete(libre); return copia; });
     setErrorGeneral('');
   }
 
   /**
-   * Quitar una fila nueva es no crearla: solo sale de la lista local, su categoria vuelve
-   * a estar disponible. Quitar una fila YA guardada es distinto -- es un DELETE real
-   * contra la base de datos, asi que espera la respuesta antes de sacarla de la lista, y
-   * un fallo se queda visible en la fila en vez de cerrarse en silencio.
+   * Quitar una fila -- nueva o ya guardada -- solo sale de la lista local. Ninguna de las
+   * dos toca la base de datos aqui: una fila nueva nunca la toco, y una persistida queda
+   * marcada en `aEliminar` para el DELETE real, que recien se dispara si el formulario
+   * termina en "Guardar presupuesto". "Cancelar" no llama a nada, asi que deja todo como
+   * estaba con solo cerrar.
    */
-  async function quitarFila(categoria: CategoriaFinanciera) {
+  function quitarFila(categoria: CategoriaFinanciera) {
     const fila = filas.find((f) => f.categoria === categoria);
     if (!fila) return;
     limpiarError(categoria);
-
-    if (fila.nueva) {
-      setFilas((actuales) => actuales.filter((f) => f.categoria !== categoria));
-      return;
-    }
-
-    setEliminando((actual) => new Set(actual).add(categoria));
-    try {
-      await onEliminar(categoria);
-      setFilas((actuales) => actuales.filter((f) => f.categoria !== categoria));
-    } catch (fallo) {
-      setErrores((actuales) => ({ ...actuales, [categoria]: fallo instanceof Error ? fallo.message : 'No fue posible quitar el límite.' }));
-    } finally {
-      setEliminando((actual) => { const copia = new Set(actual); copia.delete(categoria); return copia; });
-    }
+    setFilas((actuales) => actuales.filter((f) => f.categoria !== categoria));
+    if (!fila.nueva) setAEliminar((actual) => new Set(actual).add(categoria));
   }
 
   /**
@@ -235,15 +237,25 @@ export function ModalPresupuesto({
       return;
     }
 
-    if (aGuardar.length === 0) { onCerrar(); return; }
+    // Si una categoria marcada para borrar se volvio a agregar despues, ya no cuenta:
+    // agregarFila/cambiarCategoria la sacan de aEliminar, pero esto es la comprobacion
+    // final antes de mandar nada a la red.
+    const categoriasActuales = new Set(filas.map((f) => f.categoria));
+    const pendientesDeEliminar = [...aEliminar].filter((categoria) => !categoriasActuales.has(categoria));
+
+    if (aGuardar.length === 0 && pendientesDeEliminar.length === 0) { onCerrar(); return; }
 
     setErrores({});
     setErrorGeneral('');
     setGuardando(true);
     try {
-      await onGuardar(aGuardar);
+      const tareas: Promise<unknown>[] = [];
+      if (aGuardar.length > 0) tareas.push(onGuardar(aGuardar));
+      for (const categoria of pendientesDeEliminar) tareas.push(onEliminar(categoria));
+      await Promise.all(tareas);
+      onCerrar();
     } catch (fallo) {
-      setErrorGeneral(fallo instanceof Error ? fallo.message : 'No fue posible guardar el presupuesto.');
+      setErrorGeneral(fallo instanceof Error ? fallo.message : 'No fue posible guardar los cambios.');
       setGuardando(false);
     }
   }
@@ -333,16 +345,11 @@ export function ModalPresupuesto({
                         />
                       </span>
 
-                      {/*
-                        * Quitar una fila nueva es local (no crearla); quitar una ya guardada
-                        * es un DELETE real -- por eso el mismo boton queda deshabilitado
-                        * mientras esa categoria tiene la peticion en curso.
-                        */}
+                      {/* Quitar aqui es siempre local (ver quitarFila): el DELETE real, si corresponde, recien viaja al pulsar "Guardar presupuesto". */}
                       <button
                         type="button"
                         className="pre-quitar"
                         aria-label={`Quitar ${etiqueta}`}
-                        disabled={eliminando.has(fila.categoria)}
                         onClick={() => quitarFila(fila.categoria)}
                       >
                         <X size={15} />
