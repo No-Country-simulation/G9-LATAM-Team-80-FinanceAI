@@ -524,7 +524,7 @@
 .pre-dialogo .pre-linea.con-error .pre-monto-campo input { border-color: var(--fa-red); background: #FDF5F6; }
 .pre-dialogo .pre-linea .fa-campo-error { grid-column: 1 / -1; }
 
-/* Quitar una categoria que todavia no existe en la base de datos. */
+/* Quitar una categoria: local si es nueva, DELETE real si ya estaba guardada. */
 .pre-dialogo .pre-quitar {
   display: grid;
   place-items: center;
@@ -540,9 +540,7 @@
 
 .pre-dialogo .pre-quitar:hover { background: #FDECEF; color: var(--fa-red); }
 .pre-dialogo .pre-quitar:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 1px; }
-
-/* Reserva la columna en las filas que no se pueden quitar. */
-.pre-dialogo .pre-quitar-hueco { display: block; width: 28px; }
+.pre-dialogo .pre-quitar:disabled { opacity: 0.45; cursor: default; }
 
 /* Accion secundaria, no un segundo boton principal. */
 .pre-dialogo .pre-agregar {
@@ -616,7 +614,6 @@
   .pre-dialogo .pre-linea > .pre-linea-nombre { grid-column: 1; }
   .pre-dialogo .pre-linea > .pre-monto-campo { grid-column: 1 / -1; }
   .pre-dialogo .pre-quitar { grid-column: 2; grid-row: 1; }
-  .pre-dialogo .pre-quitar-hueco { display: none; }
 }
 
 /*

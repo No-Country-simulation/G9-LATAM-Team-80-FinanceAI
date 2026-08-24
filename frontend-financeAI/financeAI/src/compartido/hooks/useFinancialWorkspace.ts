@@ -6,6 +6,7 @@ import {
   clasificarDescripciones as clasificarDescripcionesApi,
   crearTransaccion,
   eliminarAnalisis as eliminarAnalisisApi,
+  eliminarPresupuesto as eliminarPresupuestoApi,
   eliminarTransaccion as eliminarTransaccionApi,
   guardarPresupuestos,
   importarTransacciones as importarTransaccionesApi,
@@ -355,6 +356,18 @@ async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
     recargarPresupuestos();
   }
 
+  /**
+   * Quita el limite de UNA categoria en el periodo dado -- "no le asigno presupuesto a
+   * esta categoria", no "ponle un limite de cero". El periodo llega explicito por la
+   * misma razon que en guardarLimites: es el que el formulario dice estar editando, no
+   * necesariamente mesAnalizado.
+   */
+  async function eliminarLimite(categoria: CategoriaFinanciera, mes: string | null) {
+    if (!token) return;
+    await eliminarPresupuestoApi(token, categoria, mes);
+    recargarPresupuestos();
+  }
+
   async function eliminarAnalisis(id: number) {
     if (!token) return;
     await eliminarAnalisisApi(token, id);
@@ -394,6 +407,6 @@ async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
     transacciones, transaccionesDelMes, mesAnalizado, mesesConMovimientos, seleccionarMes,
     anioAnalizado, aniosDisponibles, seleccionarAnio, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
     cargandoDatos, cargandoAnalisis, errorAnalisis, analisisListo, hidratado, agregarTransaccion, actualizarTransaccion, clasificarDescripcion, clasificarDescripciones,
-    eliminarTransaccion, importarTransacciones, guardarLimites, eliminarAnalisis, generarAnalisis, obtenerCategoria
+    eliminarTransaccion, importarTransacciones, guardarLimites, eliminarLimite, eliminarAnalisis, generarAnalisis, obtenerCategoria
   };
 }

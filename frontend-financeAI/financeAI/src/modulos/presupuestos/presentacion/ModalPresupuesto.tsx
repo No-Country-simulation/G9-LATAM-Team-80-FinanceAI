@@ -2,7 +2,6 @@ import { Info, Plus, WarningCircle, X } from '@phosphor-icons/react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { etiquetasCategoria } from '../../../compartido/constantes/categorias';
-import { formatCurrency } from '../../../compartido/utilidades/formato';
 import type { CategoriaFinanciera, PresupuestoCategoria } from '../../../compartido/tipos/finanzas';
 import '../../../compartido/estilos/modal.css';
 
@@ -18,9 +17,9 @@ export type LimiteAGuardar = { categoria: CategoriaFinanciera; presupuesto: numb
 /**
  * Una linea del editor.
  *
- * "nueva" distingue lo que todavia no existe en la base de datos de lo que si. Solo lo
- * nuevo se puede quitar: quitar una fila nueva es no crearla, mientras que quitar una
- * persistida seria un DELETE, y no existe.
+ * "nueva" distingue lo que todavia no existe en la base de datos de lo que si. Las dos se
+ * pueden quitar, pero de forma distinta: una nueva es no crearla (solo estado local), una
+ * persistida es un DELETE real contra la base de datos (ver quitarFila).
  */
 type Fila = {
   categoria: CategoriaFinanciera;
@@ -42,7 +41,7 @@ type Fila = {
  * mes que el titulo dice estar editando.
  */
 export function ModalPresupuesto({
-  periodo, periodoClave, periodoActual, categoriaInicial, presupuestos, onGuardar, onCerrar
+  periodo, periodoClave, periodoActual, categoriaInicial, presupuestos, onGuardar, onEliminar, onCerrar
 }: {
   /** "agosto de 2026". Contexto, no un campo mas del formulario. */
   periodo: string;
@@ -53,6 +52,8 @@ export function ModalPresupuesto({
   categoriaInicial?: CategoriaFinanciera;
   presupuestos: PresupuestoCategoria[];
   onGuardar: (limites: LimiteAGuardar[]) => Promise<void>;
+  /** Quitar una fila YA guardada es un DELETE real, no una edicion pendiente de "Guardar". */
+  onEliminar: (categoria: CategoriaFinanciera) => Promise<void>;
   onCerrar: () => void;
 }) {
   /* Los limites del periodo ya estan en memoria: el editor no pide nada al abrir. */
@@ -79,6 +80,8 @@ export function ModalPresupuesto({
   const [errores, setErrores] = useState<Partial<Record<CategoriaFinanciera, string>>>({});
   const [errorGeneral, setErrorGeneral] = useState('');
   const [guardando, setGuardando] = useState(false);
+  /** Categorias con un DELETE en curso -- deshabilita su fila mientras responde. */
+  const [eliminando, setEliminando] = useState<Set<CategoriaFinanciera>>(new Set());
 
   const modal = useRef<HTMLDivElement>(null);
   const campoInicial = useRef<HTMLInputElement>(null);
@@ -158,10 +161,31 @@ export function ModalPresupuesto({
     setErrorGeneral('');
   }
 
-  /** Quitar una fila nueva es no crearla: su categoria vuelve a estar disponible. */
-  function quitarFila(categoria: CategoriaFinanciera) {
-    setFilas((actuales) => actuales.filter((f) => f.categoria !== categoria));
+  /**
+   * Quitar una fila nueva es no crearla: solo sale de la lista local, su categoria vuelve
+   * a estar disponible. Quitar una fila YA guardada es distinto -- es un DELETE real
+   * contra la base de datos, asi que espera la respuesta antes de sacarla de la lista, y
+   * un fallo se queda visible en la fila en vez de cerrarse en silencio.
+   */
+  async function quitarFila(categoria: CategoriaFinanciera) {
+    const fila = filas.find((f) => f.categoria === categoria);
+    if (!fila) return;
     limpiarError(categoria);
+
+    if (fila.nueva) {
+      setFilas((actuales) => actuales.filter((f) => f.categoria !== categoria));
+      return;
+    }
+
+    setEliminando((actual) => new Set(actual).add(categoria));
+    try {
+      await onEliminar(categoria);
+      setFilas((actuales) => actuales.filter((f) => f.categoria !== categoria));
+    } catch (fallo) {
+      setErrores((actuales) => ({ ...actuales, [categoria]: fallo instanceof Error ? fallo.message : 'No fue posible quitar el límite.' }));
+    } finally {
+      setEliminando((actual) => { const copia = new Set(actual); copia.delete(categoria); return copia; });
+    }
   }
 
   /**
@@ -181,13 +205,11 @@ export function ModalPresupuesto({
 
       if (texto === '') {
         /*
-         * Vaciar una categoria persistida NO la borra: no existe DELETE y no se va a
-         * simular uno dejando de mandarla, porque la fila seguiria en la base de datos y
-         * la pantalla diria otra cosa.
+         * Vaciar el campo no borra la fila: para eso esta el boton "Quitar", que si borra
+         * de verdad (ver quitarFila). Un campo vacio solo significa "todavia no escribiste
+         * nada aqui", sea la fila nueva o ya guardada.
          */
-        fallos[fila.categoria] = fila.nueva
-          ? 'Escribe un monto o quita esta categoría.'
-          : `Eliminar un límite todavía no está disponible. El límite actual es ${formatCurrency(anterior ?? 0)}.`;
+        fallos[fila.categoria] = 'Escribe un monto o quita esta categoría.';
         continue;
       }
 
@@ -311,19 +333,20 @@ export function ModalPresupuesto({
                         />
                       </span>
 
-                      {/* Solo lo que todavia no existe en la base de datos se puede quitar. */}
-                      {fila.nueva ? (
-                        <button
-                          type="button"
-                          className="pre-quitar"
-                          aria-label={`Quitar ${etiqueta}`}
-                          onClick={() => quitarFila(fila.categoria)}
-                        >
-                          <X size={15} />
-                        </button>
-                      ) : (
-                        <span className="pre-quitar-hueco" />
-                      )}
+                      {/*
+                        * Quitar una fila nueva es local (no crearla); quitar una ya guardada
+                        * es un DELETE real -- por eso el mismo boton queda deshabilitado
+                        * mientras esa categoria tiene la peticion en curso.
+                        */}
+                      <button
+                        type="button"
+                        className="pre-quitar"
+                        aria-label={`Quitar ${etiqueta}`}
+                        disabled={eliminando.has(fila.categoria)}
+                        onClick={() => quitarFila(fila.categoria)}
+                      >
+                        <X size={15} />
+                      </button>
 
                       {fallo && <span className="fa-campo-error">{fallo}</span>}
                     </div>
