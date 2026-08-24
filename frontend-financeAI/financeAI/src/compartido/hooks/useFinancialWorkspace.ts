@@ -7,7 +7,7 @@ import {
   crearTransaccion,
   eliminarAnalisis as eliminarAnalisisApi,
   eliminarTransaccion as eliminarTransaccionApi,
-  guardarPresupuesto,
+  guardarPresupuestos,
   importarTransacciones as importarTransaccionesApi,
   listarHistorial,
   listarPresupuestos,
@@ -18,26 +18,21 @@ import type { CategoriaFinanciera, HistorialAnalisis, TipoTransaccion, Transacci
 const INGRESO_POR_DEFECTO = 4500;
 const ENDEUDAMIENTO_POR_DEFECTO = 25;
 
-/**
- * Mes mas reciente que tiene movimientos, en formato YYYY-MM.
+/*
+ * Cuanto se puede navegar hacia atras y hacia delante desde el anio del sistema.
  *
- * El analisis se llama "gasto_total_mes" pero no habia ningun filtro por fecha: se
- * enviaban TODAS las transacciones del usuario, asi que con tres meses cargados el
- * gasto se triplicaba y el perfil salia peor de lo real.
- *
- * Se elige el mes mas reciente con datos, y no el mes calendario actual, para que la
- * app siga mostrando algo cuando los movimientos son de meses anteriores -- con el mes
- * actual, importar un CSV viejo dejaba el tablero en cero sin explicar por que.
- *
- * Las fechas llegan de la API como YYYY-MM-DD, asi que comparar los primeros 7
- * caracteres como texto ya ordena cronologicamente.
+ * Cinco atras cubre el historial que alguien puede querer repasar; uno adelante permite
+ * planificar el presupuesto del anio que viene, que es el caso real que abrio esto. El
+ * rango no mira los datos: si mirara, un usuario sin transacciones no podria navegar a
+ * ningun sitio, que es justo el problema que se esta arreglando.
  */
-function mesMasReciente(movimientos: Transaccion[]): string | null {
-  return movimientos.reduce<string | null>((reciente, item) => {
-    const mes = item.fecha.slice(0, 7);
-    if (!/^\d{4}-\d{2}$/.test(mes)) return reciente;
-    return reciente === null || mes > reciente ? mes : reciente;
-  }, null);
+const ANIOS_ATRAS = 5;
+const ANIOS_ADELANTE = 1;
+
+/** El mes de calendario de hoy, en YYYY-MM. Donde abre la aplicacion. */
+function periodoDelSistema() {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
 }
 
 function movimientosDelMes(movimientos: Transaccion[], mes: string | null): Transaccion[] {
@@ -87,17 +82,47 @@ export function useFinancialWorkspace(token: string | null) {
   const [cargandoAnalisis, setCargandoAnalisis] = useState(false);
   const [errorAnalisis, setErrorAnalisis] = useState('');
   const [revision, setRevision] = useState(0);
+  const [revisionPresupuestos, setRevisionPresupuestos] = useState(0);
   const [hidratado, setHidratado] = useState(false);
   // Distingue "todavia no hay analisis" de "el analisis dio cero". Sin este flag, el
   // estado inicial (perfil Saludable y todo en cero) es indistinguible de un resultado
   // real, y el tablero mostraria un diagnostico que nadie calculo.
   const [analisisListo, setAnalisisListo] = useState(false);
 
-  const [mesSeleccionado, setMesSeleccionado] = useState<string | null>(null);
+  /*
+   * El periodo es NAVEGACION, no un resultado de los datos.
+   *
+   * Antes se derivaba de las transacciones: solo se podian elegir meses con movimientos,
+   * y elegir cualquier otro se revertia solo al mas reciente con datos. Eso dejaba dos
+   * cosas imposibles -- planificar el presupuesto de septiembre, que por definicion no
+   * tiene gastos todavia, y repasar un julio vacio para comprobar que lo esta.
+   *
+   * Ahora manda la persona: elige el periodo y cada modulo consulta ESE periodo y decide
+   * que enseñar. Ninguno decide si el periodo se puede elegir.
+   */
+  const [mesAnalizado, setMesAnalizado] = useState(periodoDelSistema);
 
-  // El analisis y los totales miran UN mes. La lista de transacciones sigue mostrando
-  // todo el historial: es un libro de movimientos, no un resumen mensual.
-  const mesesDisponibles = useMemo(() => {
+  const anioAnalizado = mesAnalizado.slice(0, 4);
+
+  /*
+   * El rango de anios se calcula desde el reloj del sistema, no desde la base de datos.
+   * Un usuario nuevo, sin una sola transaccion, tiene que poder navegar igual que uno
+   * con tres anios de historial.
+   */
+  const aniosDisponibles = useMemo(() => {
+    const actual = new Date().getFullYear();
+    return Array.from(
+      { length: ANIOS_ATRAS + ANIOS_ADELANTE + 1 },
+      (_, indice) => String(actual + ANIOS_ADELANTE - indice)
+    );
+  }, []);
+
+  /*
+   * Los meses que SI tienen movimientos. Es un dato sobre el contenido, no una lista de
+   * navegacion: solo lo usa Transacciones para ofrecer "ir a un periodo con datos"
+   * cuando el elegido esta vacio. No gobierna el selector.
+   */
+  const mesesConMovimientos = useMemo(() => {
     const meses = new Set<string>();
     transacciones.forEach((item) => {
       const mes = item.fecha.slice(0, 7);
@@ -105,15 +130,6 @@ export function useFinancialWorkspace(token: string | null) {
     });
     return [...meses].sort().reverse();
   }, [transacciones]);
-
-  // Si el mes elegido se queda sin movimientos (se borraron, o se cambio de usuario)
-  // se vuelve al mas reciente en vez de mostrar un tablero vacio sin explicacion.
-  const mesAnalizado = useMemo(
-    () => (mesSeleccionado !== null && mesesDisponibles.includes(mesSeleccionado)
-      ? mesSeleccionado
-      : mesesDisponibles[0] ?? null),
-    [mesSeleccionado, mesesDisponibles]
-  );
 
   const transaccionesDelMes = useMemo(
     () => movimientosDelMes(transacciones, mesAnalizado),
@@ -127,7 +143,7 @@ export function useFinancialWorkspace(token: string | null) {
    * y la primera dejaria una fila equivocada en el historial.
    */
   const seleccionarMes = useCallback((mes: string) => {
-    setMesSeleccionado(mes);
+    setMesAnalizado(mes);
     const supuestos = deducirSupuestos(movimientosDelMes(transacciones, mes));
     if (supuestos) {
       setIngresoMensual(supuestos.ingresoMensual);
@@ -135,39 +151,38 @@ export function useFinancialWorkspace(token: string | null) {
     }
   }, [transacciones]);
 
-  // El anio no es un estado aparte: se deriva del mes elegido. Con dos estados habria
-  // que mantenerlos en sincronia y siempre queda el caso de un anio sin ningun mes.
-  const aniosDisponibles = useMemo(
-    () => [...new Set(mesesDisponibles.map((mes) => mes.slice(0, 4)))],
-    [mesesDisponibles]
-  );
-  const anioAnalizado = mesAnalizado?.slice(0, 4) ?? null;
-  const mesesDelAnio = useMemo(
-    () => (anioAnalizado === null ? [] : mesesDisponibles.filter((mes) => mes.startsWith(anioAnalizado))),
-    [mesesDisponibles, anioAnalizado]
-  );
-
   /**
    * Cambiar de anio conserva el mes: de agosto 2026 se pasa a agosto 2025, no a
-   * diciembre. Solo si ese mes no tiene movimientos en el anio destino se cae al mas
-   * reciente que si los tenga, para no dejar el tablero sin datos que analizar.
+   * diciembre. Antes, si ese mes no tenia movimientos, saltaba a otro; ahora no hay a
+   * donde saltar porque cualquier mes es elegible.
    */
   const seleccionarAnio = useCallback((anio: string) => {
-    const numeroDeMes = mesAnalizado?.slice(5, 7);
-    const mismoMes = numeroDeMes ? `${anio}-${numeroDeMes}` : null;
-    const destino = (mismoMes !== null && mesesDisponibles.includes(mismoMes))
-      ? mismoMes
-      : mesesDisponibles.find((mes) => mes.startsWith(anio));
-    if (destino) seleccionarMes(destino);
-  }, [mesesDisponibles, mesAnalizado, seleccionarMes]);
+    seleccionarMes(`${anio}-${mesAnalizado.slice(5, 7)}`);
+  }, [mesAnalizado, seleccionarMes]);
 
   const recargarHistorial = useCallback(async () => {
     if (token) setHistorial(await listarHistorial(token));
   }, [token]);
 
-  const recargarPresupuestos = useCallback(async () => {
-    if (token) setPresupuestos(await listarPresupuestos(token));
-  }, [token]);
+  /*
+   * Un solo sitio pide los presupuestos: este efecto.
+   *
+   * Antes tambien los pedia recargarPresupuestos() despues de cada mutacion, con el
+   * periodo capturado en su closure. Si alguien guardaba y cambiaba de mes antes de que
+   * llegara la respuesta, esa respuesta pisaba los limites del mes nuevo. Ahora las
+   * mutaciones solo suben un contador y el efecto vuelve a pedirlos leyendo el periodo
+   * vigente, con su bandera para descartar respuestas que llegan tarde.
+   */
+  const recargarPresupuestos = useCallback(() => setRevisionPresupuestos((n) => n + 1), []);
+
+  useEffect(() => {
+    if (!token || !hidratado) return;
+    let vigente = true;
+    listarPresupuestos(token, mesAnalizado)
+      .then((limites) => { if (vigente) setPresupuestos(limites); })
+      .catch(() => { /* la pantalla conserva los limites que ya tenia */ });
+    return () => { vigente = false; };
+  }, [token, mesAnalizado, hidratado, revisionPresupuestos]);
 
   useEffect(() => {
     if (!token) {
@@ -175,14 +190,20 @@ export function useFinancialWorkspace(token: string | null) {
       return;
     }
     setCargandoDatos(true);
-    Promise.all([listarTransacciones(token), listarPresupuestos(token), listarHistorial(token)])
-      .then(([movimientos, limites, registros]) => {
-        setTransacciones(movimientos); setPresupuestos(limites); setHistorial(registros);
+    /*
+     * Los presupuestos NO se piden aqui: los pide el efecto de arriba, que sabe que
+     * periodo se esta mirando. Pedirlos sin periodo devolvia los del mes mas reciente
+     * con movimientos y, si esa respuesta llegaba la ultima, dejaba en pantalla los
+     * limites de un mes distinto al del encabezado.
+     */
+    Promise.all([listarTransacciones(token), listarHistorial(token)])
+      .then(([movimientos, registros]) => {
+        setTransacciones(movimientos); setHistorial(registros);
         // Deducir ANTES de marcar hidratado: el efecto que dispara el analisis depende de
         // hidratado, y React agrupa estos setState. Si se dedujera despues, el analisis
         // correria dos veces y la primera guardaria en el historial una fila calculada con
         // los valores por defecto.
-        const supuestos = deducirSupuestos(movimientosDelMes(movimientos, mesMasReciente(movimientos)));
+        const supuestos = deducirSupuestos(movimientosDelMes(movimientos, mesAnalizado));
         if (supuestos) {
           setIngresoMensual(supuestos.ingresoMensual);
           setNivelEndeudamiento(supuestos.nivelEndeudamiento);
@@ -191,10 +212,28 @@ export function useFinancialWorkspace(token: string | null) {
       })
       .catch((error: Error) => setErrorAnalisis(error.message))
       .finally(() => setCargandoDatos(false));
+    // Solo al entrar: cambiar de periodo no vuelve a descargar todo el historial.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  /*
+   * El analisis es del periodo seleccionado, y de ninguno mas.
+   *
+   * Cuando el periodo no tiene movimientos hay que BORRAR el resultado anterior, no
+   * limitarse a no pedir uno nuevo: antes esta rama hacia return y en pantalla se quedaba
+   * el diagnostico de agosto bajo el titulo de julio, con su perfil y sus cifras, como si
+   * fueran de julio. Vaciarlo deja a cada pantalla en su estado de "todavia no hay datos",
+   * que es la verdad.
+   */
   useEffect(() => {
-    if (!token || !hidratado || transaccionesDelMes.length === 0) return;
+    if (!token || !hidratado) return;
+    if (transaccionesDelMes.length === 0) {
+      setAnalisis(analisisInicial);
+      setAnalisisListo(false);
+      setCargandoAnalisis(false);
+      setErrorAnalisis('');
+      return;
+    }
     const controller = new AbortController();
     setCargandoAnalisis(true); setErrorAnalisis('');
     solicitarAnalisisFinanciero(token, transaccionesDelMes, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro, controller.signal)
@@ -222,7 +261,7 @@ export function useFinancialWorkspace(token: string | null) {
       setIngresoMensual(supuestos.ingresoMensual);
       setNivelEndeudamiento(supuestos.nivelEndeudamiento);
     }
-    await recargarPresupuestos();
+    recargarPresupuestos();
 }
 
 async function actualizarTransaccion(id: string, data: Omit<Transaccion, 'id'>) {
@@ -235,7 +274,7 @@ async function actualizarTransaccion(id: string, data: Omit<Transaccion, 'id'>) 
       setIngresoMensual(supuestos.ingresoMensual);
       setNivelEndeudamiento(supuestos.nivelEndeudamiento);
     }
-    await recargarPresupuestos();
+    recargarPresupuestos();
 }
 
   /**
@@ -265,7 +304,7 @@ async function actualizarTransaccion(id: string, data: Omit<Transaccion, 'id'>) 
       setIngresoMensual(supuestos.ingresoMensual);
       setNivelEndeudamiento(supuestos.nivelEndeudamiento);
     }
-    await recargarPresupuestos();
+    recargarPresupuestos();
 }
 
 async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
@@ -278,15 +317,32 @@ async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
       setIngresoMensual(supuestos.ingresoMensual);
       setNivelEndeudamiento(supuestos.nivelEndeudamiento);
     }
-    await recargarPresupuestos();
+    recargarPresupuestos();
 }
 
-  async function agregarPresupuesto(data: { categoria: CategoriaFinanciera; presupuesto: number }) {
-    if (!token) return;
-    const guardado = await guardarPresupuesto(token, data.categoria, data.presupuesto);
-    setPresupuestos((actuales) => actuales.some((item) => item.categoria === guardado.categoria)
-      ? actuales.map((item) => item.categoria === guardado.categoria ? guardado : item)
-      : [...actuales, guardado]);
+  /**
+   * Varios limites de UN periodo, de una vez.
+   *
+   * El periodo llega explicito desde quien llama -- Presupuesto lo captura al abrir el
+   * formulario -- y no se lee de mesAnalizado: si el selector del encabezado cambia
+   * mientras el formulario esta abierto, lo guardado sigue siendo el mes que el
+   * formulario dice estar editando.
+   *
+   * Despues se vuelve a consultar el periodo en vez de parchear el estado local: el
+   * gasto de cada categoria lo calcula el backend y solo el sabe como queda el resumen.
+   */
+  async function guardarLimites(
+    limites: { categoria: CategoriaFinanciera; presupuesto: number }[],
+    mes: string | null
+  ) {
+    if (!token || limites.length === 0) return;
+    await guardarPresupuestos(token, limites, mes);
+    /*
+     * No se parchea el estado con la respuesta: se pide de nuevo el periodo que se este
+     * mirando. Si el formulario guardo agosto y el encabezado ya esta en septiembre, lo
+     * correcto es que la pantalla siga enseñando septiembre.
+     */
+    recargarPresupuestos();
   }
 
   async function eliminarAnalisis(id: number) {
@@ -307,9 +363,9 @@ async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
   }
 
   return {
-    transacciones, transaccionesDelMes, mesAnalizado, mesesDisponibles, mesesDelAnio, seleccionarMes,
+    transacciones, transaccionesDelMes, mesAnalizado, mesesConMovimientos, seleccionarMes,
     anioAnalizado, aniosDisponibles, seleccionarAnio, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
     cargandoDatos, cargandoAnalisis, errorAnalisis, analisisListo, hidratado, agregarTransaccion, actualizarTransaccion, clasificarDescripcion, clasificarDescripciones,
-    eliminarTransaccion, importarTransacciones, agregarPresupuesto, eliminarAnalisis, generarAnalisis, obtenerCategoria
+    eliminarTransaccion, importarTransacciones, guardarLimites, eliminarAnalisis, generarAnalisis, obtenerCategoria
   };
 }

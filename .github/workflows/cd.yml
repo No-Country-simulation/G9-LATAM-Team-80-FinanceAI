@@ -220,6 +220,9 @@ jobs:
           echo "Aplicando database/003_categoria_solo_gastos.sql..."
           run_mysql < database/003_categoria_solo_gastos.sql
 
+          echo "Aplicando database/004_presupuesto_por_periodo.sql..."
+          run_mysql < database/004_presupuesto_por_periodo.sql
+
   # ---------------------------------------------------------------------
   # 5. Frontend: build estatico y subida al bucket. Independiente de los
   #    jobs de build de imagenes; solo necesita los outputs de terraform.

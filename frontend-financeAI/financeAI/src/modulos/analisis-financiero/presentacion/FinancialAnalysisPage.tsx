@@ -4,7 +4,7 @@ import { etiquetasCategoria } from '../../../compartido/constantes/categorias';
 import { gastosSinDeudas } from '../../../compartido/servicios/analisisFinanciero.service';
 import { formatCurrency, formatPercent } from '../../../compartido/utilidades/formato';
 import type { PageProps } from '../../../compartido/tipos/workspace';
-import { Card, PageHeader, ProfileBanner } from '../../tablero/presentacion/DashboardPage';
+import { Card, PageHeader, ProfileBanner, nombreDelPeriodo } from '../../tablero/presentacion/DashboardPage';
 
 type AnalysisTab = 'resumen' | 'categorias' | 'indicadores' | 'detalles';
 
@@ -18,6 +18,24 @@ export function FinancialAnalysisPage({ workspace }: PageProps) {
     .sort((a, b) => b[1] - a[1]);
 
   if (vista === 'nuevo') return <NewAnalysisView workspace={workspace} onBack={() => setVista('resumen')} />;
+
+  /*
+   * El periodo elegido no tiene con que analizarse.
+   *
+   * Sin esto la pantalla pintaba el analisis inicial -- perfil "Saludable", todo a cero --
+   * como si fuera un resultado. No era el de agosto, pero tampoco era de nadie: era el
+   * objeto vacio con el que arranca el estado. Un periodo sin datos tiene que decirlo.
+   */
+  if (!workspace.analisisListo && !workspace.cargandoAnalisis) {
+    return <section className="page-stack">
+      <PageHeader title="Análisis financiero" subtitle="Resultados actualizados de tu salud financiera."
+        action={<button className="primary-button" onClick={() => setVista('nuevo')}>Nuevo análisis</button>} />
+      {workspace.errorAnalisis && <p className="form-error">{workspace.errorAnalisis} Verifica que el backend y el servicio ML esten encendidos.</p>}
+      <div className="info-strip">
+        <p>Aún no hay suficiente información para analizar {nombreDelPeriodo(workspace.mesAnalizado) ?? 'este período'}.</p>
+      </div>
+    </section>;
+  }
 
   return <section className="page-stack">
     <PageHeader title="Análisis financiero" subtitle="Resultados actualizados de tu salud financiera."
@@ -35,7 +53,7 @@ export function FinancialAnalysisPage({ workspace }: PageProps) {
     {tabActiva === 'indicadores' && <IndicatorsView workspace={workspace} />}
     {tabActiva === 'detalles' && <AnalysisDetails workspace={workspace} />}
     <div className="info-strip">
-      <p>Este analisis considera {workspace.transacciones.length} transacciones y tus datos financieros actuales.</p>
+      <p>Este analisis considera {workspace.transaccionesDelMes.length} transacciones de {nombreDelPeriodo(workspace.mesAnalizado) ?? 'este periodo'} y tus datos financieros actuales.</p>
       <button className="outline-button" type="button" onClick={() => window.print()}><DownloadSimple size={18} /> Imprimir o guardar PDF</button>
     </div>
   </section>;

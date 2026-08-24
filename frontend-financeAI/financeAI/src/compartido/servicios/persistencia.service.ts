@@ -78,12 +78,41 @@ export async function clasificarDescripcion(token: string, descripcion: string, 
   return categoria;
 }
 
-export async function listarPresupuestos(token: string): Promise<PresupuestoCategoria[]> {
-  return (await apiRequest<PresupuestoApi[]>('/api/presupuestos', token)).map(({ categoria, presupuesto, gastado }) => ({ categoria, presupuesto, gastado }));
+/*
+ * El limite es por categoria y no tiene periodo; el gasto contra el que se compara si.
+ * Sin el parametro el backend devuelve el del mes mas reciente con movimientos, que es
+ * lo que hacia antes: la pantalla mostraba ese consumo aunque estuvieras mirando otro
+ * mes en el selector.
+ */
+function conMes(ruta: string, mes?: string | null) {
+  return mes ? `${ruta}?mes=${encodeURIComponent(mes)}` : ruta;
 }
-export async function guardarPresupuesto(token: string, categoria: CategoriaFinanciera, presupuesto: number) {
-  const item = await apiRequest<PresupuestoApi>('/api/presupuestos', token, { method: 'PUT', body: JSON.stringify({ categoria, presupuesto }) });
+
+export async function listarPresupuestos(token: string, mes?: string | null): Promise<PresupuestoCategoria[]> {
+  const items = await apiRequest<PresupuestoApi[]>(conMes('/api/presupuestos', mes), token);
+  return items.map(({ categoria, presupuesto, gastado }) => ({ categoria, presupuesto, gastado }));
+}
+export async function guardarPresupuesto(token: string, categoria: CategoriaFinanciera, presupuesto: number, mes?: string | null) {
+  const item = await apiRequest<PresupuestoApi>(conMes('/api/presupuestos', mes), token, { method: 'PUT', body: JSON.stringify({ categoria, presupuesto }) });
   return { categoria: item.categoria, presupuesto: item.presupuesto, gastado: item.gastado } satisfies PresupuestoCategoria;
+}
+
+/**
+ * Varios limites del mismo periodo en UNA peticion.
+ *
+ * Una llamada por categoria dejaba el mes a medias si fallaba la sexta. El backend lo
+ * resuelve en una transaccion: o entran todos o no entra ninguno.
+ */
+export async function guardarPresupuestos(
+  token: string,
+  limites: { categoria: CategoriaFinanciera; presupuesto: number }[],
+  mes?: string | null
+): Promise<PresupuestoCategoria[]> {
+  const items = await apiRequest<PresupuestoApi[]>(conMes('/api/presupuestos/lote', mes), token, {
+    method: 'PUT',
+    body: JSON.stringify({ limites })
+  });
+  return items.map(({ categoria, presupuesto, gastado }) => ({ categoria, presupuesto, gastado }));
 }
 export function listarHistorial(token: string) {
   return apiRequest<HistorialAnalisis[]>('/api/historial', token);

@@ -1,0 +1,256 @@
+/*
+ * El modal de FinanceAI.
+ *
+ * Los valores salen del modal de Nueva transaccion, que es el aprobado: mismo ancho,
+ * mismo radio, mismo velo, misma sombra, mismos campos, mismo pie. Aqui viven una sola
+ * vez para que no haya dos modales distintos en el mismo producto.
+ *
+ * Anatomia: cabecera, campos apilados, boton a lo ancho y Cancelar debajo. El alto lo
+ * pone el contenido.
+ *
+ * Pendiente: Transacciones sigue con su propia copia en transacciones.css, con estos
+ * mismos valores. Migrarla es cambiar los nombres de clase en ModalTransaccion.tsx y
+ * ModalImportar.tsx, borrar aquel bloque e importar este archivo.
+ */
+
+/*
+ * Por encima de TODO, incluido el lanzador del agente (59).
+ *
+ * Con 55 el lanzador quedaba flotando sobre el velo y seguia aceptando clic: la pantalla
+ * decia "esto esta bloqueado" y una esquina no lo estaba.
+ *
+ * El velo solo cubre el viewport si nada lo encierra en un contenedor: `position: fixed`
+ * se resuelve contra el ancestro transformado mas cercano, no contra la ventana. Por eso
+ * el dialogo se monta en document.body mediante un portal, y no dentro de la pagina.
+ */
+.fa-modal-velo {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(13, 24, 56, 0.28);
+  animation: faVeloEntra 160ms ease both;
+}
+
+.fa-modal {
+  --fa-primary: #2458E8;
+  --fa-deep: #153B9A;
+  --fa-green: #15AD77;
+  --fa-red: #E9566C;
+  --fa-bg: #F7F9FD;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-border: #E4E9F3;
+  --fa-card: #FFFFFF;
+
+  position: relative;
+  z-index: 91;
+  width: 520px;
+  max-width: calc(100vw - 32px);
+  /* Alto segun contenido: el formulario no tiene por que llenar la pantalla. */
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--fa-border);
+  border-radius: 20px;
+  background: var(--fa-card);
+  box-shadow: 0 20px 56px rgba(13, 24, 56, 0.16);
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+  color: var(--fa-text);
+  overflow: hidden;
+  animation: faModalEntra 180ms cubic-bezier(.32, .72, 0, 1) both;
+}
+
+/*
+ * Para un cuerpo que crece con el contenido.
+ *
+ * No reserva altura: con cuatro filas el dialogo es compacto y no aparece barra alguna.
+ * El tope solo entra en juego cuando el contenido pasa de ~78% de la ventana, y entonces
+ * se desplaza el cuerpo mientras cabecera y pie siguen a la vista.
+ */
+.fa-modal.crece { max-height: min(78vh, calc(100vh - 48px)); }
+
+@keyframes faVeloEntra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes faModalEntra {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fa-modal-velo, .fa-modal { animation: none; }
+}
+
+/* --- Cabecera -------------------------------------------------------- */
+
+.fa-modal-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 0 0 auto;
+  padding: 22px 24px 18px;
+}
+
+.fa-modal-cabecera h2 {
+  margin: 0;
+  font-size: 1.32rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/** Texto secundario bajo el titulo: contexto, no un campo. */
+.fa-modal-sub { margin: 4px 0 0; color: var(--fa-muted); font-size: 0.88rem; }
+
+.fa-modal-cerrar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  padding: 0;
+  border: 1px solid var(--fa-border);
+  border-radius: 11px;
+  background: var(--fa-card);
+  color: var(--fa-muted);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.fa-modal-cerrar:hover { background: var(--fa-bg); color: var(--fa-text); }
+.fa-modal-cerrar:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+
+/* --- Cuerpo ---------------------------------------------------------- */
+
+.fa-modal-form { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+
+/*
+ * El alto lo pone el contenido. El overflow es solo una valvula para pantallas muy
+ * bajas: un dialogo con barra de scroll propia deja de parecer un dialogo y pasa a
+ * parecer una pagina flotante.
+ */
+.fa-modal-cuerpo {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  flex: 0 1 auto;
+  min-height: 0;
+  padding: 0 24px;
+  overflow-y: auto;
+}
+
+/* Sin pie, es el pie el que cerraba el modal por abajo. */
+.fa-modal-cuerpo:last-child { padding-bottom: 24px; }
+
+/* --- Campos ---------------------------------------------------------- */
+
+/* Etiqueta encima, control debajo, uno por linea. Mismos valores que .tx-campo. */
+.fa-campo { display: grid; gap: 6px; }
+.fa-campo > span:first-child {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--fa-muted);
+  letter-spacing: 0.03em;
+}
+
+.fa-campo.invalido input { border-color: var(--fa-red); background: #FDF5F6; }
+
+.fa-campo-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 0.81rem;
+  font-weight: 500;
+  color: var(--fa-red);
+}
+
+
+.fa-modal input,
+.fa-modal select,
+.fa-modal textarea {
+  width: 100%;
+  height: 50px;
+  padding: 0 14px;
+  border: 1px solid var(--fa-border);
+  border-radius: 12px;
+  background: var(--fa-card);
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--fa-text);
+}
+
+.fa-modal input::placeholder { color: var(--fa-muted); }
+
+.fa-modal input:focus,
+.fa-modal select:focus {
+  border-color: var(--fa-primary);
+  outline: 2px solid rgba(36, 88, 232, 0.16);
+  outline-offset: 0;
+}
+
+.fa-modal input:focus-visible,
+.fa-modal select:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: -1px; }
+
+/* Las flechas no aportan nada a un importe y estrechan el campo. Escribir a mano, pegar
+   y las flechas del teclado siguen funcionando igual. */
+.fa-modal input[type='number'] { appearance: textfield; -moz-appearance: textfield; }
+.fa-modal input[type='number']::-webkit-outer-spin-button,
+.fa-modal input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* --- Pie -------------------------------------------------------------- */
+
+.fa-modal-pie {
+  display: grid;
+  gap: 2px;
+  flex: 0 0 auto;
+  padding: 22px 24px 24px;
+  background: var(--fa-card);
+}
+
+.fa-modal-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 50px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: var(--fa-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fa-modal-cta:hover { background: var(--fa-deep); }
+.fa-modal-cta:disabled { opacity: 0.6; cursor: default; }
+.fa-modal-cta:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+
+.fa-modal-cancelar {
+  justify-self: center;
+  padding: 10px 14px;
+  border: 0;
+  background: none;
+  color: var(--fa-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fa-modal-cancelar:hover { color: var(--fa-text); }
+.fa-modal-cancelar:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 3px; border-radius: 4px; }
+
+/* --- Responsive ------------------------------------------------------- */
+
+@media (max-width: 620px) {
+  .fa-modal-velo { padding: 12px; }
+  .fa-modal { width: 100%; max-height: calc(100vh - 24px); border-radius: 18px; }
+  .fa-modal-cabecera { padding: 18px 18px 14px; }
+  .fa-modal-cuerpo { padding: 0 18px; }
+  .fa-modal-pie { padding: 18px; }
+}

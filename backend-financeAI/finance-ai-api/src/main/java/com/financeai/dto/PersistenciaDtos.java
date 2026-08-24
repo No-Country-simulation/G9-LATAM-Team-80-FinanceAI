@@ -51,9 +51,33 @@ public final class PersistenciaDtos {
     }
     public record TransaccionResponse(Long id, String descripcion, String categoria, String tipo, LocalDate fecha, BigDecimal monto) {}
     public record ImportarTransaccionesRequest(@NotEmpty List<@jakarta.validation.Valid TransaccionGuardarRequest> transacciones) {}
+    /**
+     * Un limite de una categoria. El periodo NO viaja aqui: lo pone la peticion (?mes=),
+     * porque quien manda es el selector del encabezado y no un campo del formulario.
+     *
+     * @Digits(13,2) es exactamente el hueco de DECIMAL(15,2) en la tabla: sin el, un
+     * limite de mas de trece cifras enteras pasaba la validacion y reventaba al insertar.
+     */
     public record PresupuestoRequest(
             @NotBlank @Size(max = 50) String categoria,
-            @NotNull @DecimalMin("0.01") BigDecimal presupuesto
+            @NotNull @DecimalMin("0.01") @Digits(integer = 13, fraction = 2) BigDecimal presupuesto
+    ) {
+        @AssertTrue(message = "categoria no pertenece al catalogo oficial")
+        public boolean isCategoriaDelCatalogo() {
+            return CategoriasFinancieras.OFICIALES.contains(categoria);
+        }
+    }
+
+    /**
+     * Varios limites del MISMO periodo en una sola peticion.
+     *
+     * Existe para que configurar un mes entero sea una sola transaccion: con una llamada
+     * por categoria, un fallo a mitad dejaba el mes configurado a medias y sin forma de
+     * saber cuales habian entrado. @Valid en los elementos hace que una sola categoria
+     * invalida tumbe la peticion completa antes de tocar la base de datos.
+     */
+    public record PresupuestoLoteRequest(
+            @NotEmpty @Size(max = 50) List<@jakarta.validation.Valid PresupuestoRequest> limites
     ) {}
     public record PresupuestoResponse(Long id, String categoria, BigDecimal presupuesto, BigDecimal gastado) {}
     public record AnalisisHistorialResponse(

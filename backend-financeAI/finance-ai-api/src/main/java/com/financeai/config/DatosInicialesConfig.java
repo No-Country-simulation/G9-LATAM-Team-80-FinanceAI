@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 @Configuration
@@ -19,7 +20,7 @@ public class DatosInicialesConfig {
     CommandLineRunner datosIniciales(UsuarioRepository usuarios, TransaccionRepository transacciones, PresupuestoRepository presupuestos) {
         return args -> usuarios.findByEmailIgnoreCase("demo@financeai.local").ifPresent(usuario -> {
             if (transacciones.findByUsuarioIdOrderByFechaDescIdDesc(usuario.getId()).isEmpty()) guardarTransacciones(usuario, transacciones);
-            if (presupuestos.findByUsuarioIdOrderByCategoria(usuario.getId()).isEmpty()) guardarPresupuestos(usuario, presupuestos);
+            if (presupuestos.findByUsuarioIdAndPeriodoOrderByCategoria(usuario.getId(), mesSembrado().toString()).isEmpty()) guardarPresupuestos(usuario, presupuestos);
         });
     }
 
@@ -74,17 +75,29 @@ public class DatosInicialesConfig {
      * reciente CON datos, de modo que la demo nunca arranca vacia.
      */
     private LocalDate dia(int diaDelMes) {
-        LocalDate hoy = LocalDate.now();
-        LocalDate mes = hoy.getDayOfMonth() >= ULTIMO_DIA_SEMBRADO ? hoy : hoy.minusMonths(1);
-        return mes.withDayOfMonth(diaDelMes);
+        return mesSembrado().atDay(diaDelMes);
     }
 
+    /** El mes al que pertenece la demo entera: movimientos y limites. */
+    private YearMonth mesSembrado() {
+        LocalDate hoy = LocalDate.now();
+        return YearMonth.from(hoy.getDayOfMonth() >= ULTIMO_DIA_SEMBRADO ? hoy : hoy.minusMonths(1));
+    }
+
+    /**
+     * Los limites van al mismo mes que los movimientos.
+     *
+     * Un presupuesto pertenece a un periodo: sembrarlos en otro mes distinto del de las
+     * transacciones dejaria la pantalla de Presupuesto vacia el dia que se levanta la
+     * demo, con los gastos a la vista pero sin ningun plan contra el que compararlos.
+     */
     private void guardarPresupuestos(Usuario usuario, PresupuestoRepository repositorio) {
+        String periodo = mesSembrado().toString();
         repositorio.saveAll(List.of(
-                new PresupuestoEntity(usuario, "alimentacion", new BigDecimal("600000")),
-                new PresupuestoEntity(usuario, "transporte", new BigDecimal("300000")),
-                new PresupuestoEntity(usuario, "vivienda", new BigDecimal("1300000")),
-                new PresupuestoEntity(usuario, "entretenimiento", new BigDecimal("150000"))
+                new PresupuestoEntity(usuario, "alimentacion", periodo, new BigDecimal("600000")),
+                new PresupuestoEntity(usuario, "transporte", periodo, new BigDecimal("300000")),
+                new PresupuestoEntity(usuario, "vivienda", periodo, new BigDecimal("1300000")),
+                new PresupuestoEntity(usuario, "entretenimiento", periodo, new BigDecimal("150000"))
         ));
     }
     private TransaccionEntity movimiento(Usuario usuario, String descripcion, String categoria, String tipo, LocalDate fecha, String monto) {

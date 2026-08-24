@@ -61,7 +61,7 @@ export function TransactionsPage({ workspace }: PageProps) {
   const [errorAccion, setErrorAccion] = useState('');
   const [avisoPeriodo, setAvisoPeriodo] = useState('');
 
-  const { transacciones, transaccionesDelMes, mesAnalizado, mesesDisponibles, seleccionarMes, cargandoDatos, hidratado } = workspace;
+  const { transacciones, transaccionesDelMes, mesAnalizado, mesesConMovimientos, seleccionarMes, cargandoDatos, hidratado } = workspace;
   const periodo = nombreDePeriodo(mesAnalizado);
 
   const hayFiltros = busqueda.trim() !== '' || filtroCategoria !== 'todas' || filtroTipo !== 'todos';
@@ -111,8 +111,8 @@ export function TransactionsPage({ workspace }: PageProps) {
 
   /** Periodo mas reciente, distinto del actual, que si tiene movimientos. */
   const periodoConDatos = useMemo(
-    () => mesesDisponibles.find((mes) => mes !== mesAnalizado) ?? null,
-    [mesesDisponibles, mesAnalizado]
+    () => mesesConMovimientos.find((mes) => mes !== mesAnalizado) ?? null,
+    [mesesConMovimientos, mesAnalizado]
   );
 
   function limpiarFiltros() {
