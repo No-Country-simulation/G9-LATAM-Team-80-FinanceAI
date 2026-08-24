@@ -114,6 +114,18 @@ export async function guardarPresupuestos(
   });
   return items.map(({ categoria, presupuesto, gastado }) => ({ categoria, presupuesto, gastado }));
 }
+/**
+ * Quita el limite de una categoria en el periodo indicado.
+ *
+ * No es un PUT con presupuesto vacio o en 0: el backend nunca acepta eso (el limite
+ * siempre es > 0), asi que "sin limite" solo se puede pedir con un DELETE real.
+ */
+export function eliminarPresupuesto(token: string, categoria: CategoriaFinanciera, mes?: string | null) {
+  const parametros = new URLSearchParams({ categoria });
+  if (mes) parametros.set('mes', mes);
+  return apiRequest<void>(`/api/presupuestos?${parametros.toString()}`, token, { method: 'DELETE' });
+}
+
 export function listarHistorial(token: string) {
   return apiRequest<HistorialAnalisis[]>('/api/historial', token);
 }

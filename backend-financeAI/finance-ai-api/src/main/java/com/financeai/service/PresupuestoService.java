@@ -75,6 +75,20 @@ public class PresupuestoService {
         return peticiones.stream().map(peticion -> aplicar(usuario, peticion, periodo, movimientos)).toList();
     }
 
+    /**
+     * Quita el limite de una categoria EN ESE periodo. Los demas periodos no se tocan.
+     *
+     * Idempotente a proposito: si la categoria ya no tenia limite ahi, no hay nada que
+     * hacer -- ese es justamente el estado que la persona pedia, no un error.
+     */
+    @Transactional
+    public void eliminar(Usuario usuario, String categoria, String mes) {
+        List<TransaccionEntity> movimientos = transacciones.findByUsuarioIdOrderByFechaDescIdDesc(usuario.getId());
+        YearMonth periodo = periodo(mes, movimientos);
+        presupuestos.findByUsuarioIdAndCategoriaAndPeriodo(usuario.getId(), categoria, periodo.toString())
+                .ifPresent(presupuestos::delete);
+    }
+
     /** Crea o actualiza una fila. La clave es (usuario, categoria, periodo). */
     private PresupuestoResponse aplicar(Usuario usuario, PresupuestoRequest request,
                                         YearMonth periodo, List<TransaccionEntity> movimientos) {

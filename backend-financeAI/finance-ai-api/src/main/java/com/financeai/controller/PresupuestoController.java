@@ -1,5 +1,6 @@
 package com.financeai.controller;
 
+import com.financeai.dominio.CategoriasFinancieras;
 import com.financeai.dto.PersistenciaDtos.*;
 import com.financeai.service.PresupuestoService;
 import com.financeai.service.SesionService;
@@ -47,6 +48,23 @@ public class PresupuestoController {
             @RequestParam(required = false) String mes,
             @Valid @RequestBody PresupuestoRequest req) {
         return servicio.guardar(sesiones.requerirUsuario(auth), req, validar(mes));
+    }
+
+    /**
+     * Quita el limite de una categoria en ESE periodo; los demas meses no se tocan.
+     *
+     * No reutiliza PresupuestoRequest para esto: su @DecimalMin("0.01") existe justo para
+     * que un limite nunca sea 0 ni null, asi que no hay forma de pedir "sin limite" con
+     * ese contrato. Un endpoint propio evita mezclar dos significados en un mismo campo.
+     */
+    @DeleteMapping @ResponseStatus(HttpStatus.NO_CONTENT) public void eliminar(
+            @RequestHeader("Authorization") String auth,
+            @RequestParam(required = false) String mes,
+            @RequestParam String categoria) {
+        if (!CategoriasFinancieras.OFICIALES.contains(categoria)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "categoria no pertenece al catalogo oficial");
+        }
+        servicio.eliminar(sesiones.requerirUsuario(auth), categoria, validar(mes));
     }
 
     /**

@@ -146,6 +146,15 @@ export function BudgetsPage({ workspace }: PageProps) {
     setModalAbierto(false);
   }
 
+  /*
+   * Distinto de guardar(): es un DELETE inmediato de UNA categoria, no algo que espere al
+   * "Guardar presupuesto" del lote. El modal se queda abierto -- puede haber mas cambios
+   * pendientes en otras filas.
+   */
+  function eliminar(categoria: CategoriaFinanciera) {
+    return workspace.eliminarLimite(categoria, periodoDelModal);
+  }
+
   return (
     <section className="page-stack presupuesto">
       <PageHeader
@@ -192,6 +201,7 @@ export function BudgetsPage({ workspace }: PageProps) {
           categoriaInicial={categoriaInicial}
           presupuestos={limitesDelModal}
           onGuardar={guardar}
+          onEliminar={eliminar}
           onCerrar={() => setModalAbierto(false)}
         />
       )}
