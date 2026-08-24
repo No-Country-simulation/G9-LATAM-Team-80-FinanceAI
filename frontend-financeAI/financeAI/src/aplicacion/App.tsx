@@ -6,9 +6,7 @@ import { TransactionsPage } from '../modulos/transacciones/presentacion/Transact
 import { FinancialAnalysisPage } from '../modulos/analisis-financiero/presentacion/FinancialAnalysisPage';
 import { BudgetsPage } from '../modulos/presupuestos/presentacion/BudgetsPage';
 import { RecommendationsPage } from '../modulos/recomendaciones/presentacion/RecommendationsPage';
-import { HistoryPage } from '../modulos/historial/presentacion/HistoryPage';
 import { SettingsPage } from '../modulos/configuracion/presentacion/SettingsPage';
-import { FilesPage } from '../modulos/archivos/presentacion/FilesPage';
 import { LoginPage } from '../modulos/autenticacion/presentacion/LoginPage';
 import { useFinancialWorkspace } from '../compartido/hooks/useFinancialWorkspace';
 import { cerrarSesion, comprobarSesion, iniciarSesion, type Sesion } from '../compartido/servicios/auth.service';
@@ -47,8 +45,7 @@ export function App() {
     const paginas: Record<RutaId, JSX.Element> = {
       tablero: <DashboardPage {...props} />, transacciones: <TransactionsPage {...props} />,
       analisis: <FinancialAnalysisPage {...props} />, presupuestos: <BudgetsPage {...props} />,
-      recomendaciones: <RecommendationsPage {...props} />, historial: <HistoryPage {...props} />,
-      configuracion: <SettingsPage {...props} />, archivos: <FilesPage {...props} />
+      recomendaciones: <RecommendationsPage {...props} />, configuracion: <SettingsPage {...props} />
     };
     return paginas[rutaActiva];
   }, [rutaActiva, workspace]);

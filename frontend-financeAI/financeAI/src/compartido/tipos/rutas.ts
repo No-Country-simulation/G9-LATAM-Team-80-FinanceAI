@@ -6,12 +6,10 @@ export type RutaId =
   | 'analisis'
   | 'presupuestos'
   | 'recomendaciones'
-  | 'historial'
-  | 'configuracion'
-  | 'archivos';
+  | 'configuracion';
 
 /** Grupos del sidebar. Solo agrupan visualmente: no afectan a la navegacion. */
-export type GrupoRuta = 'general' | 'datos';
+export type GrupoRuta = 'general';
 
 export type RutaAplicacion = {
   id: RutaId;

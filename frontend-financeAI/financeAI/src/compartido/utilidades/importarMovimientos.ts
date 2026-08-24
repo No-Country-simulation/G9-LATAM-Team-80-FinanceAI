@@ -66,8 +66,3 @@ export async function prepararImportacion(
 
   return completas;
 }
-
-/** Cuantos gastos del archivo va a resolver el clasificador. Solo para el mensaje. */
-export function contarPendientes(filas: FilaImportada[]): number {
-  return filas.filter((fila) => fila.tipo === 'gasto' && fila.categoria === null).length;
-}

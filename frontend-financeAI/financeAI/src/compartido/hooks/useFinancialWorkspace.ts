@@ -5,7 +5,6 @@ import {
   clasificarDescripcion as clasificarDescripcionApi,
   clasificarDescripciones as clasificarDescripcionesApi,
   crearTransaccion,
-  eliminarAnalisis as eliminarAnalisisApi,
   eliminarPresupuesto as eliminarPresupuestoApi,
   eliminarTransaccion as eliminarTransaccionApi,
   guardarPresupuestos,
@@ -368,12 +367,6 @@ async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
     recargarPresupuestos();
   }
 
-  async function eliminarAnalisis(id: number) {
-    if (!token) return;
-    await eliminarAnalisisApi(token, id);
-    setHistorial((actual) => actual.filter((item) => item.id !== id));
-  }
-
   /**
    * Recalcula el analisis del periodo seleccionado -- es lo unico que "Actualizar
    * analisis" dispara, y lo unico que marca un recalculo como explicito (ver el efecto
@@ -407,6 +400,6 @@ async function importarTransacciones(items: Omit<Transaccion, 'id'>[]) {
     transacciones, transaccionesDelMes, mesAnalizado, mesesConMovimientos, seleccionarMes,
     anioAnalizado, aniosDisponibles, seleccionarAnio, presupuestos, historial, analisis, ingresoMensual, nivelEndeudamiento, frecuenciaAhorro,
     cargandoDatos, cargandoAnalisis, errorAnalisis, analisisListo, hidratado, agregarTransaccion, actualizarTransaccion, clasificarDescripcion, clasificarDescripciones,
-    eliminarTransaccion, importarTransacciones, guardarLimites, eliminarLimite, eliminarAnalisis, generarAnalisis, obtenerCategoria
+    eliminarTransaccion, importarTransacciones, guardarLimites, eliminarLimite, generarAnalisis, obtenerCategoria
   };
 }

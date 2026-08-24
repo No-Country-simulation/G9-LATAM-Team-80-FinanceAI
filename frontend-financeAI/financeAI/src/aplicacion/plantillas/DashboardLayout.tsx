@@ -19,7 +19,7 @@ type DashboardLayoutProps = PropsWithChildren<{
   onLogout: () => void;
   /** Periodo global seleccionado, en formato YYYY-MM. Lo elige la persona. */
   mesAnalizado: string | null;
-  /** Meses del anio elegido con movimientos, del mas reciente al mas viejo. */
+  /** Meses del anio elegido con movimientos, del mas reciente al mas viejo. */
   onSeleccionarMes: (mes: string) => void;
   /** Anio que se esta analizando, en formato YYYY. */
   anioAnalizado: string | null;
@@ -37,8 +37,7 @@ function etiquetaDePeriodo(mes: string | null) {
 }
 
 const GRUPOS = [
-  { id: 'general' as const, etiqueta: 'General' },
-  { id: 'datos' as const, etiqueta: 'Datos' }
+  { id: 'general' as const, etiqueta: 'General' }
 ];
 
 export function DashboardLayout({
@@ -47,7 +46,7 @@ export function DashboardLayout({
   onNavigate,
   usuario,
   onLogout,
-  mesAnalizado,
+  mesAnalizado,
   onSeleccionarMes,
   anioAnalizado,
   aniosDisponibles,
@@ -125,7 +124,7 @@ export function DashboardLayout({
           <div className="fa-header-controles">
             <SelectorPeriodo
               mesAnalizado={mesAnalizado}
-              anioAnalizado={anioAnalizado}
+              anioAnalizado={anioAnalizado}
               aniosDisponibles={aniosDisponibles}
               onSeleccionarMes={onSeleccionarMes}
               onSeleccionarAnio={onSeleccionarAnio}
