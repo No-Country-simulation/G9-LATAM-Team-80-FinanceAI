@@ -1,0 +1,731 @@
+/*
+ * Presupuesto.
+ *
+ * Todo cuelga de .presupuesto, igual que en Tablero y Transacciones: el sistema nuevo
+ * convive con la hoja global mientras quedan pantallas sin rediseñar.
+ *
+ * La pantalla es una herramienta de planificacion, no otro tablero: una superficie de
+ * resumen, una tabla densa y una columna de ayuda estrecha. Las unicas visualizaciones
+ * son la barra general y la barra compacta de cada categoria, porque las dos comparan
+ * exactamente lo mismo: limite contra consumo.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+.presupuesto {
+  --fa-primary: #2458E8;
+  --fa-deep: #153B9A;
+  --fa-green: #15AD77;
+  --fa-amber: #F3A23A;
+  --fa-red: #E9566C;
+  --fa-bg: #F7F9FD;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-border: #E4E9F3;
+  --fa-filete: #EDF1F8;
+  --fa-carril: #EFF3FA;
+  --fa-card: #FFFFFF;
+  --fa-radio-card: 16px;
+
+  /*
+   * La composicion no crece indefinidamente: pasado este ancho la tabla se estira sin
+   * ganar informacion y las cifras quedan a media pantalla de su etiqueta. El bloque se
+   * queda alineado a la izquierda para compartir margen con Encabezado y Barra lateral.
+   */
+  max-width: 1400px;
+  gap: 20px;
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+  color: var(--fa-text);
+}
+
+.presupuesto .tono-riesgo { color: var(--fa-red); }
+.presupuesto .tono-sano { color: var(--fa-green); }
+
+/* --- Encabezado de la pagina ---------------------------------------- */
+
+/*
+ * Titulo a la izquierda, accion a la derecha en la misma linea visual y el subtitulo
+ * pegado al titulo. Mas compacto que el global: esta pantalla es una herramienta, y el
+ * filete inferior es lo que la separa del encabezado de la aplicacion.
+ */
+.presupuesto .page-header {
+  /* Contra el titulo, no contra el bloque: centrado sobre titulo+subtitulo el boton
+     caia 12px por debajo de la linea del h1. */
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--fa-border);
+}
+
+.presupuesto .page-header h1 {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.presupuesto .page-header p { color: var(--fa-muted); font-size: 0.92rem; }
+
+/* --- Controles ------------------------------------------------------ */
+
+.presupuesto .pre-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.presupuesto .pre-boton.primario { background: var(--fa-primary); color: #fff; }
+.presupuesto .pre-boton.primario:hover { background: var(--fa-deep); }
+.presupuesto .pre-boton:disabled { opacity: 0.6; cursor: default; }
+.presupuesto .pre-boton:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+
+.presupuesto .pre-enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--fa-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.presupuesto .pre-enlace:hover { color: var(--fa-deep); }
+.presupuesto .pre-enlace:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 3px; border-radius: 4px; }
+
+/* Accion de fila: cabe en la columna de Uso sin ensancharla. */
+.presupuesto .pre-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--fa-border);
+  border-radius: 9px;
+  background: var(--fa-card);
+  color: var(--fa-primary);
+  font: inherit;
+  font-size: 0.79rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.presupuesto .pre-chip:hover { border-color: #C6D4F5; background: #F5F8FF; }
+.presupuesto .pre-chip:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+
+.presupuesto .pre-eyebrow {
+  margin: 0;
+  color: var(--fa-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* --- Resumen mensual ------------------------------------------------ */
+
+/*
+ * Una sola superficie: las tres cifras en fila y el estado del periodo a la derecha,
+ * dentro de la misma tarjeta y separado solo por un filete. No es una segunda tarjeta.
+ */
+.presupuesto .pre-resumen {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(190px, 1fr);
+  border: 1px solid var(--fa-border);
+  border-radius: 18px;
+  background: var(--fa-card);
+  overflow: hidden;
+}
+
+.presupuesto .pre-resumen-principal { padding: 20px 24px 20px; }
+.presupuesto .pre-resumen h2 { margin: 0; font-size: 0.98rem; font-weight: 700; letter-spacing: -0.01em; }
+
+.presupuesto .pre-cifras {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 28px;
+  margin: 16px 0 0;
+}
+
+.presupuesto .pre-cifras > div { display: grid; gap: 1px; min-width: 0; }
+
+/*
+ * Jerarquia contenida: la etiqueta pesa casi tanto como la cifra. Presupuesto planifica,
+ * no exhibe indicadores, asi que el numero no necesita el tamaño de un tablero.
+ */
+.presupuesto .pre-cifras dt { color: var(--fa-muted); font-size: 0.94rem; font-weight: 600; }
+.presupuesto .pre-cifras dd {
+  margin: 1px 0 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.022em;
+  font-variant-numeric: tabular-nums;
+}
+.presupuesto .pre-cifras small { color: var(--fa-muted); font-size: 0.83rem; }
+
+.presupuesto .pre-avance {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.presupuesto .pre-avance .pre-barra { flex: 1 1 auto; height: 7px; }
+.presupuesto .pre-avance span:last-child {
+  flex: 0 0 auto;
+  color: var(--fa-muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mismo plano que las cifras; el filete es el unico separador. */
+.presupuesto .pre-estado {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  padding: 20px 22px;
+  border-left: 1px solid var(--fa-filete);
+}
+
+.presupuesto .pre-pill {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.presupuesto .pre-pill.sano { background: #E8F7F1; color: #0C7A55; }
+.presupuesto .pre-pill.riesgo { background: #FDECEF; color: #B23A4C; }
+
+.presupuesto .pre-estado-texto { margin: 0; color: var(--fa-muted); font-size: 0.86rem; line-height: 1.5; }
+.presupuesto .pre-estado-texto strong { color: var(--fa-text); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* --- Dos columnas: categorias y ayuda -------------------------------- */
+
+/* La tabla se queda con tres cuartos; la ayuda es secundaria y no le roba ancho. */
+.presupuesto .pre-columnas {
+  display: grid;
+  grid-template-columns: minmax(0, 77fr) minmax(0, 23fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.presupuesto .pre-lateral { display: grid; gap: 16px; }
+
+.presupuesto .pre-ayuda-card {
+  padding: 18px;
+  border: 1px solid var(--fa-border);
+  border-radius: 16px;
+  background: var(--fa-card);
+}
+
+.presupuesto .pre-ayuda-card h2 { margin: 0 0 13px; font-size: 0.92rem; font-weight: 700; letter-spacing: -0.01em; }
+.presupuesto .pre-ayuda-card ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+
+.presupuesto .pre-ayuda-card li { display: flex; align-items: flex-start; gap: 10px; }
+.presupuesto .pre-ayuda-card li > span:last-child {
+  display: grid;
+  gap: 1px;
+  color: var(--fa-muted);
+  font-size: 0.79rem;
+  line-height: 1.4;
+}
+.presupuesto .pre-ayuda-card strong { color: var(--fa-text); font-size: 0.83rem; font-weight: 600; }
+
+.presupuesto .pre-paso-icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: #EEF2FE;
+  color: var(--fa-primary);
+}
+
+/* --- Barra ---------------------------------------------------------- */
+
+/*
+ * El relleno se corta en el 100% desde el componente: una barra al 358% no cabe en su
+ * carril. El porcentaje real se lee al lado, que es donde puede decir 358,6 % sin
+ * deformar nada.
+ */
+.presupuesto .pre-barra {
+  height: 5px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--fa-carril);
+  overflow: hidden;
+}
+
+.presupuesto .pre-barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--fa-primary);
+  transition: width 220ms cubic-bezier(.32, .72, 0, 1);
+}
+
+.presupuesto .pre-barra.excedido span { background: var(--fa-red); }
+
+@media (prefers-reduced-motion: reduce) {
+  .presupuesto .pre-barra span { transition: none; }
+}
+
+/* --- Presupuesto por categoria -------------------------------------- */
+
+.presupuesto .pre-categorias { display: grid; gap: 12px; }
+.presupuesto .pre-categorias h2 { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; }
+
+.presupuesto .pre-tabla {
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-card);
+  background: var(--fa-card);
+  overflow: hidden;
+}
+
+/*
+ * Cuadricula estricta, la misma para la cabecera y para todas las filas: 30 / 18 / 18 /
+ * 18 / 16. En fr y no en porcentajes para que los huecos se descuenten antes de repartir
+ * y las columnas no se salgan de la tarjeta.
+ */
+.presupuesto .pre-cabecera,
+.presupuesto .pre-fila {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 30fr) minmax(0, 18fr) minmax(0, 18fr) minmax(0, 18fr) minmax(0, 16fr);
+  align-items: center;
+  gap: 0 12px;
+  padding: 0 20px;
+}
+
+.presupuesto .pre-cabecera {
+  height: 38px;
+  border-bottom: 1px solid var(--fa-border);
+  background: #FCFDFF;
+  color: var(--fa-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+/* Todo lo que es cifra va a la derecha; solo la categoria queda a la izquierda. */
+.presupuesto .pre-cabecera span:not(:first-child),
+.presupuesto .pre-fila .pre-monto,
+.presupuesto .pre-fila .pre-uso { text-align: right; }
+
+.presupuesto .pre-fila {
+  /* Fila principal con todos los datos; la barra ocupa una segunda linea muy baja. */
+  grid-template-rows: auto auto;
+  gap: 4px 12px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--fa-filete);
+}
+
+.presupuesto .pre-fila:last-child { border-bottom: 0; }
+.presupuesto .pre-fila:hover { background: #FCFDFF; }
+
+.presupuesto .pre-categoria {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.presupuesto .pre-categoria > span { display: grid; gap: 0; min-width: 0; }
+.presupuesto .pre-categoria small { color: var(--fa-muted); font-size: 0.76rem; font-weight: 500; }
+
+/* Icono de la categoria en su propio color, sobre un pastel muy suave. Ayuda a escanear
+   la lista; no es el protagonista de la fila. */
+.presupuesto .pre-icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+.presupuesto .pre-monto {
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Sin limite no hay cifra que poner: una raya dice mas que un cero. */
+.presupuesto .pre-sin-dato { color: #C2CADD; font-weight: 500; }
+
+/* Separa las categorias sin limite dentro de la misma tabla. No es otra tarjeta. */
+.presupuesto .pre-subtitulo {
+  margin: 0;
+  padding: 11px 20px 8px;
+  border-top: 1px solid var(--fa-border);
+  background: #FCFDFF;
+  color: var(--fa-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.presupuesto .pre-pie { margin: 0; color: var(--fa-muted); font-size: 0.79rem; line-height: 1.5; }
+
+.presupuesto .pre-uso {
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.presupuesto .pre-fila.excedida .pre-uso { color: var(--fa-red); }
+
+/* La barra vive bajo su porcentaje, dentro de la columna de Uso: corta, fina y asociada
+   al numero que explica. A lo ancho de la fila convertia cada categoria en una grafica. */
+.presupuesto .pre-fila .pre-barra {
+  grid-column: 5;
+  grid-row: 2;
+  align-self: center;
+}
+
+.presupuesto .pre-movil-resumen { display: none; }
+
+/* Sin barra no hay segunda linea: la fila se queda en una y baja de altura. */
+.presupuesto .pre-fila.sin-limite {
+  grid-template-rows: auto;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* --- Sin presupuesto ------------------------------------------------ */
+
+.presupuesto .pre-vacio-estado {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 48px 32px 52px;
+  border: 1px solid var(--fa-border);
+  border-radius: 18px;
+  background: var(--fa-card);
+  text-align: center;
+}
+
+.presupuesto .pre-vacio-icono {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 4px;
+  border-radius: 15px;
+  background: #EEF2FE;
+  color: var(--fa-primary);
+}
+
+.presupuesto .pre-vacio-estado h2 { margin: 0; font-size: 1.18rem; font-weight: 700; letter-spacing: -0.015em; }
+.presupuesto .pre-vacio-estado p { margin: 0; max-width: 48ch; color: var(--fa-muted); font-size: 0.92rem; line-height: 1.55; }
+.presupuesto .pre-vacio-nota {
+  margin-top: 2px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: var(--fa-bg);
+  color: var(--fa-muted);
+  font-size: 0.85rem;
+}
+.presupuesto .pre-vacio-estado .pre-boton { margin-top: 10px; }
+
+/* --- Editor del presupuesto del mes ---------------------------------- */
+
+/*
+ * El dialogo lo viste compartido/estilos/modal.css, el mismo de Nueva transaccion.
+ * Aqui vive lo propio del editor: la reja de las lineas, la accion de agregar y el
+ * simbolo dentro del importe.
+ */
+
+/* Solo la inicial: con capitalize salia "Agosto De 2026". */
+.pre-dialogo .pre-periodo::first-letter { text-transform: uppercase; }
+
+.pre-dialogo .pre-editor { gap: 14px; }
+
+.pre-dialogo .pre-filas { display: grid; gap: 10px; }
+
+/*
+ * La misma reja para la cabecera y para todas las lineas. La tercera columna es la de
+ * quitar: existe siempre, con o sin boton, para que los importes no se desplacen entre
+ * una fila persistida y una nueva.
+ */
+.pre-dialogo .pre-filas-cabecera,
+.pre-dialogo .pre-linea {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 168px 28px;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.pre-dialogo .pre-filas-cabecera {
+  color: var(--fa-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.pre-dialogo .pre-filas-cabecera span:nth-child(2) { text-align: right; }
+
+.pre-dialogo .pre-linea-nombre {
+  min-width: 0;
+  font-size: 0.93rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * El simbolo va dentro del campo y el numero a la derecha, para que la columna de
+ * importes se lea de un vistazo. No hay formateo: el proyecto no tiene un campo
+ * monetario compartido y no se inventa uno aqui -- queda como pendiente global.
+ */
+.pre-dialogo .pre-monto-campo { position: relative; display: grid; }
+
+.pre-dialogo .pre-monto-campo input {
+  padding-left: 30px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pre-dialogo .pre-monto-campo > span {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fa-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.pre-dialogo .pre-linea.con-error .pre-monto-campo input { border-color: var(--fa-red); background: #FDF5F6; }
+.pre-dialogo .pre-linea .fa-campo-error { grid-column: 1 / -1; }
+
+/* Quitar una categoria que todavia no existe en la base de datos. */
+.pre-dialogo .pre-quitar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--fa-muted);
+  cursor: pointer;
+}
+
+.pre-dialogo .pre-quitar:hover { background: #FDECEF; color: var(--fa-red); }
+.pre-dialogo .pre-quitar:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 1px; }
+
+/* Reserva la columna en las filas que no se pueden quitar. */
+.pre-dialogo .pre-quitar-hueco { display: block; width: 28px; }
+
+/* Accion secundaria, no un segundo boton principal. */
+.pre-dialogo .pre-agregar {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px 0 8px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--fa-primary);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pre-dialogo .pre-agregar:hover { background: #F1F5FF; }
+.pre-dialogo .pre-agregar:disabled { color: var(--fa-muted); background: none; cursor: default; }
+.pre-dialogo .pre-agregar:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+
+.pre-dialogo .pre-cuenta {
+  margin: 0;
+  color: var(--fa-muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* El encabezado se movio por detras mientras el formulario estaba abierto. */
+.pre-dialogo .pre-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #EEF2FE;
+  color: var(--fa-deep);
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+.pre-dialogo .pre-aviso svg { flex: 0 0 auto; margin-top: 2px; }
+
+.pre-dialogo .pre-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0 0 6px;
+  color: var(--fa-red);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.pre-dialogo .pre-error svg { flex: 0 0 auto; margin-top: 3px; }
+
+/* En una columna estrecha el importe no cabe al lado del nombre: pasa debajo. */
+@media (max-width: 620px) {
+  .pre-dialogo .pre-filas-cabecera { display: none; }
+  .pre-dialogo .pre-filas { gap: 16px; }
+
+  .pre-dialogo .pre-linea {
+    grid-template-columns: minmax(0, 1fr) 28px;
+    gap: 6px 10px;
+  }
+
+  .pre-dialogo .pre-linea > select,
+  .pre-dialogo .pre-linea > .pre-linea-nombre { grid-column: 1; }
+  .pre-dialogo .pre-linea > .pre-monto-campo { grid-column: 1 / -1; }
+  .pre-dialogo .pre-quitar { grid-column: 2; grid-row: 1; }
+  .pre-dialogo .pre-quitar-hueco { display: none; }
+}
+
+/*
+ * El nombre de la categoria abre el editor del mes enfocado en esa fila. Es un boton,
+ * pero se pinta exactamente como el texto que sustituye: la fila de la tabla no cambia
+ * de alto ni de reja, y de paso la accion queda alcanzable con el teclado.
+ */
+.presupuesto .pre-editar {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.presupuesto .pre-editar:hover { color: var(--fa-primary); text-decoration: underline; }
+.presupuesto .pre-editar:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 3px; border-radius: 4px; }
+
+/* --- Responsive ------------------------------------------------------ */
+
+@media (max-width: 1100px) {
+  /* La ayuda baja debajo de la tabla antes que estrujarla, y ahi se tumba en tres pasos. */
+  .presupuesto .pre-columnas { grid-template-columns: minmax(0, 1fr); }
+  .presupuesto .pre-ayuda-card ol { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .presupuesto .pre-resumen { grid-template-columns: minmax(0, 1fr); }
+  .presupuesto .pre-estado { border-left: 0; border-top: 1px solid var(--fa-filete); }
+}
+
+@media (max-width: 900px) {
+  /* Con menos sitio se aprieta la categoria antes que las cifras. */
+  .presupuesto .pre-cabecera,
+  .presupuesto .pre-fila {
+    grid-template-columns:
+      minmax(0, 26fr) minmax(0, 19fr) minmax(0, 19fr) minmax(0, 19fr) minmax(0, 17fr);
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .presupuesto .pre-monto, .presupuesto .pre-uso { font-size: 0.83rem; }
+}
+
+@media (max-width: 720px) {
+  .presupuesto .page-header h1 { font-size: 1.4rem; }
+
+  .presupuesto .pre-ayuda-card ol { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .presupuesto .pre-resumen-principal { padding: 18px; }
+  .presupuesto .pre-estado { padding: 16px 18px; }
+  /* Las tres cifras en columna: en fila quedaban en 90px cada una. */
+  .presupuesto .pre-cifras { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .presupuesto .pre-cifras dd { font-size: 1.5rem; }
+  .presupuesto .pre-avance { flex-wrap: wrap; gap: 8px; }
+  .presupuesto .pre-avance .pre-barra { flex-basis: 100%; }
+
+  /*
+   * Cada categoria pasa a ser una ficha de cuatro lineas: nombre y uso arriba, el
+   * "gastado de limite" en una sola frase, la barra, y el disponible. La cabecera de la
+   * tabla desaparece porque ya no encabeza nada.
+   */
+  .presupuesto .pre-cabecera { display: none; }
+
+  .presupuesto .pre-fila {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: none;
+    gap: 6px 12px;
+    padding: 14px 16px;
+  }
+
+  .presupuesto .pre-categoria { grid-column: 1; grid-row: 1; }
+  .presupuesto .pre-fila .pre-uso { grid-column: 2; grid-row: 1; align-self: center; text-align: right; }
+
+  .presupuesto .pre-movil-resumen {
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    color: var(--fa-muted);
+    font-size: 0.83rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .presupuesto .pre-fila .pre-barra { grid-column: 1 / -1; grid-row: 3; align-self: center; }
+
+  .presupuesto .pre-fila .pre-monto {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    grid-column: 1 / -1;
+    grid-row: 4;
+    text-align: left;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--fa-text);
+  }
+
+  .presupuesto .pre-fila .pre-monto::before {
+    content: attr(data-etiqueta);
+    color: var(--fa-muted);
+    font-weight: 500;
+  }
+
+  .presupuesto .pre-fila .pre-monto.tono-riesgo { color: var(--fa-red); }
+  .presupuesto .pre-fila .pre-monto.tono-sano { color: var(--fa-green); }
+
+  /* Las dos cifras que la frase de arriba ya resume dejan de repetirse. Va despues de
+     .pre-monto y con una clase mas: si no, la regla de arriba le devolvia el display. */
+  .presupuesto .pre-fila .pre-monto.pre-solo-tabla { display: none; }
+
+  /* Sin limite: nombre, accion y el gastado. Las rayas no aportan en una columna. */
+  .presupuesto .pre-fila.sin-limite { padding: 12px 16px; }
+  .presupuesto .pre-fila.sin-limite .pre-sin-dato { display: none; }
+  .presupuesto .pre-fila.sin-limite .pre-monto { grid-row: 2; }
+}

@@ -168,7 +168,7 @@ export function DashboardPage({ workspace, navegar }: PageProps) {
         ? <div className="dash-salud dash-salud-esqueleto" />
         : workspace.analisisListo
           ? <PanelSuperior workspace={workspace} navegar={navegar} />
-          : <SinAnalisis />}
+          : <SinAnalisis periodo={nombreDelPeriodo(workspace.mesAnalizado)} />}
 
       {workspace.analisisListo && (
         <>
@@ -181,7 +181,11 @@ export function DashboardPage({ workspace, navegar }: PageProps) {
         </>
       )}
 
-      <UltimosMovimientos transacciones={workspace.transacciones} navegar={navegar} />
+      <UltimosMovimientos
+        transacciones={workspace.transaccionesDelMes}
+        periodo={nombreDelPeriodo(workspace.mesAnalizado)}
+        navegar={navegar}
+      />
     </section>
   );
 }
@@ -838,7 +842,18 @@ function Oportunidad({ workspace, navegar }: { workspace: PageProps['workspace']
 /* Ultimos movimientos                                                 */
 /* ------------------------------------------------------------------ */
 
-function UltimosMovimientos({ transacciones, navegar }: { transacciones: Transaccion[]; navegar: PageProps['navegar'] }) {
+/**
+ * Los ultimos movimientos DEL PERIODO que se esta mirando.
+ *
+ * Antes leia todo el historial, asi que con el encabezado en julio y julio vacio seguian
+ * apareciendo los movimientos de agosto: la unica tarjeta del tablero que contradecia al
+ * selector.
+ */
+function UltimosMovimientos({ transacciones, periodo, navegar }: {
+  transacciones: Transaccion[];
+  periodo: string | null;
+  navegar: PageProps['navegar'];
+}) {
   const ultimos = transacciones.slice(0, 5);
 
   return (
@@ -849,6 +864,11 @@ function UltimosMovimientos({ transacciones, navegar }: { transacciones: Transac
           Ver todas <ArrowRight size={15} />
         </button>
       </header>
+      {ultimos.length === 0 && (
+        <p className="dash-vacio-inline">
+          {periodo ? `No hay movimientos registrados en ${periodo}.` : 'No hay movimientos registrados en este período.'}
+        </p>
+      )}
       <ul className="dash-movimientos">
         {ultimos.map((item) => (
           <li key={item.id}>
@@ -906,12 +926,40 @@ function SinTransacciones({ onImportar }: { onImportar: () => void }) {
   );
 }
 
-function SinAnalisis() {
+const MESES_EN_LETRA = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+];
+
+/**
+ * "2026-07" -> "julio de 2026".
+ *
+ * Con una lista propia y no con Intl: en es-PE el formateador devuelve "setiembre", y el
+ * resto de la aplicacion -- Presupuesto, Transacciones -- escribe "septiembre". Dos
+ * ortografias del mismo mes en la misma pantalla se leen como un error.
+ */
+export function nombreDelPeriodo(mes: string | null) {
+  if (mes === null) return null;
+  const nombre = MESES_EN_LETRA[Number(mes.slice(5, 7)) - 1];
+  return nombre ? `${nombre} de ${mes.slice(0, 4)}` : null;
+}
+
+/**
+ * El periodo elegido no da para un diagnostico.
+ *
+ * Nombra el mes a proposito: el periodo lo elige la persona y puede ser uno futuro o uno
+ * vacio, asi que "este mes" no bastaba para saber de cual se estaba hablando.
+ */
+function SinAnalisis({ periodo }: { periodo: string | null }) {
   return (
     <article className="dash-estado compacto">
       <span className="dash-estado-icono"><ChartLineUp size={26} /></span>
       <h2>Todavía no hay un diagnóstico</h2>
-      <p>Estamos reuniendo la información de este mes. En cuanto haya datos suficientes verás tu perfil aquí.</p>
+      <p>
+        {periodo
+          ? `Aún no hay suficiente información para analizar ${periodo}.`
+          : 'Aún no hay suficiente información para analizar este período.'}
+      </p>
     </article>
   );
 }

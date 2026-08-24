@@ -17,14 +17,13 @@ type DashboardLayoutProps = PropsWithChildren<{
     email?: string;
   };
   onLogout: () => void;
-  /** Mes que esta mirando el analisis, en formato YYYY-MM. */
+  /** Periodo global seleccionado, en formato YYYY-MM. Lo elige la persona. */
   mesAnalizado: string | null;
-  /** Meses del anio elegido con movimientos, del mas reciente al mas viejo. */
-  mesesDelAnio: string[];
+  /** Meses del anio elegido con movimientos, del mas reciente al mas viejo. */
   onSeleccionarMes: (mes: string) => void;
   /** Anio que se esta analizando, en formato YYYY. */
   anioAnalizado: string | null;
-  /** Anios con movimientos, del mas reciente al mas viejo. */
+  /** Rango de anios navegable. Se calcula desde el reloj, no desde los datos. */
   aniosDisponibles: string[];
   onSeleccionarAnio: (anio: string) => void;
 }>;
@@ -48,8 +47,7 @@ export function DashboardLayout({
   onNavigate,
   usuario,
   onLogout,
-  mesAnalizado,
-  mesesDelAnio,
+  mesAnalizado,
   onSeleccionarMes,
   anioAnalizado,
   aniosDisponibles,
@@ -127,8 +125,7 @@ export function DashboardLayout({
           <div className="fa-header-controles">
             <SelectorPeriodo
               mesAnalizado={mesAnalizado}
-              anioAnalizado={anioAnalizado}
-              mesesDelAnio={mesesDelAnio}
+              anioAnalizado={anioAnalizado}
               aniosDisponibles={aniosDisponibles}
               onSeleccionarMes={onSeleccionarMes}
               onSeleccionarAnio={onSeleccionarAnio}
@@ -258,14 +255,14 @@ function useCierreExterno(activo: boolean, cerrar: () => void) {
  * razona por mes. No introduce estado propio: sigue leyendo mesAnalizado y llamando a
  * las mismas dos funciones del workspace.
  *
- * Los 12 meses se listan siempre, pero los que no tienen movimientos van deshabilitados:
- * dejar elegirlos no dispararia el analisis y se veria el diagnostico del mes anterior
- * bajo otro titulo. Deshabilitados ademas muestran la cobertura real del anio.
+ * Los doce meses se pueden elegir siempre. Antes los que no tenian movimientos iban
+ * deshabilitados, y eso hacia imposible lo unico para lo que sirve un presupuesto:
+ * planificar un mes que todavia no ha ocurrido. Que haya datos decide lo que enseña cada
+ * pantalla, no a donde se puede navegar.
  */
-function SelectorPeriodo({ mesAnalizado, anioAnalizado, mesesDelAnio, aniosDisponibles, onSeleccionarMes, onSeleccionarAnio }: {
+function SelectorPeriodo({ mesAnalizado, anioAnalizado, aniosDisponibles, onSeleccionarMes, onSeleccionarAnio }: {
   mesAnalizado: string | null;
   anioAnalizado: string | null;
-  mesesDelAnio: string[];
   aniosDisponibles: string[];
   onSeleccionarMes: (mes: string) => void;
   onSeleccionarAnio: (anio: string) => void;
@@ -277,7 +274,6 @@ function SelectorPeriodo({ mesAnalizado, anioAnalizado, mesesDelAnio, aniosDispo
 
   const numeroActual = mesAnalizado.slice(5, 7);
   const mesActual = MESES.find((mes) => mes.numero === numeroActual) ?? MESES[0];
-  const conDatos = new Set(mesesDelAnio.map((mes) => mes.slice(5, 7)));
 
   return (
     <div className="fa-periodo" ref={contenedor}>
@@ -309,7 +305,6 @@ function SelectorPeriodo({ mesAnalizado, anioAnalizado, mesesDelAnio, aniosDispo
       {abierto === 'mes' && (
         <div className="fa-periodo-menu" role="listbox" aria-label="Mes">
           {MESES.map((mes) => {
-            const disponible = conDatos.has(mes.numero);
             const activo = mes.numero === numeroActual;
             return (
               <button
@@ -318,8 +313,6 @@ function SelectorPeriodo({ mesAnalizado, anioAnalizado, mesesDelAnio, aniosDispo
                 role="option"
                 aria-selected={activo}
                 className={activo ? 'activo' : ''}
-                disabled={!disponible}
-                title={disponible ? undefined : 'Sin movimientos en este mes'}
                 onClick={() => { onSeleccionarMes(`${anioAnalizado}-${mes.numero}`); setAbierto(null); }}
               >
                 {mes.largo}

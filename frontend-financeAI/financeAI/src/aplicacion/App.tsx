@@ -60,7 +60,7 @@ export function App() {
   const iniciales = partes.slice(0, 2).map((parte) => parte[0]).join('').toUpperCase();
   return <DashboardLayout rutas={rutasAplicacion} rutaActiva={rutaActiva} onNavigate={setRutaActiva}
     usuario={{ nombre: sesion.usuario.nombre, iniciales, rol: sesion.usuario.rol, email: sesion.usuario.email }} onLogout={logout}
-    mesAnalizado={workspace.mesAnalizado} mesesDelAnio={workspace.mesesDelAnio}
+    mesAnalizado={workspace.mesAnalizado}
     onSeleccionarMes={workspace.seleccionarMes} anioAnalizado={workspace.anioAnalizado}
     aniosDisponibles={workspace.aniosDisponibles} onSeleccionarAnio={workspace.seleccionarAnio}>
     {pagina}

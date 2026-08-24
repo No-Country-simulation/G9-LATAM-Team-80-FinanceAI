@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, Target } from '@phosphor-icons/reac
 import { useState } from 'react';
 import type { Recomendacion } from '../../../compartido/tipos/finanzas';
 import type { PageProps } from '../../../compartido/tipos/workspace';
-import { Badge, Card, PageHeader } from '../../tablero/presentacion/DashboardPage';
+import { Badge, Card, PageHeader, nombreDelPeriodo } from '../../tablero/presentacion/DashboardPage';
 
 type RecommendationTab = 'todas' | 'gastos' | 'ahorro' | 'deudas' | 'ingresos';
 
@@ -67,11 +67,28 @@ function RecommendationsContent({ workspace }: PageProps) {
               </button>
             </article>
           ))}
+          {/*
+            * Sin recomendaciones hay dos motivos distintos y el texto los separa: que el
+            * analisis del periodo no exista todavia, o que exista y no haya encontrado
+            * nada. Antes los dos decian lo mismo, y en un mes vacio parecia un veredicto.
+            */}
           {recomendacionesFiltradas.length === 0 && (
             <article className="subview-card empty-state">
               <Target size={42} />
-              <h2>No hay recomendaciones en esta categoría</h2>
-              <p>Cuando el análisis detecte oportunidades, aparecerán aquí.</p>
+              {workspace.analisisListo ? (
+                <>
+                  <h2>No hay recomendaciones en esta categoría</h2>
+                  <p>Cuando el análisis detecte oportunidades, aparecerán aquí.</p>
+                </>
+              ) : (
+                <>
+                  <h2>Todavía no hay recomendaciones</h2>
+                  <p>
+                    Aún no hay suficiente información para analizar
+                    {' '}{nombreDelPeriodo(workspace.mesAnalizado) ?? 'este período'}.
+                  </p>
+                </>
+              )}
             </article>
           )}
         </div>
