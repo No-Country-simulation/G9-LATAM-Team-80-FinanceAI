@@ -1,0 +1,210 @@
+/*
+ * Recomendaciones.
+ *
+ * Todo cuelga de .recomendaciones, igual que en Tablero/Presupuesto/Analisis: el sistema
+ * nuevo convive con la hoja global mientras quedan pantallas sin rediseñar. Antes esta
+ * pantalla usaba .recommendation-card/.subview-card de la hoja vieja (Geist, azul
+ * #0b5cff); esta hoja la migra al mismo lenguaje visual que el resto (Manrope, #2458E8,
+ * radio 16-18px, sin sombra de elevacion).
+ *
+ * Sin tabs y sin columna lateral a proposito: la auditoria confirmo un maximo de 4
+ * recomendaciones (test_maximo_4_recomendaciones en el motor), asi que filtrar no aporta,
+ * y "Impacto estimado" no era un calculo real. La pantalla es: prioridad del mes (por
+ * POSICION real del motor, no por un badge Alta/Media/Baja que la auditoria probo poco
+ * fiel) -> otras oportunidades -> una franja de contexto hacia Analisis.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+.recomendaciones {
+  --fa-primary: #2458E8;
+  --fa-deep: #153B9A;
+  --fa-violet: #6548EF;
+  --fa-green: #15AD77;
+  --fa-amber: #F3A23A;
+  --fa-red: #E9566C;
+  --fa-bg: #F7F9FD;
+  --fa-text: #0D1838;
+  --fa-muted: #6D7897;
+  --fa-border: #E4E9F3;
+  --fa-card: #FFFFFF;
+  --fa-radio-card: 16px;
+
+  font-family: 'Manrope', 'Geist', system-ui, sans-serif;
+  color: var(--fa-text);
+}
+
+.recomendaciones .tono-sano { color: var(--fa-green); }
+.recomendaciones .tono-atencion { color: var(--fa-amber); }
+.recomendaciones .tono-riesgo { color: var(--fa-red); }
+
+/* --- Encabezado -------------------------------------------------------- */
+
+.recomendaciones .page-header {
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--fa-border);
+}
+
+.recomendaciones .page-header h1 { margin: 0 0 4px; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+.recomendaciones .page-header p { margin: 0; color: var(--fa-muted); font-size: 0.92rem; }
+
+/* --- Controles ----------------------------------------------------------- */
+
+.recomendaciones .re-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--fa-border);
+  border-radius: 11px;
+  background: var(--fa-card);
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.recomendaciones .re-boton.primario { border-color: transparent; background: var(--fa-primary); color: #fff; }
+.recomendaciones .re-boton.primario:hover { background: var(--fa-deep); }
+.recomendaciones .re-boton:not(.primario):hover { border-color: var(--fa-primary); color: var(--fa-primary); }
+.recomendaciones .re-boton:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 2px; }
+
+/* Accion de texto, sin caja: para el CTA de cada card y la franja de contexto. */
+.recomendaciones .re-enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--fa-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.recomendaciones .re-enlace.primario { font-size: 0.92rem; font-weight: 700; }
+.recomendaciones .re-enlace:hover { color: var(--fa-deep); }
+.recomendaciones .re-enlace:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 3px; border-radius: 4px; }
+
+/* --- Tarjeta base ---------------------------------------------------------- */
+
+.recomendaciones .re-card {
+  padding: 22px 24px;
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-card);
+  background: var(--fa-card);
+}
+
+.recomendaciones .re-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  color: var(--fa-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.recomendaciones .re-eyebrow svg { flex: 0 0 auto; }
+
+/* --- Prioridad del mes ------------------------------------------------- */
+
+/*
+ * Protagonista pero contenida: sin gradient, sin fondo tenido por severidad -- el tono
+ * solo vive en el icono del eyebrow (ver re-icono.tono-*). recomendaciones[0] SIEMPRE es
+ * la de mayor prioridad real (el motor ya ordeno antes de devolver el array), asi que
+ * "Prioridad del mes" no necesita ademas un badge Alta/Media/Baja: la posicion ya dice todo.
+ */
+.recomendaciones .re-principal { padding: 26px 28px; }
+.recomendaciones .re-principal h2 { margin: 0; font-size: 1.34rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; max-width: 56ch; }
+.recomendaciones .re-principal-cuerpo { margin: 10px 0 0; max-width: 62ch; color: var(--fa-muted); font-size: 0.96rem; line-height: 1.55; }
+.recomendaciones .re-principal-dato { margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--fa-border); color: var(--fa-text); font-size: 0.9rem; font-weight: 600; }
+.recomendaciones .re-principal .re-enlace { margin-top: 18px; }
+
+/* Icono pequeño junto al eyebrow: el unico lugar donde vive el color de severidad. */
+.recomendaciones .re-icono {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: #EEF2FE;
+  color: var(--fa-primary);
+}
+.recomendaciones .re-icono.tono-riesgo { background: #FDECEF; color: var(--fa-red); }
+.recomendaciones .re-icono.tono-atencion { background: #FEF3E3; color: var(--fa-amber); }
+.recomendaciones .re-icono.tono-sano { background: #E8F7F1; color: var(--fa-green); }
+
+/* --- Otras oportunidades ------------------------------------------------- */
+
+.recomendaciones .re-otras h2 { margin: 0 0 14px; font-size: 1.02rem; font-weight: 700; letter-spacing: -0.01em; }
+
+/*
+ * auto-fill con un tope de ancho: con una sola card no se estira a lo ancho completo (no
+ * queda una cuadricula enorme vacia), y con dos o tres arma el grid de columnas.
+ */
+.recomendaciones .re-otras-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 380px)); gap: 16px; }
+
+.recomendaciones .re-oportunidad { padding: 18px 20px; }
+.recomendaciones .re-oportunidad h3 { margin: 0; font-size: 0.98rem; font-weight: 700; line-height: 1.3; }
+.recomendaciones .re-oportunidad-cuerpo { margin: 6px 0 0; color: var(--fa-muted); font-size: 0.85rem; line-height: 1.5; }
+.recomendaciones .re-oportunidad-dato { margin: 8px 0 0; color: var(--fa-text); font-size: 0.84rem; font-weight: 600; }
+.recomendaciones .re-oportunidad .re-enlace { margin-top: 14px; font-size: 0.82rem; }
+
+/* --- Contexto (franja ligera, no card lateral) -------------------------- */
+
+.recomendaciones .re-contexto {
+  padding: 18px 4px 4px;
+  border-top: 1px solid var(--fa-border);
+}
+
+.recomendaciones .re-contexto-titulo { margin: 0 0 4px; font-size: 0.92rem; font-weight: 700; }
+.recomendaciones .re-contexto-cuerpo { margin: 0 0 10px; max-width: 62ch; color: var(--fa-muted); font-size: 0.87rem; line-height: 1.5; }
+
+/* --- Estados vacios ------------------------------------------------------ */
+
+.recomendaciones .re-estado {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 52px 30px;
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-card);
+  background: var(--fa-card);
+  text-align: center;
+}
+
+.recomendaciones .re-estado svg { color: var(--fa-muted); }
+.recomendaciones .re-estado h2 { margin: 0; font-size: 1.1rem; font-weight: 700; max-width: 42ch; }
+.recomendaciones .re-estado p { margin: 0; max-width: 46ch; color: var(--fa-muted); }
+.recomendaciones .re-estado .re-boton { margin-top: 8px; }
+
+/* --- Detalle (modal) ------------------------------------------------------ */
+
+/*
+ * El dialogo se porta a document.body, fuera de .recomendaciones -- por eso lleva su
+ * propia clase de scope en el velo (mismo patron que .an-dialogo en Analisis y
+ * .pre-dialogo en Presupuesto), en vez de depender de un ancestro que ya no esta en ese
+ * punto del DOM.
+ */
+.re-dialogo .re-detalle-texto { margin: 0; color: var(--fa-text); font-size: 0.94rem; line-height: 1.55; }
+.re-dialogo .fa-modal-cuerpo > div + div { padding-top: 16px; border-top: 1px solid var(--fa-border); }
+
+/* --- Responsive ------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .recomendaciones .page-header { flex-direction: column; align-items: stretch; }
+  .recomendaciones .re-card { padding: 18px 20px; }
+  .recomendaciones .re-principal { padding: 20px; }
+  .recomendaciones .re-principal h2 { font-size: 1.16rem; }
+  .recomendaciones .re-otras-grid { grid-template-columns: minmax(0, 1fr); }
+}
