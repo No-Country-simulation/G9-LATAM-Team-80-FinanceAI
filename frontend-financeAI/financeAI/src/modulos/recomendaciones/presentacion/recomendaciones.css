@@ -1,17 +1,15 @@
 /*
  * Recomendaciones.
  *
- * Todo cuelga de .recomendaciones, igual que en Tablero/Presupuesto/Analisis: el sistema
- * nuevo convive con la hoja global mientras quedan pantallas sin rediseñar. Antes esta
- * pantalla usaba .recommendation-card/.subview-card de la hoja vieja (Geist, azul
- * #0b5cff); esta hoja la migra al mismo lenguaje visual que el resto (Manrope, #2458E8,
- * radio 16-18px, sin sombra de elevacion).
+ * Todo cuelga de .recomendaciones, igual que en Tablero/Presupuesto/Analisis. Mismo
+ * contenedor que el resto de la app (.main-area no impone max-width) -- esta pantalla no
+ * inventa uno propio.
  *
- * Sin tabs y sin columna lateral a proposito: la auditoria confirmo un maximo de 4
- * recomendaciones (test_maximo_4_recomendaciones en el motor), asi que filtrar no aporta,
- * y "Impacto estimado" no era un calculo real. La pantalla es: prioridad del mes (por
- * POSICION real del motor, no por un badge Alta/Media/Baja que la auditoria probo poco
- * fiel) -> otras oportunidades -> una franja de contexto hacia Analisis.
+ * Composicion: encabezado -> resumen compacto (tres datos reales en una sola superficie)
+ * -> grid de recomendaciones lado a lado (recomendaciones[0] con el acento de severidad
+ * real, el resto con el acento de su propio tipo -- misma card, mismo patron) -> franja
+ * de contexto. Cada card muestra su evidencia real (el dato, la referencia) con una
+ * microbarra en escala real 0-100%: nunca donut, gauge ni tendencia inventada.
  */
 
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
@@ -89,14 +87,13 @@
   cursor: pointer;
 }
 
-.recomendaciones .re-enlace.primario { font-size: 0.92rem; font-weight: 700; }
+.recomendaciones .re-enlace.primario { font-size: 0.95rem; font-weight: 700; }
 .recomendaciones .re-enlace:hover { color: var(--fa-deep); }
 .recomendaciones .re-enlace:focus-visible { outline: 2px solid var(--fa-primary); outline-offset: 3px; border-radius: 4px; }
 
 /* --- Tarjeta base ---------------------------------------------------------- */
 
 .recomendaciones .re-card {
-  padding: 22px 24px;
   border: 1px solid var(--fa-border);
   border-radius: var(--fa-radio-card);
   background: var(--fa-card);
@@ -105,70 +102,162 @@
 .recomendaciones .re-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 10px;
+  gap: 10px;
+  margin: 0 0 16px;
   color: var(--fa-muted);
-  font-size: 0.7rem;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.recomendaciones .re-eyebrow svg { flex: 0 0 auto; }
-
-/* --- Prioridad del mes ------------------------------------------------- */
-
-/*
- * Protagonista pero contenida: sin gradient, sin fondo tenido por severidad -- el tono
- * solo vive en el icono del eyebrow (ver re-icono.tono-*). recomendaciones[0] SIEMPRE es
- * la de mayor prioridad real (el motor ya ordeno antes de devolver el array), asi que
- * "Prioridad del mes" no necesita ademas un badge Alta/Media/Baja: la posicion ya dice todo.
- */
-.recomendaciones .re-principal { padding: 26px 28px; }
-.recomendaciones .re-principal h2 { margin: 0; font-size: 1.34rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; max-width: 56ch; }
-.recomendaciones .re-principal-cuerpo { margin: 10px 0 0; max-width: 62ch; color: var(--fa-muted); font-size: 0.96rem; line-height: 1.55; }
-.recomendaciones .re-principal-dato { margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--fa-border); color: var(--fa-text); font-size: 0.9rem; font-weight: 600; }
-.recomendaciones .re-principal .re-enlace { margin-top: 18px; }
-
-/* Icono pequeño junto al eyebrow: el unico lugar donde vive el color de severidad. */
+/* Insignia circular con presencia real -- no un adorno de 22px. */
 .recomendaciones .re-icono {
   display: inline-grid;
+  flex: 0 0 auto;
   place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   background: #EEF2FE;
   color: var(--fa-primary);
 }
 .recomendaciones .re-icono.tono-riesgo { background: #FDECEF; color: var(--fa-red); }
 .recomendaciones .re-icono.tono-atencion { background: #FEF3E3; color: var(--fa-amber); }
 .recomendaciones .re-icono.tono-sano { background: #E8F7F1; color: var(--fa-green); }
+.recomendaciones .re-icono.tipo-deudas { background: #FDECEF; color: var(--fa-red); }
+.recomendaciones .re-icono.tipo-ahorro { background: #E8F7F1; color: var(--fa-green); }
+.recomendaciones .re-icono.tipo-gastos { background: #FEF3E3; color: var(--fa-amber); }
+.recomendaciones .re-icono.tipo-ingresos { background: #F1ECFE; color: var(--fa-violet); }
 
-/* --- Otras oportunidades ------------------------------------------------- */
+/* --- Resumen del periodo: una superficie, tres segmentos ------------------- */
 
-.recomendaciones .re-otras h2 { margin: 0 0 14px; font-size: 1.02rem; font-weight: 700; letter-spacing: -0.01em; }
-
-/*
- * auto-fill con un tope de ancho: con una sola card no se estira a lo ancho completo (no
- * queda una cuadricula enorme vacia), y con dos o tres arma el grid de columnas.
- */
-.recomendaciones .re-otras-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 380px)); gap: 16px; }
-
-.recomendaciones .re-oportunidad { padding: 18px 20px; }
-.recomendaciones .re-oportunidad h3 { margin: 0; font-size: 0.98rem; font-weight: 700; line-height: 1.3; }
-.recomendaciones .re-oportunidad-cuerpo { margin: 6px 0 0; color: var(--fa-muted); font-size: 0.85rem; line-height: 1.5; }
-.recomendaciones .re-oportunidad-dato { margin: 8px 0 0; color: var(--fa-text); font-size: 0.84rem; font-weight: 600; }
-.recomendaciones .re-oportunidad .re-enlace { margin-top: 14px; font-size: 0.82rem; }
-
-/* --- Contexto (franja ligera, no card lateral) -------------------------- */
-
-.recomendaciones .re-contexto {
-  padding: 18px 4px 4px;
-  border-top: 1px solid var(--fa-border);
+.recomendaciones .re-resumen {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--fa-border);
+  border-radius: 14px;
+  background: var(--fa-card);
+  overflow: hidden;
 }
 
-.recomendaciones .re-contexto-titulo { margin: 0 0 4px; font-size: 0.92rem; font-weight: 700; }
-.recomendaciones .re-contexto-cuerpo { margin: 0 0 10px; max-width: 62ch; color: var(--fa-muted); font-size: 0.87rem; line-height: 1.5; }
+.recomendaciones .re-resumen-item {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 22px;
+  min-width: 0;
+}
+
+.recomendaciones .re-resumen-item + .re-resumen-item { border-left: 1px solid var(--fa-border); }
+
+.recomendaciones .re-resumen-etiqueta {
+  color: var(--fa-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.recomendaciones .re-resumen-valor {
+  overflow: hidden;
+  color: var(--fa-text);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Grid de recomendaciones: lado a lado --------------------------------- */
+
+/*
+ * auto-fit con un piso de 380px: con 2 (el caso real de agosto) da exactamente dos
+ * columnas iguales a los anchos de escritorio tipicos -- lo mismo que repeat(2, 1fr), pero
+ * se adapta solo si el motor devuelve 1, 3 o 4 sin tocar el orden real ni inventar una
+ * card para balancear.
+ */
+.recomendaciones .re-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 24px; align-items: stretch; }
+
+/* --- Card de recomendacion: misma composicion para la principal y el resto --------- */
+
+/*
+ * Fondo mayoritariamente blanco: el color (severidad real en la principal, tipo en el
+ * resto) es un rail izquierdo de 4px (--acento) mas la insignia/el valor -- nunca la card
+ * pintada. Flex-column para que el CTA quede siempre al pie, alineado entre las dos
+ * cards aunque el contenido de arriba difiera un poco en alto. La altura sale del
+ * contenido: sin min-height en ningun selector de este archivo.
+ */
+.recomendaciones .re-recomendacion {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 30px;
+  border-left: 4px solid var(--acento, var(--fa-border));
+}
+
+.recomendaciones .re-recomendacion h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
+.recomendaciones .re-cuerpo { margin: 10px 0 0; color: var(--fa-muted); font-size: 15px; line-height: 1.5; }
+
+.recomendaciones .re-divisor { margin: 20px 0 16px; border: 0; border-top: 1px solid var(--fa-border); }
+
+.recomendaciones .re-stat-etiqueta { margin: 0 0 4px; color: var(--fa-muted); font-size: 13px; font-weight: 700; }
+
+.recomendaciones .re-stat-fila { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 14px; }
+.recomendaciones .re-stat-valor { color: var(--fa-text); font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+/* Selector compuesto (dos clases) a proposito: gana por especificidad sobre el generico .tono-x o .tipo-x, sin depender del orden en el archivo. */
+.recomendaciones .re-stat-valor.tono-riesgo { color: var(--fa-red); }
+.recomendaciones .re-stat-valor.tono-atencion { color: var(--fa-amber); }
+.recomendaciones .re-stat-valor.tono-sano { color: var(--fa-green); }
+.recomendaciones .re-stat-valor.tipo-deudas { color: var(--fa-red); }
+.recomendaciones .re-stat-valor.tipo-ahorro { color: var(--fa-green); }
+.recomendaciones .re-stat-valor.tipo-gastos { color: var(--fa-amber); }
+.recomendaciones .re-stat-valor.tipo-ingresos { color: var(--fa-violet); }
+.recomendaciones .re-stat-referencia-inline { color: var(--fa-muted); font-size: 13px; font-weight: 600; }
+
+.recomendaciones .re-recomendacion .re-enlace.primario { margin-top: auto; padding-top: 20px; }
+
+/* --- Microbarra: escala real 0-100 %, sin grafico decorativo ---------------------- */
+
+.recomendaciones .re-barra { margin-top: 14px; }
+
+.recomendaciones .re-barra-pista { position: relative; height: 8px; border-radius: 999px; background: var(--fa-border); }
+.recomendaciones .re-barra-relleno { display: block; height: 100%; border-radius: 999px; background: var(--barra-color, var(--fa-primary)); }
+
+/* Marca en forma de flecha apuntando a la referencia real, apoyada sobre la pista. */
+.recomendaciones .re-barra-marca { position: absolute; top: -6px; width: 0; height: 0; transform: translateX(-50%); border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--fa-text); opacity: 0.55; }
+
+.recomendaciones .re-barra-escala { position: relative; display: flex; justify-content: space-between; margin-top: 6px; color: var(--fa-muted); font-size: 11px; font-weight: 700; }
+.recomendaciones .re-barra-escala-referencia { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+
+/* --- Contexto final: franja ligera, fondo azul muy tenue -------------------------- */
+
+.recomendaciones .re-contexto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+  border: 1px solid var(--fa-border);
+  border-radius: var(--fa-radio-card);
+  background: #EEF5FE;
+}
+
+.recomendaciones .re-contexto-texto { min-width: 0; }
+
+.recomendaciones .re-contexto-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  color: var(--fa-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+.recomendaciones .re-contexto-titulo svg { flex: 0 0 auto; color: var(--fa-primary); }
+
+.recomendaciones .re-contexto-cuerpo { margin: 0; max-width: 68ch; color: var(--fa-muted); font-size: 14px; line-height: 1.5; }
+.recomendaciones .re-contexto .re-enlace { flex: 0 0 auto; }
 
 /* --- Estados vacios ------------------------------------------------------ */
 
@@ -190,12 +279,6 @@
 
 /* --- Detalle (modal) ------------------------------------------------------ */
 
-/*
- * El dialogo se porta a document.body, fuera de .recomendaciones -- por eso lleva su
- * propia clase de scope en el velo (mismo patron que .an-dialogo en Analisis y
- * .pre-dialogo en Presupuesto), en vez de depender de un ancestro que ya no esta en ese
- * punto del DOM.
- */
 .re-dialogo .re-detalle-texto { margin: 0; color: var(--fa-text); font-size: 0.94rem; line-height: 1.55; }
 .re-dialogo .fa-modal-cuerpo > div + div { padding-top: 16px; border-top: 1px solid var(--fa-border); }
 
@@ -203,8 +286,11 @@
 
 @media (max-width: 720px) {
   .recomendaciones .page-header { flex-direction: column; align-items: stretch; }
-  .recomendaciones .re-card { padding: 18px 20px; }
-  .recomendaciones .re-principal { padding: 20px; }
-  .recomendaciones .re-principal h2 { font-size: 1.16rem; }
-  .recomendaciones .re-otras-grid { grid-template-columns: minmax(0, 1fr); }
+  .recomendaciones .re-resumen { flex-direction: column; }
+  .recomendaciones .re-resumen-item + .re-resumen-item { border-left: 0; border-top: 1px solid var(--fa-border); }
+  .recomendaciones .re-grid { grid-template-columns: minmax(0, 1fr); }
+  .recomendaciones .re-recomendacion { padding: 22px; }
+  .recomendaciones .re-recomendacion h2 { font-size: 19px; }
+  .recomendaciones .re-stat-valor { font-size: 28px; }
+  .recomendaciones .re-contexto { flex-direction: column; align-items: flex-start; }
 }
