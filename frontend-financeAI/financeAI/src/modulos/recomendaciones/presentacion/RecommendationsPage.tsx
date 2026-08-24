@@ -1,182 +1,338 @@
-import { ArrowLeft, ArrowRight, CheckCircle, Target } from '@phosphor-icons/react';
-import { useState } from 'react';
-import type { Recomendacion } from '../../../compartido/tipos/finanzas';
+import { ArrowRight, CreditCard, PiggyBank, Receipt, Target, TrendUp, X } from '@phosphor-icons/react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { formatPercent } from '../../../compartido/utilidades/formato';
+import type { Recomendacion, ResultadoAnalisis } from '../../../compartido/tipos/finanzas';
 import type { PageProps } from '../../../compartido/tipos/workspace';
-import { Badge, Card, PageHeader, nombreDelPeriodo } from '../../tablero/presentacion/DashboardPage';
+import { PageHeader, nombreDelPeriodo } from '../../tablero/presentacion/DashboardPage';
+import '../../../compartido/estilos/modal.css';
+import './recomendaciones.css';
 
-type RecommendationTab = 'todas' | 'gastos' | 'ahorro' | 'deudas' | 'ingresos';
+const ENFOCABLES = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
 
-export function RecommendationsPage(props: PageProps) {
-  // El agente ya no se monta aca: vive en DashboardLayout y acompaña a toda la app.
-  return <RecommendationsContent {...props} />;
+/**
+ * Nombres del ML que repiten la palabra "gastos" dentro de la frase (mismo ajuste que
+ * Dashboard: sin esto sale "tu gasto en otros gastos").
+ */
+const NOMBRE_DE_CATEGORIA: Record<string, string> = {
+  'otros gastos': 'la categoría Otros',
+  'gastos profesionales': 'la categoría Profesionales'
+};
+
+/**
+ * Reescrituras de acentos/tipografia sobre el copy que llega del motor de
+ * recomendaciones. Duplicado local de las mismas plantillas de Dashboard
+ * (DashboardPage.tsx, REESCRITURAS) -- ancladas a la frase completa, nunca un reemplazo
+ * suelto: un texto que no calce exacto sale intacto. Se aplica SOLO al pintar; el string
+ * original (`recomendacion.descripcion`) es el que ya vino clasificado por
+ * convertirRecomendacion y no se toca aqui.
+ */
+const REESCRITURAS: { patron: RegExp; reemplazo: (...partes: string[]) => string }[] = [
+  {
+    patron: /^Alerta: tu gasto en (.+?) supera el (\d+)% de tu ingreso mensual, revisalo con prioridad\.$/,
+    reemplazo: (_todo, nombre, porcentaje) =>
+      `Alerta: tus gastos en ${NOMBRE_DE_CATEGORIA[nombre] ?? nombre} superan el ${porcentaje} % de tu ingreso mensual. Revísalos con prioridad.`
+  },
+  {
+    patron: /^Estas destinando mas del (\d+)% de tu ingreso a (.+?), por encima de lo recomendado para esa categoria\.$/,
+    reemplazo: (_todo, porcentaje, nombre) =>
+      `Estás destinando más del ${porcentaje} % de tu ingreso a ${NOMBRE_DE_CATEGORIA[nombre] ?? nombre}, por encima de lo recomendado para esa categoría.`
+  },
+  {
+    patron: /^Tu situacion actual requiere atencion: (.+)$/,
+    reemplazo: (_todo, resto) => `Tu situación actual requiere atención: ${resto}`
+  },
+  {
+    patron: /^Estas en una zona de alerta temprana: revisa tus categorias de mayor gasto (.+)$/,
+    reemplazo: (_todo, resto) => `Estás en una zona de alerta temprana: revisa tus categorías de mayor gasto ${resto}`
+  },
+  {
+    patron: /^Tu perfil es saludable, pero tu margen de ahorro real es bajo: conviene generar un colchon de emergencia\.$/,
+    reemplazo: () => 'Tu perfil es saludable, pero tu margen de ahorro real es bajo: conviene generar un colchón de emergencia.'
+  },
+  {
+    patron: /^Aumenta tu frecuencia de ahorro: hoy te queda menos del (\d+)% de tu ingreso disponible\.$/,
+    reemplazo: (_todo, porcentaje) => `Aumenta tu frecuencia de ahorro: hoy te queda menos del ${porcentaje} % de tu ingreso disponible.`
+  }
+];
+
+function pulirCopy(texto: string) {
+  for (const { patron, reemplazo } of REESCRITURAS) {
+    const partes = texto.match(patron);
+    if (partes) return reemplazo(...partes);
+  }
+  return texto;
 }
 
-function RecommendationsContent({ workspace }: PageProps) {
-  const [vista, setVista] = useState<'listado' | 'detalle' | 'proyeccion'>('listado');
-  const [tabActiva, setTabActiva] = useState<RecommendationTab>('todas');
-  const [recomendacionActiva, setRecomendacionActiva] = useState<Recomendacion | null>(null);
-  const recomendacionesFiltradas = tabActiva === 'todas'
-    ? workspace.analisis.recomendaciones
-    : workspace.analisis.recomendaciones.filter((item) => item.tipo === tabActiva);
+function comoOracion(texto: string) {
+  const pulido = texto.replace(/(\d)%/g, '$1 %');
+  return pulido.charAt(0).toUpperCase() + pulido.slice(1);
+}
 
-  if (vista === 'detalle' && recomendacionActiva) {
-    return (
-      <RecommendationDetailView
-        recomendacion={recomendacionActiva}
-        onBack={() => setVista('listado')}
+/**
+ * Divide el texto del motor en titulo (antes de ":") y cuerpo (despues). Simple a
+ * proposito: a diferencia de separarInstruccion() en Dashboard -- que descarta el
+ * preambulo porque Dashboard ya muestra el diagnostico aparte --, aqui SI se muestran las
+ * dos mitades, porque esta pantalla no tiene otro lugar donde ese contexto ya este dicho.
+ */
+function tituloYCuerpo(textoOriginal: string): { titulo: string; cuerpo: string | null } {
+  const texto = pulirCopy(textoOriginal);
+  const corte = texto.indexOf(':');
+  if (corte < 0) return { titulo: comoOracion(texto), cuerpo: null };
+  return { titulo: comoOracion(texto.slice(0, corte).trim()), cuerpo: comoOracion(texto.slice(corte + 1).trim()) };
+}
+
+/**
+ * Dato relacionado: solo para los textos donde la asociacion es 100% determinista.
+ *
+ * El motor tiene exactamente 6 plantillas posibles (auditado en recomendaciones.py). Dos
+ * de ellas -- alerta_gasto_elevado y categoria_alta -- interpolan una categoria que el
+ * motor NO devuelve estructurada (solo queda dentro del texto libre); extraerla de ahi
+ * seria la "coincidencia textual fragil" que se pidio evitar, asi que esas dos no
+ * muestran dato relacionado. Las otras cuatro son strings FIJOS (sin interpolar nada
+ * mas que ya se compara por igualdad exacta, no por keyword), y para esas la auditoria
+ * aprobo reusar razonesPerfil (perfil_general) o tasaAhorro (ahorro_bajo).
+ */
+function datoRelacionado(textoOriginal: string, analisis: ResultadoAnalisis): string | null {
+  if (
+    textoOriginal === 'Tu situacion actual requiere atencion: prioriza reducir gastos discrecionales y evita adquirir nueva deuda este mes.' ||
+    textoOriginal === 'Estas en una zona de alerta temprana: revisa tus categorias de mayor gasto antes de que se conviertan en un problema.'
+  ) {
+    return datoDesdeRazonPerfil(analisis);
+  }
+  if (
+    textoOriginal === 'Tu perfil es saludable, pero tu margen de ahorro real es bajo: conviene generar un colchon de emergencia.' ||
+    textoOriginal === 'Aumenta tu frecuencia de ahorro: hoy te queda menos del 10% de tu ingreso disponible.'
+  ) {
+    return `Tu tasa de ahorro actual es ${formatPercent(analisis.tasaAhorro)}.`;
+  }
+  return null;
+}
+
+/** Misma logica de interpretarRazon() en Analisis (duplicada, no importada: es un helper de presentacion local a cada pantalla). */
+function datoDesdeRazonPerfil(analisis: ResultadoAnalisis): string | null {
+  const razon = analisis.razonesPerfil[0];
+  if (!razon) return null;
+  if (
+    /^el nivel de endeudamiento supera el \d+% del ingreso$/.test(razon) ||
+    /^el endeudamiento esta en zona moderada \(\d+%-\d+%\)$/.test(razon)
+  ) {
+    return `${formatPercent(analisis.nivelEndeudamiento)} de tus ingresos está comprometido con deuda.`;
+  }
+  if (
+    /^los gastos representan mas del \d+% del ingreso mensual$/.test(razon) ||
+    /^los gastos representan entre el \d+% y \d+% del ingreso$/.test(razon)
+  ) {
+    return `${formatPercent(analisis.ratioGastoIngreso)} de tus ingresos se destina a gastos.`;
+  }
+  return null;
+}
+
+/**
+ * Etiqueta e icono visual por tipo. `tipo` no viene del motor -- lo infiere
+ * convertirRecomendacion() en el servicio, buscando palabras dentro del texto (ver
+ * auditoria) -- asi que aqui se usa unicamente como adorno secundario, nunca para decidir
+ * orden ni prioridad.
+ */
+const ETIQUETA_TIPO: Record<Recomendacion['tipo'], string> = {
+  gastos: 'Gastos',
+  ahorro: 'Ahorro',
+  deudas: 'Deudas',
+  ingresos: 'Ingresos'
+};
+
+const ICONO_TIPO: Record<Recomendacion['tipo'], JSX.Element> = {
+  gastos: <Receipt size={13} weight="bold" />,
+  ahorro: <PiggyBank size={13} weight="bold" />,
+  deudas: <CreditCard size={13} weight="bold" />,
+  ingresos: <TrendUp size={13} weight="bold" />
+};
+
+/** Tono del icono de "Prioridad del mes": el unico lugar donde vive el color de severidad, y sale del perfil real, no de texto. */
+function tonoDelPerfil(perfil: string): 'sano' | 'atencion' | 'riesgo' {
+  if (perfil.startsWith('En riesgo')) return 'riesgo';
+  if (perfil.startsWith('En observaci')) return 'atencion';
+  return 'sano';
+}
+
+export function RecommendationsPage({ workspace, navegar }: PageProps) {
+  const [activa, setActiva] = useState<Recomendacion | null>(null);
+  const { analisis } = workspace;
+  const periodo = nombreDelPeriodo(workspace.mesAnalizado);
+  // Orden real del motor: ya viene ordenado por prioridad numerica antes de salir de
+  // recomendaciones.py, y ese orden se preserva sin tocarse hasta aca. recomendaciones[0]
+  // es siempre la mas urgente -- por eso NUNCA se reordena por el badge Alta/Media/Baja.
+  const recomendaciones = analisis.recomendaciones;
+
+  return <section className="page-stack recomendaciones">
+    <PageHeader title="Recomendaciones" subtitle={`Acciones priorizadas a partir de tu situación financiera de ${periodo ?? 'este período'}.`} />
+
+    {!workspace.analisisListo && (
+      <EstadoVacio
+        titulo={`Aún no podemos generar recomendaciones para ${periodo ?? 'este período'}.`}
+        cuerpo="Completa el análisis del período para que FinanceAI pueda identificar oportunidades."
+        navegar={navegar}
       />
-    );
-  }
+    )}
 
-  if (vista === 'proyeccion') {
-    return <ProjectionView workspace={workspace} onBack={() => setVista('listado')} />;
-  }
+    {workspace.analisisListo && recomendaciones.length === 0 && (
+      <EstadoVacio
+        titulo={`No detectamos acciones prioritarias para ${periodo ?? 'este período'}.`}
+        cuerpo="FinanceAI no encontró oportunidades específicas con la información actual de este período."
+        navegar={navegar}
+      />
+    )}
 
-  return (
-    <section className="page-stack">
-      <PageHeader title="Recomendaciones" subtitle="Sugerencias personalizadas para mejorar tu salud financiera." />
-      <div className="tabs">
-        {([
-          ['todas', 'Todas'],
-          ['gastos', 'Gastos'],
-          ['ahorro', 'Ahorro'],
-          ['deudas', 'Deudas'],
-          ['ingresos', 'Ingresos']
-        ] as const).map(([id, label]) => (
-          <button key={id} className={tabActiva === id ? 'active' : ''} onClick={() => setTabActiva(id)}>{label}</button>
-        ))}
+    {workspace.analisisListo && recomendaciones.length > 0 && <>
+      <PrioridadDelMes
+        recomendacion={recomendaciones[0]}
+        analisis={analisis}
+        tono={tonoDelPerfil(analisis.perfilFinanciero)}
+        onVerDetalle={() => setActiva(recomendaciones[0])}
+      />
+
+      {recomendaciones.length > 1 && (
+        <div className="re-otras">
+          <h2>Otras oportunidades</h2>
+          <div className="re-otras-grid">
+            {recomendaciones.slice(1, 4).map((item) => (
+              <OportunidadCard key={item.id} recomendacion={item} analisis={analisis} onVerDetalle={() => setActiva(item)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="re-contexto">
+        <p className="re-contexto-titulo">¿Por qué estas recomendaciones?</p>
+        <p className="re-contexto-cuerpo">FinanceAI las genera a partir de tu análisis financiero y tus movimientos de {periodo ?? 'este período'}.</p>
+        <button type="button" className="re-enlace" onClick={() => navegar('analisis')}>Ver análisis <ArrowRight size={14} /></button>
       </div>
-      <div className="recommendations-layout">
-        <div className="recommendation-list">
-          {recomendacionesFiltradas.map((item) => (
-            <article className="recommendation-card" key={item.id}>
-              <span><Target size={30} /></span>
-              <div>
-                <h2>{item.titulo}</h2>
-                <p>{item.descripcion}</p>
-              </div>
-              <Badge tone={item.prioridad === 'Alta' ? 'red' : item.prioridad === 'Media' ? 'orange' : 'green'}>Prioridad: {item.prioridad}</Badge>
-              <button
-                className="outline-button"
-                onClick={() => {
-                  setRecomendacionActiva(item);
-                  setVista('detalle');
-                }}
-              >
-                Ver detalles
-              </button>
-            </article>
-          ))}
-          {/*
-            * Sin recomendaciones hay dos motivos distintos y el texto los separa: que el
-            * analisis del periodo no exista todavia, o que exista y no haya encontrado
-            * nada. Antes los dos decian lo mismo, y en un mes vacio parecia un veredicto.
-            */}
-          {recomendacionesFiltradas.length === 0 && (
-            <article className="subview-card empty-state">
-              <Target size={42} />
-              {workspace.analisisListo ? (
-                <>
-                  <h2>No hay recomendaciones en esta categoría</h2>
-                  <p>Cuando el análisis detecte oportunidades, aparecerán aquí.</p>
-                </>
-              ) : (
-                <>
-                  <h2>Todavía no hay recomendaciones</h2>
-                  <p>
-                    Aún no hay suficiente información para analizar
-                    {' '}{nombreDelPeriodo(workspace.mesAnalizado) ?? 'este período'}.
-                  </p>
-                </>
-              )}
-            </article>
+    </>}
+
+    {activa && <DetalleRecomendacionModal recomendacion={activa} analisis={analisis} onCerrar={() => setActiva(null)} />}
+  </section>;
+}
+
+function EstadoVacio({ titulo, cuerpo, navegar }: { titulo: string; cuerpo: string; navegar: PageProps['navegar'] }) {
+  return <article className="re-estado">
+    <Target size={40} />
+    <h2>{titulo}</h2>
+    <p>{cuerpo}</p>
+    <button type="button" className="re-boton primario" onClick={() => navegar('analisis')}>Ver análisis</button>
+  </article>;
+}
+
+function PrioridadDelMes({ recomendacion, analisis, tono, onVerDetalle }: {
+  recomendacion: Recomendacion;
+  analisis: ResultadoAnalisis;
+  tono: 'sano' | 'atencion' | 'riesgo';
+  onVerDetalle: () => void;
+}) {
+  const { titulo, cuerpo } = tituloYCuerpo(recomendacion.descripcion);
+  const dato = datoRelacionado(recomendacion.descripcion, analisis);
+
+  return <article className="re-card re-principal">
+    <p className="re-eyebrow"><span className={`re-icono tono-${tono}`}><Target size={13} weight="bold" /></span> Prioridad del mes</p>
+    <h2>{titulo}</h2>
+    {cuerpo && <p className="re-principal-cuerpo">{cuerpo}</p>}
+    {dato && <p className="re-principal-dato">{dato}</p>}
+    <button type="button" className="re-enlace primario" onClick={onVerDetalle}>Ver recomendación <ArrowRight size={16} /></button>
+  </article>;
+}
+
+function OportunidadCard({ recomendacion, analisis, onVerDetalle }: {
+  recomendacion: Recomendacion;
+  analisis: ResultadoAnalisis;
+  onVerDetalle: () => void;
+}) {
+  const { titulo, cuerpo } = tituloYCuerpo(recomendacion.descripcion);
+  const dato = datoRelacionado(recomendacion.descripcion, analisis);
+
+  return <article className="re-card re-oportunidad">
+    <p className="re-eyebrow">{ICONO_TIPO[recomendacion.tipo]} {ETIQUETA_TIPO[recomendacion.tipo]}</p>
+    <h3>{titulo}</h3>
+    {cuerpo && <p className="re-oportunidad-cuerpo">{cuerpo}</p>}
+    {dato && <p className="re-oportunidad-dato">{dato}</p>}
+    <button type="button" className="re-enlace" onClick={onVerDetalle}>Ver recomendación <ArrowRight size={14} /></button>
+  </article>;
+}
+
+/**
+ * Detalle de una recomendacion, en el modal ya aprobado de FinanceAI (mismo patron que
+ * ModalPresupuesto.tsx y CompletarIngresoModal en Analisis: portal a document.body,
+ * `inert` en .layout, scroll bloqueado, trampa de foco, Escape cierra).
+ *
+ * Antes esto navegaba a una vista aparte con plazo sugerido, checklist generico y
+ * "marcar como plan de accion" -- nada de eso vino nunca del motor (la auditoria lo
+ * confirmo), asi que no se traslada al rediseño. Solo se muestra lo que es real: el
+ * cuerpo del texto del motor ("por que aparece") y el dato relacionado si existe.
+ */
+function DetalleRecomendacionModal({ recomendacion, analisis, onCerrar }: {
+  recomendacion: Recomendacion;
+  analisis: ResultadoAnalisis;
+  onCerrar: () => void;
+}) {
+  const { titulo, cuerpo } = tituloYCuerpo(recomendacion.descripcion);
+  const dato = datoRelacionado(recomendacion.descripcion, analisis);
+  const modal = useRef<HTMLDivElement>(null);
+  const cerrarRef = useRef<HTMLButtonElement>(null);
+  const idTitulo = useId();
+
+  useEffect(() => {
+    const origen = document.activeElement as HTMLElement | null;
+    const raiz = document.querySelector('.layout');
+    const overflowPrevio = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    raiz?.setAttribute('inert', '');
+    return () => {
+      raiz?.removeAttribute('inert');
+      document.body.style.overflow = overflowPrevio;
+      origen?.focus?.();
+    };
+  }, []);
+
+  useEffect(() => { cerrarRef.current?.focus(); }, []);
+
+  useEffect(() => {
+    function alPulsarTecla(evento: KeyboardEvent) {
+      if (evento.key === 'Escape') { onCerrar(); return; }
+      if (evento.key !== 'Tab' || !modal.current) return;
+      const enfocables = [...modal.current.querySelectorAll<HTMLElement>(ENFOCABLES)]
+        .filter((elemento) => !elemento.hasAttribute('disabled') && elemento.offsetParent !== null);
+      if (enfocables.length === 0) return;
+      const primero = enfocables[0];
+      const ultimo = enfocables[enfocables.length - 1];
+      if (evento.shiftKey && document.activeElement === primero) { evento.preventDefault(); ultimo.focus(); }
+      else if (!evento.shiftKey && document.activeElement === ultimo) { evento.preventDefault(); primero.focus(); }
+    }
+    document.addEventListener('keydown', alPulsarTecla);
+    return () => document.removeEventListener('keydown', alPulsarTecla);
+  }, [onCerrar]);
+
+  return createPortal(
+    <div className="fa-modal-velo re-dialogo">
+      <div className="fa-modal" ref={modal} role="dialog" aria-modal="true" aria-labelledby={idTitulo}>
+        <header className="fa-modal-cabecera">
+          <div><h2 id={idTitulo}>{titulo}</h2></div>
+          <button ref={cerrarRef} type="button" className="fa-modal-cerrar" aria-label="Cerrar" onClick={onCerrar}><X size={18} /></button>
+        </header>
+        <div className="fa-modal-cuerpo">
+          <div>
+            <p className="re-eyebrow">Por qué aparece</p>
+            <p className="re-detalle-texto">{cuerpo ?? comoOracion(pulirCopy(recomendacion.descripcion))}</p>
+          </div>
+          {dato && (
+            <div>
+              <p className="re-eyebrow">Dato relacionado</p>
+              <p className="re-detalle-texto">{dato}</p>
+            </div>
           )}
         </div>
-        <Card title="Impacto estimado">
-          <div className="indicator-list">
-            <p><span>Gasto mensual actual</span><strong>{workspace.analisis.gastoTotalMes.toFixed(2)}</strong></p>
-            <p><span>Ahorro registrado</span><strong className="positive">{workspace.analisis.ahorroTotal.toFixed(2)}</strong></p>
-            <p><span>Perfil actual</span><strong>{workspace.analisis.perfilFinanciero}</strong></p>
-          </div>
-          <button className="link-button" onClick={() => setVista('proyeccion')}>Ver proyeccion detallada <ArrowRight size={18} /></button>
-        </Card>
-      </div>
-    </section>
-  );
-}
-
-function RecommendationDetailView({
-  recomendacion,
-  onBack
-}: {
-  recomendacion: Recomendacion;
-  onBack: () => void;
-}) {
-  const [marcada, setMarcada] = useState(false);
-  return (
-    <section className="page-stack">
-      <PageHeader
-        title="Detalle de recomendación"
-        subtitle="Acciones sugeridas para aplicar esta mejora financiera."
-        action={<button className="outline-button" onClick={onBack}><ArrowLeft size={18} /> Volver</button>}
-      />
-      <article className="subview-card recommendation-detail">
-        <Badge tone={recomendacion.prioridad === 'Alta' ? 'red' : recomendacion.prioridad === 'Media' ? 'orange' : 'green'}>Prioridad: {recomendacion.prioridad}</Badge>
-        <h2>{recomendacion.titulo}</h2>
-        <p>{recomendacion.descripcion}</p>
-        <div className="detail-grid">
-          <article><small>Tipo</small><strong>{recomendacion.tipo}</strong></article>
-          <article><small>Prioridad</small><strong>{recomendacion.prioridad}</strong></article>
-          <article><small>Plazo sugerido</small><strong>30 días</strong></article>
+        <div className="fa-modal-pie">
+          <button type="button" className="fa-modal-cta" onClick={onCerrar}>Entendido</button>
         </div>
-        <div className="action-checklist">
-          <p><CheckCircle size={20} weight="fill" /> Revisar movimientos de los últimos 30 días.</p>
-          <p><CheckCircle size={20} weight="fill" /> Definir un límite mensual para la categoría afectada.</p>
-          <p><CheckCircle size={20} weight="fill" /> Medir el impacto en el siguiente análisis.</p>
-        </div>
-        <button className="primary-button" onClick={() => setMarcada(true)}>{marcada ? 'Añadida al plan de esta sesión' : 'Marcar como plan de acción'}</button>
-      </article>
-    </section>
-  );
-}
-
-function ProjectionView({ workspace, onBack }: { workspace: PageProps['workspace']; onBack: () => void }) {
-  const reduccionObjetivo = workspace.analisis.gastoTotalMes * 0.1;
-  const ahorroOptimizado = workspace.analisis.ahorroTotal + reduccionObjetivo;
-  return (
-    <section className="page-stack">
-      <PageHeader
-        title="Proyeccion detallada"
-        subtitle="Estimación de impacto si aplicas las recomendaciones principales."
-        action={<button className="outline-button" onClick={onBack}><ArrowLeft size={18} /> Volver</button>}
-      />
-      <div className="two-column-grid">
-        <article className="subview-card">
-          <h2>Escenario actual</h2>
-          <div className="indicator-list">
-            <p><span>Ahorro registrado</span><strong>$ {workspace.analisis.ahorroTotal.toFixed(2)}</strong></p>
-            <p><span>Gasto mensual</span><strong>$ {workspace.analisis.gastoTotalMes.toFixed(2)}</strong></p>
-            <p><span>Perfil</span><strong>{workspace.analisis.perfilFinanciero}</strong></p>
-          </div>
-        </article>
-        <article className="subview-card">
-          <h2>Escenario optimizado</h2>
-          <div className="indicator-list">
-            <p><span>Ahorro mensual</span><strong className="positive">$ {ahorroOptimizado.toFixed(2)}</strong></p>
-            <p><span>Reduccion objetivo (10%)</span><strong className="blue">$ {reduccionObjetivo.toFixed(2)}</strong></p>
-            <p><span>Resultado esperado</span><strong className="positive">Mayor margen financiero</strong></p>
-          </div>
-        </article>
       </div>
-      <article className="subview-card">
-        <h2>Proyeccion por mes</h2>
-        <table className="data-table roomy">
-          <thead><tr><th>Mes</th><th>Ahorro proyectado</th><th>Gasto reducido</th><th>Perfil esperado</th></tr></thead>
-          <tbody>
-            {[1, 2, 3].map((mes) => <tr key={mes}><td>Mes {mes}</td><td>$ {(workspace.analisis.ahorroTotal + reduccionObjetivo * mes).toFixed(2)}</td><td>$ {(reduccionObjetivo * mes).toFixed(2)}</td><td>Mejora progresiva</td></tr>)}
-          </tbody>
-        </table>
-      </article>
-    </section>
+    </div>,
+    document.body
   );
 }
