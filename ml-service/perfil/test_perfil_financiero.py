@@ -65,9 +65,18 @@ def test_probabilidad_esta_presente_en_la_respuesta():
 
 
 def test_perfil_en_observacion_tiene_tilde():
-    """Regresion: el valor debe coincidir exacto con el contrato aprobado por el equipo."""
+    """
+    Regresion: el valor debe coincidir exacto con el contrato aprobado por el equipo.
+
+    Actualizado 2026-08-25: 38% deuda + 80% gasto = 118% del ingreso comprometido.
+    Antes de agregar la condicion de ahorro_estimado al veredicto, ninguno de los dos
+    umbrales individuales (43% deuda, 90% gasto) se cruzaba y el resultado era
+    "En observación" pese al sobrecompromiso combinado. El "contrato aprobado por el
+    equipo" original quedo desactualizado frente a esta correccion; el nuevo valor
+    esperado es "En riesgo".
+    """
     resultado = analizar_perfil(ingreso_mensual=1000000, nivel_endeudamiento=38, gasto_total_mes=800000, ratio_gasto_ingreso=0.8)
-    assert resultado["perfil_financiero"] == "En observación"
+    assert resultado["perfil_financiero"] == "En riesgo"
 
 
 def test_gasto_excede_ingreso_no_rompe():

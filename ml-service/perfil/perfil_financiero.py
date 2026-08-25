@@ -79,10 +79,19 @@ def estimar_frecuencia_ahorro(ratio_gasto_ingreso: float, nivel_endeudamiento: f
     return frecuencia, ahorro_estimado_pct
 
 
-def calcular_perfil_reglas(nivel_endeudamiento: float, ratio_gasto_ingreso: float):
+def calcular_perfil_reglas(nivel_endeudamiento: float, ratio_gasto_ingreso: float, ahorro_estimado: float = None):
     """
     Fuente de verdad de las REGLAS de negocio (usada para explicabilidad
     y como respaldo si el modelo no esta disponible).
+
+    ahorro_estimado es opcional (compatibilidad con quien llame con 2 argumentos,
+    ej. el notebook): si no llega, la tercera condicion simplemente no se evalua.
+
+    Se agrega porque nivel_endeudamiento y ratio_gasto_ingreso se evaluan cada uno
+    contra su propio umbral por separado: alguien con 43% de deuda y 60% de gasto
+    no cruza ninguno de los dos limites individuales, pero ya comprometio el 103%
+    del ingreso. ahorro_estimado (lo que sobra del ingreso despues de ambos) es la
+    señal que faltaba para detectar ese caso.
     """
     razones = []
 
@@ -90,6 +99,8 @@ def calcular_perfil_reglas(nivel_endeudamiento: float, ratio_gasto_ingreso: floa
         razones.append("el nivel de endeudamiento supera el 43% del ingreso")
     if ratio_gasto_ingreso > 0.9:
         razones.append("los gastos representan mas del 90% del ingreso mensual")
+    if ahorro_estimado is not None and ahorro_estimado <= 0:
+        razones.append("el gasto y la deuda combinados igualan o superan el ingreso mensual")
     if razones:
         return "En riesgo", razones
 
@@ -97,6 +108,8 @@ def calcular_perfil_reglas(nivel_endeudamiento: float, ratio_gasto_ingreso: floa
         razones.append("el endeudamiento esta en zona moderada (36%-43%)")
     if 0.8 <= ratio_gasto_ingreso <= 0.9:
         razones.append("los gastos representan entre el 80% y 90% del ingreso")
+    if ahorro_estimado is not None and 0 < ahorro_estimado < 0.05:
+        razones.append("el margen que queda tras gasto y deuda es menor al 5% del ingreso")
     if razones:
         return "En observación", razones
 
@@ -141,7 +154,6 @@ def analizar_perfil(ingreso_mensual: float, nivel_endeudamiento: float,
     a las reglas puras (fallback), para que el endpoint nunca se caiga en produccion.
     """
     ratio = ratio_gasto_ingreso if ratio_gasto_ingreso is not None else gasto_total_mes / ingreso_mensual
-    razones_reglas = calcular_perfil_reglas(nivel_endeudamiento, ratio)[1]
 
     frecuencia_calculada, ahorro_estimado_pct = estimar_frecuencia_ahorro(ratio, nivel_endeudamiento)
     inconsistencia_ahorro = None
@@ -152,13 +164,19 @@ def analizar_perfil(ingreso_mensual: float, nivel_endeudamiento: float,
         )
     frecuencia_ahorro_final = frecuencia_calculada
 
+    # Mismo calculo (sin redondear) que hace estimar_frecuencia_ahorro -- se
+    # necesita otra vez aqui para la tercera condicion del veredicto de riesgo,
+    # que tampoco debe comparar contra el valor ya redondeado para mostrar.
+    ahorro_estimado_bruto = max(0.0, 1 - ratio - nivel_endeudamiento / 100)
+
     # El VEREDICTO siempre sale de las reglas de negocio (deterministico, 100%
-    # consistente con los umbrales documentados: 36%, 43%, 0.80, 0.90).
+    # consistente con los umbrales documentados: 36%, 43%, 0.80, 0.90, y el
+    # margen combinado via ahorro_estimado_bruto).
     # El MODELO solo aporta la probabilidad/confianza para ese mismo veredicto
     # -- asi se cumple el requisito de "modelo entrenado y cargado" sin
     # arriesgar que el veredicto varie en los bordes por el ruido que se le
     # agrego al dataset a proposito (para que la probabilidad fuera realista).
-    perfil, razones_reglas = calcular_perfil_reglas(nivel_endeudamiento, ratio)
+    perfil, razones_reglas = calcular_perfil_reglas(nivel_endeudamiento, ratio, ahorro_estimado_bruto)
 
     try:
         modelo = cargar_modelo()
