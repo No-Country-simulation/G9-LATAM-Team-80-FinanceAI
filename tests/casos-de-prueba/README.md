@@ -11,10 +11,12 @@ Todo esta expresado en **una sola moneda (COP)** y **un solo mes**.
 Ejecutado el 2026-08-22 sobre `main` en el commit `ea5c324`, con el ambiente local
 levantado y la base limpia: **28 de 30 casos coinciden**.
 
-**Nota 2026-08-25**: esta corrida es anterior al cambio que agrega `ahorro_estimado_pct`
-al veredicto (ver seccion 3). Los valores `esperado` de S-02, O-01, O-04, O-07, R-01, R-02,
-R-03 y U-02 ya se actualizaron para reflejar el nuevo comportamiento, pero esta tabla de
-"ultima corrida" todavia no se re-ejecuto contra el servicio corriendo con el cambio.
+**Re-ejecutado el 2026-08-25** contra el servicio local real (backend + ML + BD), despues de
+agregar la condicion de `ahorro_estimado_pct` al veredicto (ver seccion 3): **28 de 30 casos
+siguen coincidiendo**, mismo resultado que la corrida anterior. Los 8 casos afectados por el
+cambio (S-02, O-01, O-04, O-07, R-01, R-02, R-03, U-02) coinciden con sus nuevos valores
+esperados. Los 2 que difieren son los mismos de siempre (S-04 por C7, U-06 por C3b) -- el
+cambio no introdujo ninguna falla nueva.
 
 Los 2 que difieren son hallazgos abiertos, no fallas del set:
 
