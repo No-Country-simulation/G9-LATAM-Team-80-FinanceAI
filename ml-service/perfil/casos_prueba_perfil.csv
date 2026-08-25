@@ -2,14 +2,14 @@ caso,ingreso_mensual,nivel_endeudamiento,frecuencia_ahorro,gasto_total_mes,perfi
 Saludable claro,1200000,10.0,Alta,800000,Saludable,0.67
 Riesgo por endeudamiento alto,1200000,50.0,Baja,700000,En riesgo,0.58
 Riesgo por gasto excesivo,1200000,15.0,Baja,1150000,En riesgo,0.96
-Observacion por endeudamiento,1200000,38.0,Media,800000,En observacion,0.67
+Observacion por endeudamiento,1200000,38.0,Media,800000,En riesgo,0.67
 Observacion por ratio de gasto,1200000,10.0,Media,1020000,En observacion,0.85
-Limite exacto 36% deuda,1000000,36.0,Media,700000,En observacion,0.7
-Justo bajo el limite (35.9%),1000000,35.9,Alta,700000,Saludable,0.7
-Limite exacto 43% deuda,1000000,43.0,Media,700000,En observacion,0.7
+Limite exacto 36% deuda,1000000,36.0,Media,700000,En riesgo,0.7
+Justo bajo el limite (35.9%),1000000,35.9,Alta,700000,En riesgo,0.7
+Limite exacto 43% deuda,1000000,43.0,Media,700000,En riesgo,0.7
 Justo sobre el limite (43.1%),1000000,43.1,Baja,700000,En riesgo,0.7
 Ratio exacto 0.80,1000000,10.0,Media,800000,En observacion,0.8
-Ratio exacto 0.90,1000000,10.0,Baja,900000,En observacion,0.9
+Ratio exacto 0.90,1000000,10.0,Baja,900000,En riesgo,0.9
 Ratio justo sobre 0.90 (0.91),1000000,10.0,Baja,910000,En riesgo,0.91
 Deuda baja pero gasta casi todo,900000,5.0,Baja,880000,En riesgo,0.98
 Deuda alta pero gasta poco,900000,45.0,Alta,400000,En riesgo,0.44

@@ -11,6 +11,13 @@ Todo esta expresado en **una sola moneda (COP)** y **un solo mes**.
 Ejecutado el 2026-08-22 sobre `main` en el commit `ea5c324`, con el ambiente local
 levantado y la base limpia: **28 de 30 casos coinciden**.
 
+**Re-ejecutado el 2026-08-25** contra el servicio local real (backend + ML + BD), despues de
+agregar la condicion de `ahorro_estimado_pct` al veredicto (ver seccion 3): **28 de 30 casos
+siguen coincidiendo**, mismo resultado que la corrida anterior. Los 8 casos afectados por el
+cambio (S-02, O-01, O-04, O-07, R-01, R-02, R-03, U-02) coinciden con sus nuevos valores
+esperados. Los 2 que difieren son los mismos de siempre (S-04 por C7, U-06 por C3b) -- el
+cambio no introdujo ninguna falla nueva.
+
 Los 2 que difieren son hallazgos abiertos, no fallas del set:
 
 | ID | Que pasa | Causa |
@@ -96,14 +103,21 @@ Efecto en `analisis_financieros`: las ultimas corridas guardaron
 
 ```
 ratio = gasto_total_mes / ingreso_mensual
+ahorro_estimado_pct = max(0, 1 - ratio - endeudamiento/100)
 
-En riesgo        si  endeudamiento > 43   O  ratio > 0.90
-En observación   si  36 <= endeudamiento <= 43  O  0.80 <= ratio <= 0.90
+En riesgo        si  endeudamiento > 43   O  ratio > 0.90  O  ahorro_estimado_pct <= 0
+En observación   si  36 <= endeudamiento <= 43  O  0.80 <= ratio <= 0.90  O  0 < ahorro_estimado_pct < 0.05
 Saludable        en cualquier otro caso
 
-ahorro_estimado_pct = max(0, 1 - ratio - endeudamiento/100)
 frecuencia_ahorro   = Alta si > 0.20 | Media si >= 0.10 | Baja si < 0.10
 ```
+
+**Actualizado 2026-08-25**: se agrego la condicion de `ahorro_estimado_pct` al veredicto (antes
+solo alimentaba `frecuencia_ahorro`, nunca el perfil). Antes de este cambio, endeudamiento y
+gasto se evaluaban cada uno por separado: 43% deuda + 60% gasto (103% del ingreso combinado) no
+cruzaba ningun umbral individual y salia "En observación" o incluso "Saludable" -- era la
+incoherencia mas visible del modelo (ver S-02 abajo). Ver
+[perfil_financiero.py:82](../../feature-financeAI/ml-service/perfil_financiero.py:82).
 
 ## 4. Matriz de casos (nivel API)
 
@@ -117,7 +131,7 @@ dependa de la clasificacion ni de sumas intermedias.
 | ID | Deuda % | Gasto | Ratio | Perfil | Ahorro est. | Frec. | Que aisla |
 |---|---:|---:|---:|---|---:|---|---|
 | S-01 | 20 | 2.750.000 | 0.55 | Saludable | 0.25 | Alta | camino feliz |
-| S-02 | 35.9 | 3.500.000 | 0.70 | Saludable | 0.00 | Baja | frontera 36% por abajo |
+| S-02 | 35.9 | 3.500.000 | 0.70 | **En riesgo** (desde 2026-08-25, antes Saludable) | 0.00 | Baja | frontera 36% por abajo, pero ahorro combinado <= 0 |
 | S-03 | 10 | 3.950.000 | 0.79 | Saludable | 0.11 | Media | frontera 0.80 por abajo |
 | S-04 | 10 | 3.500.000 | 0.70 | Saludable | 0.20 | **Media** (hoy da Alta) | borde Alta/Media, ver C7 |
 | S-05 | 10 | 3.450.000 | 0.69 | Saludable | 0.21 | Alta | contraste de S-04 |
@@ -129,21 +143,21 @@ que no coincide hoy, y la causa es C7 en la tabla de abajo.
 
 | ID | Deuda % | Gasto | Ratio | Perfil | Ahorro est. | Frec. | Que aisla |
 |---|---:|---:|---:|---|---:|---|---|
-| O-01 | 38 | 3.000.000 | 0.60 | En observación | 0.02 | Baja | solo por deuda, 1 razon |
-| O-02 | 10 | 4.250.000 | 0.85 | En observación | 0.05 | Baja | solo por gasto, 1 razon |
-| O-03 | 36.0 | 3.000.000 | 0.60 | En observación | 0.04 | Baja | borde 36 inclusivo |
-| O-04 | 43.0 | 3.000.000 | 0.60 | En observación | 0.00 | Baja | borde 43 inclusivo |
+| O-01 | 38 | 3.000.000 | 0.60 | En observación | 0.02 | Baja | deuda + margen <0.05, **2 razones** (desde 2026-08-25, antes 1) |
+| O-02 | 10 | 4.250.000 | 0.85 | En observación | 0.05 | Baja | solo por gasto, 1 razon (0.05 no entra al tramo <0.05) |
+| O-03 | 36.0 | 3.000.000 | 0.60 | En observación | 0.04 | Baja | borde 36 inclusivo + margen <0.05, 2 razones |
+| O-04 | 43.0 | 3.000.000 | 0.60 | **En riesgo** (desde 2026-08-25, antes En observación) | 0.00 | Baja | borde 43 inclusivo, pero ahorro combinado <= 0 |
 | O-05 | 5 | 4.000.000 | 0.80 | En observación | 0.15 | Media | borde 0.80 inclusivo |
-| O-06 | 5 | 4.500.000 | 0.90 | En observación | 0.05 | Baja | borde 0.90 inclusivo |
-| O-07 | 38 | 4.250.000 | 0.85 | En observación | 0.00 | Baja | **2 razones** |
+| O-06 | 5 | 4.500.000 | 0.90 | En observación | 0.05 | Baja | borde 0.90 inclusivo + margen <0.05 (por error de punto flotante, ver C7), 2 razones |
+| O-07 | 38 | 4.250.000 | 0.85 | **En riesgo** (desde 2026-08-25, antes En observación con 2 razones) | 0.00 | Baja | ahorro combinado <= 0, **1 razon** |
 
 ### En riesgo
 
 | ID | Deuda % | Gasto | Ratio | Perfil | Ahorro est. | Frec. | Que aisla |
 |---|---:|---:|---:|---|---:|---|---|
-| R-01 | 43.1 | 3.000.000 | 0.60 | En riesgo | 0.00 | Baja | primer cruce por deuda |
-| R-02 | 10 | 4.550.000 | 0.91 | En riesgo | 0.00 | Baja | primer cruce por gasto |
-| R-03 | 55 | 4.750.000 | 0.95 | En riesgo | 0.00 | Baja | **2 razones** |
+| R-01 | 43.1 | 3.000.000 | 0.60 | En riesgo | 0.00 | Baja | primer cruce por deuda + margen <=0, **2 razones** (desde 2026-08-25, antes 1) |
+| R-02 | 10 | 4.550.000 | 0.91 | En riesgo | 0.00 | Baja | primer cruce por gasto + margen <=0, **2 razones** (desde 2026-08-25, antes 1) |
+| R-03 | 55 | 4.750.000 | 0.95 | En riesgo | 0.00 | Baja | **3 razones** (desde 2026-08-25, antes 2) |
 | R-04 | 15 | 5.500.000 | 1.10 | En riesgo | 0.00 | Baja | ratio > 1, ahorro no negativo |
 | R-05 | 100 | 500.000 | 0.10 | En riesgo | 0.00 | Baja | tope de validacion |
 
@@ -152,7 +166,7 @@ que no coincide hoy, y la causa es C7 en la tabla de abajo.
 | ID | Que reproduce | Causa |
 |---|---|---|
 | U-01 | Ingreso 4.500 con gastos en COP: responde 200 OK con ratio 47.111% | C1 |
-| U-02 | Nomina de 5.500.000 en la lista, pero el ratio usa los 3.000.000 del formulario | C2 |
+| U-02 | Nomina de 5.500.000 en la lista, pero el ratio usa los 3.000.000 del formulario. Desde 2026-08-25 el ratio de 0.80 ya no da "En observacion" sino "En riesgo" (20% deuda + 80% gasto = 100% del ingreso) | C2 |
 | U-03 | Presupuesto cuadrado al peso: ahorro real 25%, el sistema estima 5% | C3 |
 | U-04 | Usuario declara ahorro "Alta", la respuesta dice "Baja", `_inconsistencia_ahorro` = null | C4 |
 | U-05 | Arriendo de julio y de agosto sumados en `gasto_total_mes` | C5 |

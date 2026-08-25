@@ -4,11 +4,12 @@
   "nota": "Todos los casos usan UNA sola unidad monetaria (COP) y un solo mes. El endpoint POST /api/analisis-financiero calcula gasto_total_mes SOLO con las transacciones tipo 'gasto' del payload; ignora las de tipo 'ingreso' (el ingreso viene del campo del formulario). Por eso cada caso lleva una unica transaccion 'gasto' con el monto exacto: asi el ratio queda sin ambiguedad.",
   "reglas_de_referencia": {
     "ratio_gasto_ingreso": "gasto_total_mes / ingreso_mensual",
-    "En riesgo": "nivel_endeudamiento > 43  O  ratio > 0.90",
-    "En observacion": "36 <= nivel_endeudamiento <= 43  O  0.80 <= ratio <= 0.90",
-    "Saludable": "ninguna de las anteriores",
     "ahorro_estimado_pct": "max(0, 1 - ratio - nivel_endeudamiento/100)",
-    "frecuencia_ahorro": "Alta si > 0.20 | Media si >= 0.10 | Baja si < 0.10"
+    "En riesgo": "nivel_endeudamiento > 43  O  ratio > 0.90  O  ahorro_estimado_pct <= 0",
+    "En observacion": "36 <= nivel_endeudamiento <= 43  O  0.80 <= ratio <= 0.90  O  0 < ahorro_estimado_pct < 0.05",
+    "Saludable": "ninguna de las anteriores",
+    "frecuencia_ahorro": "Alta si > 0.20 | Media si >= 0.10 | Baja si < 0.10",
+    "nota_2026-08-25": "Se agrego la condicion de ahorro_estimado_pct al veredicto (antes solo alimentaba frecuencia_ahorro). Antes de este cambio, deuda y gasto se evaluaban solo por separado: 43% deuda + 60% gasto (103% del ingreso) no cruzaba ningun umbral individual y salia 'En observacion' o 'Saludable'. Ver S-02, O-04, O-07, U-02 abajo."
   },
   "casos": [
     {
@@ -55,12 +56,13 @@
       },
       "esperado": {
         "http": 200,
-        "perfil_financiero": "Saludable",
+        "perfil_financiero": "En riesgo",
         "ratio_gasto_ingreso": 0.7,
         "ahorro_estimado_pct": 0.0,
-        "frecuencia_ahorro": "Baja"
+        "frecuencia_ahorro": "Baja",
+        "n_razones": 1
       },
-      "verifica": "Frontera 36%. Ojo: el perfil sale Saludable pero el ahorro estimado es 0% (gasto + deuda = 105.9% del ingreso). Es la incoherencia mas visible del modelo actual."
+      "verifica": "Frontera 36%. Antes de agregar la condicion de ahorro_estimado_pct al veredicto (2026-08-25), este caso salia 'Saludable' pese a que gasto + deuda = 105.9% del ingreso -- era 'la incoherencia mas visible del modelo actual'. Ahora ahorro_estimado_pct <= 0 lo marca En riesgo."
     },
     {
       "id": "S-03",
@@ -160,10 +162,10 @@
         "ratio_gasto_ingreso": 0.6,
         "ahorro_estimado_pct": 0.02,
         "frecuencia_ahorro": "Baja",
-        "n_razones": 1,
+        "n_razones": 2,
         "probabilidad_max": 0.99
       },
-      "verifica": "Una sola razon, y debe hablar de endeudamiento. Ademas acota la probabilidad: si vuelve a dar exactamente 1.0 es el fallback disfrazado de certeza (bug de la tilde entre 'En observación' y la clase 'En observacion' del modelo)."
+      "verifica": "DOS razones desde 2026-08-25: endeudamiento en zona moderada, y ademas ahorro_estimado_pct (0.02) cae en el nuevo tramo 0 < ahorro < 0.05. Antes solo hablaba de endeudamiento (n_razones: 1). Acota tambien la probabilidad: si vuelve a dar exactamente 1.0 es el fallback disfrazado de certeza (bug de la tilde entre 'En observación' y la clase 'En observacion' del modelo)."
     },
     {
       "id": "O-02",
@@ -235,12 +237,13 @@
       },
       "esperado": {
         "http": 200,
-        "perfil_financiero": "En observación",
+        "perfil_financiero": "En riesgo",
         "ratio_gasto_ingreso": 0.6,
         "ahorro_estimado_pct": 0.0,
-        "frecuencia_ahorro": "Baja"
+        "frecuencia_ahorro": "Baja",
+        "n_razones": 1
       },
-      "verifica": "43.0 todavia es observacion. Par de contraste con R-01 (43.1)."
+      "verifica": "Desde 2026-08-25: 43% deuda no cruza el umbral individual (>43), pero deuda + gasto = 103% del ingreso, asi que ahorro_estimado_pct <= 0 lo marca En riesgo por la nueva tercera condicion. Antes salia 'En observacion' (43.0 es el borde inclusivo del tramo moderado). Ya no es par de contraste limpio con R-01 (43.1): ambos dan En riesgo, por motivos distintos."
     },
     {
       "id": "O-05",
@@ -310,13 +313,13 @@
       },
       "esperado": {
         "http": 200,
-        "perfil_financiero": "En observación",
+        "perfil_financiero": "En riesgo",
         "ratio_gasto_ingreso": 0.85,
         "ahorro_estimado_pct": 0.0,
         "frecuencia_ahorro": "Baja",
-        "n_razones": 2
+        "n_razones": 1
       },
-      "verifica": "Debe devolver DOS razones, no una."
+      "verifica": "Desde 2026-08-25: 38% deuda y 0.85 ratio son cada uno moderados por separado, pero suman 123% del ingreso -- ahorro_estimado_pct <= 0 lo marca En riesgo por la nueva tercera condicion, con una sola razon (ninguno de los dos umbrales individuales de riesgo se cruza). Antes salia 'En observacion' con dos razones (endeudamiento moderado + ratio moderado)."
     },
     {
       "id": "R-01",
@@ -340,9 +343,9 @@
         "ratio_gasto_ingreso": 0.6,
         "ahorro_estimado_pct": 0.0,
         "frecuencia_ahorro": "Baja",
-        "n_razones": 1
+        "n_razones": 2
       },
-      "verifica": "Primer valor que cruza a riesgo por deuda."
+      "verifica": "Primer valor que cruza a riesgo por deuda. Desde 2026-08-25 suma una segunda razon: ahorro_estimado_pct tambien da 0 (43.1% + 60% = 103.1% del ingreso), asi que ademas de la razon de endeudamiento aparece la de margen combinado."
     },
     {
       "id": "R-02",
@@ -366,9 +369,9 @@
         "ratio_gasto_ingreso": 0.91,
         "ahorro_estimado_pct": 0.0,
         "frecuencia_ahorro": "Baja",
-        "n_razones": 1
+        "n_razones": 2
       },
-      "verifica": "Primer valor que cruza a riesgo por gasto."
+      "verifica": "Primer valor que cruza a riesgo por gasto. Desde 2026-08-25 suma una segunda razon: ahorro_estimado_pct tambien da 0 (10% + 91% = 101% del ingreso), asi que ademas de la razon de gasto aparece la de margen combinado."
     },
     {
       "id": "R-03",
@@ -392,9 +395,9 @@
         "ratio_gasto_ingreso": 0.95,
         "ahorro_estimado_pct": 0.0,
         "frecuencia_ahorro": "Baja",
-        "n_razones": 2
+        "n_razones": 3
       },
-      "verifica": "Debe devolver DOS razones."
+      "verifica": "Debe devolver TRES razones desde 2026-08-25: deuda (55% > 43), gasto (0.95 > 0.90) y margen combinado (ahorro_estimado_pct <= 0). Antes eran dos (deuda y gasto)."
     },
     {
       "id": "R-04",
@@ -499,11 +502,12 @@
       },
       "esperado": {
         "http": 200,
-        "perfil_financiero": "En observación",
+        "perfil_financiero": "En riesgo",
         "ratio_gasto_ingreso": 0.8,
+        "ahorro_estimado_pct": 0.0,
         "frecuencia_ahorro": "Baja"
       },
-      "verifica": "El ML ignora por completo las transacciones tipo 'ingreso'. Con la nomina real (5.500.000) el ratio seria 0.44 -> Saludable; con el campo del formulario da 0.80 -> En observacion. Dos numeros distintos para el mismo mes."
+      "verifica": "El ML ignora por completo las transacciones tipo 'ingreso'. Con la nomina real (5.500.000) el ratio seria 0.44 -> Saludable; con el campo del formulario da 0.80. Desde 2026-08-25 ese 0.80 ya no da 'En observacion' sino 'En riesgo': 20% deuda + 80% gasto = 100% del ingreso, ahorro_estimado_pct <= 0. Sigue siendo el mismo hallazgo de fondo (dos numeros distintos para el mismo mes), ahora con un veredicto todavia mas alejado del real (Saludable)."
     },
     {
       "id": "U-03",
