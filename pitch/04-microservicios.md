@@ -26,7 +26,7 @@ Navegador                Caddy (172.18.0.4)        backend Java (172.18.0.3:8080
    |<-- JSON respuesta ---------|                            |                                   |                          |
 ```
 
-Puntos clave: el navegador solo conoce a Caddy (un unico origen, TLS de Let's Encrypt). Caddy no sabe nada de ML; el backend Java es el unico que le habla al ml-service, y lo hace por el nombre de servicio de docker compose, no por una URL publica.
+Puntos clave: el navegador solo conoce a Caddy (un unico origen, TLS de Let's Encrypt). Caddy no participa en esta llamada concreta; el backend Java es el unico que le habla al ml-service, y lo hace por el nombre de servicio de docker compose, no por una URL publica.
 
 ## 2. Tabla por servicio
 

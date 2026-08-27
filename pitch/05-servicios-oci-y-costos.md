@@ -39,8 +39,8 @@ Este es el **unico coste** de todo el stack. MySQL HeatWave, Object Storage, OCI
 
 La tenancy `hackaton80` esta en el **trial de USD 300 por 30 dias** que OCI da a cuentas nuevas. Puntos clave:
 
-- Los USD 300 cubren de sobra el gasto de la VM durante el trial: a USD 61.32/mes, 30 dias cuestan aproximadamente USD 61, muy por debajo del credito.
-- Al terminar el trial, si la cuenta **no** se convierte a Pay As You Go, OCI apaga los recursos que no son Always Free. En este proyecto eso es exactamente la VM `financeai-app` (VM.Standard.E5.Flex), porque ese shape no tiene nivel gratuito.
+- Los USD 300 cubren de sobra el gasto de la VM durante el trial: a USD 0.084/hora, 30 dias (720 horas) cuestan USD 60.48; la cifra de USD 61.32/mes usa el estandar de 730 horas de OCI, muy por debajo del credito.
+- Al terminar el trial, si la cuenta **no** se convierte a Pay As You Go, OCI termina (elimina) los recursos que no son Always Free. En este proyecto eso es exactamente la VM `financeai-app` (VM.Standard.E5.Flex), porque ese shape no tiene nivel gratuito.
 - Lo que **si sobrevive** sin necesidad de pagar, porque son Always Free: MySQL HeatWave (MySQL.Free), Object Storage (bucket de frontend y de tfstate), OCIR (los repos de imagenes), y el egress de red.
 - En otras palabras: al vencer el trial sin upgrade, la aplicacion deja de estar accesible (no hay VM que sirva Caddy/backend/ml-service), pero el codigo empaquetado (imagenes en OCIR), los datos (MySQL) y los assets del frontend (Object Storage) no se pierden.
 
@@ -64,7 +64,7 @@ El cambio de infraestructura ya esta preparado para esto: el shape de la VM esta
 |---|---|---|---|---|---|
 | (a) Hoy | VM.Standard.E5.Flex | 2 | 12 GB | (2x0.030 + 12x0.002) x 730 | **USD 61.32** |
 | (b) Con A1 Always Free | VM.Standard.A1.Flex | (pendiente de medir) | (pendiente de medir) | Always Free dentro de los limites A1.Flex (limite exacto por confirmar) | **USD 0** |
-| (c) Escalado a 4 OCPU / 24 GB en E5 | VM.Standard.E5.Flex | 4 | 24 GB | (4x0.030 + 24x0.002) x 730 | **USD 122.64** |
+| (c) Escalado a 4/24 en E5 *(hipotetico)* | VM.Standard.E5.Flex | 4 | 24 GB | (4x0.030 + 24x0.002) x 730 | **USD 122.64** |
 
 ```
 (c) 4 OCPU x 0.030 = 0.120 USD/hora
@@ -74,11 +74,11 @@ El cambio de infraestructura ya esta preparado para esto: el shape de la VM esta
         x 730 h/mes = 122.64 USD/mes
 ```
 
-El escenario (c) escala linealmente respecto a (a): duplicar OCPU y RAM duplica el costo mensual, porque la formula de E5.Flex es puramente proporcional a los recursos asignados. El escenario (b) es el unico que llega a cero, y solo es alcanzable cuando OCI libere capacidad A1 en `sa-bogota-1`.
+El escenario (c) es **ilustrativo, no un plan de despliegue**: sirve solo para mostrar como escala la tarifa, y ninguna de sus cifras corresponde a algo medido en el sistema actual. Escala linealmente respecto a (a): duplicar OCPU y RAM duplica el costo mensual, porque la formula de E5.Flex es puramente proporcional a los recursos asignados. El escenario (b) es el unico que llega a cero, y solo es alcanzable cuando OCI libere capacidad A1 en `sa-bogota-1`.
 
 ## Resumen
 
 - Coste actual: USD 61.32/mes, integramente atribuible a la VM de Compute.
 - Todo lo demas (base de datos, storage, registro de imagenes, red, egress) esta dentro de los limites Always Free.
 - El trial de USD 300/30 dias cubre el coste actual varias veces; el riesgo real no es de presupuesto sino de continuidad si no se hace el upgrade a Pay As You Go a tiempo.
-- El camino a costo cero (shape A1.Flex) ya esta modelado en Terraform como una variable, y solo esta bloqueado por disponibilidad de capacidad en la region, no por trabajo de ingenieria pendiente.
+- El camino a costo cero (shape A1.Flex) ya esta modelado en Terraform como la variable `instance_shape`, pero requiere DOS cosas: (1) que OCI libere capacidad A1 en `sa-bogota-1`, que esta fuera de nuestro control, y (2) trabajo de ingenieria pendiente: reconstruir las imagenes de backend y ml-service para `linux/arm64` y mover los jobs de build del CD a runners ARM.

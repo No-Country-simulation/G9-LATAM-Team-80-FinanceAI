@@ -14,14 +14,17 @@ El pipeline de CD (`.github/workflows/cd.yml`) despliega FinanceAI completo -inf
    |build-backend| |  build-ml   | | db-migrate  | | frontend |
    +------+------+ +------+------+ +------+------+ +----+-----+
           +---------------+---------------+             |
-                           v                             |
-                      +--------+                         |
-                      | deploy |<------------------------+
-                      +---+----+  (needs terraform, build-backend, build-ml, db-migrate)
-                          v
-                      +--------+
-                      | smoke  |  (needs terraform, deploy, frontend)
-                      +--------+
+                          v                                  |
+                     +--------+                              |
+                     | deploy |  (needs terraform,           |
+                     +---+----+   build-backend,             |
+                         |        build-ml, db-migrate)      |
+                         |                                   |
+                         |    +------------------------------+
+                         v    v
+                     +--------------+
+                     |    smoke     |  (needs terraform, deploy, frontend)
+                     +--------------+
 ```
 
 `terraform` es el unico job raiz: todo lo demas depende de sus outputs (URLs, hostnames, repos OCIR). `build-backend`, `build-ml`, `db-migrate` y `frontend` corren en paralelo entre si. `deploy` espera a los tres primeros (no a `frontend`, porque el frontend vive en un bucket, no en la VM). `smoke` cierra el pipeline y necesita tanto `deploy` como `frontend` para verificar el sitio completo.
@@ -60,7 +63,7 @@ En un redeploy sin cambios reales, Terraform deberia reportar que no hay cambios
 
 ## 5. Rollback
 
-Como cada imagen se publica con un tag por SHA ademas de `:latest`, y el `.env` de la VM fija ese SHA como version activa, volver a un despliegue anterior no requiere reconstruir nada: basta con disparar el workflow manualmente (`workflow_dispatch`) indicando el SHA del commit al que se quiere volver. El job `deploy` reescribe `/opt/financeai/.env` con ese tag, hace `docker compose pull` (que descarga la imagen ya existente en OCIR, no una nueva) y `up -d`. El tiempo de rollback es el de un pull de imagen y un restart de contenedores, no el de un build completo.
+Como cada imagen se publica con un tag por SHA ademas de `:latest`, y el `.env` de la VM fija ese SHA como version activa, volver a un despliegue anterior no requiere reconstruir nada: se re-despliega una version anterior. Matiz importante: hoy `workflow_dispatch` esta declarado sin `inputs`, asi que **no se puede pasar un SHA arbitrario**. El mecanismo real es lanzar el workflow sobre una referencia que apunte al commit anterior (`gh workflow run cd.yml --ref <tag-o-rama>`): GitHub hace checkout de esa referencia y `github.sha` pasa a ser ese commit. Anadir un input explicito de tag seria una mejora pequena y util. El job `deploy` reescribe `/opt/financeai/.env` con ese tag, hace `docker compose pull` (que descarga la imagen ya existente en OCIR, no una nueva) y `up -d`. El tiempo de rollback es el de un pull de imagen y un restart de contenedores, no el de un build completo.
 
 ## 6. Lecciones del primer despliegue real
 
